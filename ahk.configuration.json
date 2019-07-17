@@ -5,6 +5,12 @@
 		// symbols used for start and end a block comment. Remove this entry if your language does not support block comments
 		"blockComment": [ "/*", "*/" ]
 	},
+	"capabilities" : {
+		"definitionProvider" : "true",
+		"signatureHelpProvider" : {
+            "triggerCharacters": [ "(" ]
+        }
+	},
 	// symbols used as brackets
     "brackets": [
     	["{", "}"],
