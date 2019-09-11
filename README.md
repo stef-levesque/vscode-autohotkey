@@ -4,6 +4,8 @@ AutoHotKey language support for VS Code
 * Color Syntax
 * Comment blocks
 * Snippets (thanks @denolfe)
+* Method symbol
+* Code format (Mayby unsuited for you code)
 
 ## Installation
 
