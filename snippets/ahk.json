@@ -1386,19 +1386,19 @@
     },
     ".Read()": {
       "prefix": ".Read()",
-      "body": "Read(${1:[Characters]})"
+      "body": ".Read(${1:[Characters]})"
     },
     ".Write()": {
       "prefix": ".Write()",
-      "body": "Write(${1:String})"
+      "body": ".Write(${1:String})"
     },
     ".ReadLine()": {
       "prefix": ".ReadLine()",
-      "body": "ReadLine()"
+      "body": ".ReadLine()"
     },
     ".WriteLine()": {
       "prefix": ".WriteLine()",
-      "body": "WriteLine(${1:[String]})"
+      "body": ".WriteLine(${1:[String]})"
     },
     ".ReadUInt()": {
       "prefix": ".ReadUInt()",
