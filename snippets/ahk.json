@@ -562,19 +562,20 @@
     },
     "Loop <file>": {
       "prefix": "Loop <file>",
-      "body": "Loop, ${1:FilePattern [}, ${2:IncludeFolders?}, ${3:Recurse?]}"
+      "body": "Loop, ${1:FilePattern }[, ${2:IncludeFolders?}, ${3:Recurse?]}"
     },
     "Loop parse": {
       "prefix": "Loop parse",
-      "body": "Loop, ${1:Parse}, ${2:InputVar [}, ${3:Delimiters|CSV}, ${4:OmitChars]}"
+      "body": "Loop, Parse, ${1:InputVar }[, ${2:Delimiters|CSV}, ${3:OmitChars]}"
     },
     "Loop read": {
       "prefix": "Loop read",
-      "body": "Loop, ${1:Read}, ${2:InputFile [}, ${3:OutputFile]}"
+      "body": "Loop, Read, ${1:InputFile }[, ${2:OutputFile]}"
     },
     "Loop reg": {
       "prefix": "Loop reg",
-      "body": "Loop, ${1:HKLM|HKU|HKCU|HKCR|HKCC [}, ${2:Key}, ${3:IncludeSubkeys?}, ${4:Recurse?]}"
+      "body": "Loop, Reg, ${1:KeyName }[, ${2:Mode}]",
+      "description": "Test"
     },
     "Menu": {
       "prefix": "Menu",
