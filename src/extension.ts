@@ -10,6 +10,12 @@ import { initLogging, log } from "./vcore";
  *   vsce package
  *   copy vscode-autohotkey-plus-2.0.1.vsix \Dropbox\v
  *   code --install-extension vscode-autohotkey-plus-2.0.1.vsix
+ * 
+ * to publish to vs code marketplace:
+ * 
+ *   increment version in package.json
+ *   vsce publish -p yourPublishingKeyHere
+ * 
  */
 export function activate(ctx: vscode.ExtensionContext) {
     const channel: vscode.OutputChannel = vscode.window.createOutputChannel("ahk");
