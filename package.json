@@ -2,7 +2,7 @@
 	"name": "vscode-autohotkey-vj",
 	"displayName": "AutoHotkey++",
 	"description": "AutoHotkey language support for VS Code",
-	"version": "2.5.3",
+	"version": "3.0.0",
 	"publisher": "vinnyjames",
 	"engines": {
 		"vscode": "^1.30.0"
@@ -74,7 +74,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^8.10.51",
-		"tslint": "^5.15.0",
+		"tslint": "^5.20.0",
 		"typescript": "^3.4.3",
 		"vscode": "^1.1.34"
 	},

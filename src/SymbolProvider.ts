@@ -2,24 +2,23 @@ import * as vscode from "vscode";
 
 function getRemark(document: vscode.TextDocument, line: number) {
     if (line >= 0) {
-        const {text} = document.lineAt(line);
+        const { text } = document.lineAt(line);
         const markMatch = text.match(/^;(.+)/);
         if (markMatch) {
             return markMatch[1];
         }
     }
-
     return null;
 }
 
 export function getSymbolForLine(document: vscode.TextDocument, line: number): vscode.SymbolInformation {
-    const {text} = document.lineAt(line);
+    const { text } = document.lineAt(line);
 
     const methodMatch = text.match(/(\w+\(\w*\))\s*{/);
     if (methodMatch) {
-		let loc = new vscode.Location(document.uri, new vscode.Position(line, 0));
-		return new vscode.SymbolInformation(methodMatch[1], vscode.SymbolKind.Method,
-			getRemark(document, line - 1), loc);
+        const loc = new vscode.Location(document.uri, new vscode.Position(line, 0));
+        return new vscode.SymbolInformation(methodMatch[1], vscode.SymbolKind.Method,
+            getRemark(document, line - 1), loc);
     }
 
     const hotKeyMatch = text.match(/;;(.+)/);
