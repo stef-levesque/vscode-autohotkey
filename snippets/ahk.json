@@ -512,6 +512,14 @@
       "prefix": "IfWinNotExist",
       "body": "IfWinNotExist, ${1:[ WinTitle}, ${2:WinText}, ${3:ExcludeTitle}, ${4:ExcludeText]}"
     },
+    "Switch": {
+      "prefix": "Switch",
+      "body": "Switch "
+    },
+    "Case": {
+      "prefix": "Case",
+      "body": "Case ${1:CaseValue}:"
+    },
     "ImageSearch": {
       "prefix": "ImageSearch",
       "body": "ImageSearch, ${1:OutputVarX}, ${2:OutputVarY}, ${3:X1}, ${4:Y1}, ${5:X2}, ${6:Y2}, ${7:ImageFile}"
