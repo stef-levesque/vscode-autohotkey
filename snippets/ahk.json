@@ -1506,7 +1506,7 @@
     },
     ".MaxIndex()": {
       "prefix": ".MaxIndex()",
-      "body": "MaxIndex()"
+      "body": ".MaxIndex()"
     },
     ".SetCapacity()": {
       "prefix": ".SetCapacity()",
@@ -3064,9 +3064,9 @@
       "prefix": "ControlList",
       "body": "ControlList"
     },
-    "Count": {
-      "prefix": "Count",
-      "body": "Count"
+    ".Count()": {
+      "prefix": ".Count()",
+      "body": ".Count()"
     },
     "List": {
       "prefix": "List",
