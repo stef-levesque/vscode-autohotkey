@@ -181,7 +181,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>\b(?!MsgBox)(?&lt;!\.)(?i:if|else|return|loop|break|for|while|class|extends|catch|finally|throw|try|until|continue|critical|exit|exitapp|switch|case)\b</string>
+			<string>\b(?!MsgBox)(?&lt;!\.)(?i:if|else|return|loop|break|for|while|new|class|extends|catch|finally|throw|try|until|continue|critical|exit|exitapp|switch|case)\b</string>
 			<key>name</key>
 			<string>keyword.control.ahk</string>
 		</dict>
