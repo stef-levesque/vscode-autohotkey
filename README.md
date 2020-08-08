@@ -1,19 +1,26 @@
-# Visual Studio Code Autohotkey Sharp
+# Visual Studio Code Autohotkey Simple language Server
 
-A personal edition modified from [vscode-autohotkey](https://github.com/vinnyjames/vscode-autohotkey)
+A personal edition modified from [vscode-autohotkey](https://github.com/vinnyjames/vscode-autohotkey)  
+And Microsoft lsp-simple
 
 AutoHotKey language support for VS Code
+
+## Notice
+
+* This is a parser based on regular expression. The results are not guaranteed.
+
+## Feature
 * Color Syntax(1.1.32 version)
 * Comment blocks
 * Snippets
-* Doucment symbol(class and method) 
+* Code Completion
+* Doucment symbol(class, method, label, hotkey) 
 * Goto Definition(limited support)
-  * only work `foo(params*)` and `{` is in the same line
 * Signature Helper (tooltip for method parameters)
-* Code format (might unsuited for your code)
+
 
 ## Further Plan
 
-* [ ] Language server
+* [x] Language server
 * [ ] Syntax analyze based parser  
 * [ ] Enable documentation markdown

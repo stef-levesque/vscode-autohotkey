@@ -1,39 +1,27 @@
 {
-	"name": "vscode-autohotkey-enhance-temp",
-	"displayName": "AutoHotkey#",
-	"description": "AutoHotkey language support for VS Code",
-	"version": "0.1.2",
+	"name": "ahk-simple-ls",
+	"description": "Simple implementation of an ahk language server in node.",
+	"version": "0.0.1",
+	"author": "helsmy",
+	"license": "LGPLv3.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/helsmy/vscode-autohotkey"
+	},
 	"publisher": "helsmy",
+	"categories": [
+		"Programming Languages"
+	],
+	"keywords": [
+		"ahk", "autohotkey", "AutoHotkey"
+	],
 	"engines": {
-		"vscode": "^1.41.1"
+		"vscode": "^1.43.0"
 	},
 	"activationEvents": [
 		"onLanguage:ahk"
 	],
-	"main": "./out/extension",
-	"categories": [
-		"Programming Languages",
-		"Snippets"
-	],
-	"license": "SEE LICENSE IN LICENSE.md",
-	"icon": "icon.png",
-	"bugs": {
-		"url": "https://github.com/helsmy/vscode-autohotkey/issues"
-	},
-	"homepage": "https://github.com/helsmy/vscode-autohotkey/blob/master/README.md",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/helsmy/vscode-autohotkey.git"
-	},
-	"galleryBanner": {
-		"color": "#5c2d91",
-		"theme": "dark"
-	},
-	"keywords": [
-		"vscode",
-		"autohotkey",
-		"ahk"
-	],
+	"main": "./client/out/extension",
 	"contributes": {
 		"languages": [
 			{
@@ -44,8 +32,7 @@
 					"ahk"
 				],
 				"extensions": [
-					".ahk",
-					".ext"
+					".ahk"
 				],
 				"configuration": "./ahk.configuration.json"
 			}
@@ -62,24 +49,44 @@
 				"language": "ahk",
 				"path": "./snippets/ahk.json"
 			}
-		]
+		],
+		"configuration": {
+			"type": "object",
+			"title": "Example configuration",
+			"properties": {
+				"languageServerExample.maxNumberOfProblems": {
+					"scope": "resource",
+					"type": "number",
+					"default": 100,
+					"description": "Controls the maximum number of problems produced by the server."
+				},
+				"languageServerExample.trace.server": {
+					"scope": "window",
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"default": "off",
+					"description": "Traces the communication between VS Code and the language server."
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc --project ./",
-		"watch": "tsc -watch --project ./",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test",
-		"tslint": "tslint -t verbose src/**/*.ts"
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"test": "sh ./scripts/e2e.sh"
 	},
 	"devDependencies": {
-		"@types/node": "^8.10.58",
-		"tslint": "^5.20.0",
-		"typescript": "^3.6.4",
-		"vscode": "^1.1.36"
-	},
-	"dependencies": {
-		"n-readlines": "^1.0.0",
-		"vsce": "^1.69.0"
+		"@types/mocha": "^7.0.2",
+		"mocha": "^8.0.1",
+		"@types/node": "^12.12.0",
+		"eslint": "^6.4.0",
+		"@typescript-eslint/parser": "^2.3.0",
+		"typescript": "^3.9.4"
 	}
 }

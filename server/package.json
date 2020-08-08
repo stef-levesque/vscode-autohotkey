@@ -1,0 +1,19 @@
+{
+	"name": "ahk-simple-ls",
+	"description": "Example implementation of an ahk language server in node.",
+	"version": "0.0.1",
+	"author": "helsmy",
+	"license": "LGPLv3.0",
+	"engines": {
+		"node": "*"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/helsmy/vscode-autohotkey"
+	},
+	"dependencies": {
+		"vscode-languageserver": "^6.1.1",
+		"vscode-languageserver-textdocument": "^1.0.1"
+	},
+	"scripts": {}
+}
