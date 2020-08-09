@@ -1,7 +1,7 @@
 {
 	"name": "ahk-simple-ls",
 	"description": "Simple implementation of an ahk language server in node.",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"author": "helsmy",
 	"license": "LGPLv3.0",
 	"repository": {
@@ -79,7 +79,9 @@
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-		"test": "sh ./scripts/e2e.sh"
+		"test": "sh ./scripts/e2e.sh",
+		"publish": "vsce publish",
+		"package": "vsce package"
 	},
 	"devDependencies": {
 		"@types/mocha": "^7.0.2",

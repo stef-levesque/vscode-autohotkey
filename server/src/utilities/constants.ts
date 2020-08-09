@@ -11,7 +11,8 @@ export const keywords = [
 	'gosub',    'return',  'global',
 	'local',    'throw',   'continue',
 	'catch',	'finally',	'in',
-	'for'
+	'for', 		'this',		'new',
+	'critical',	'exit',		'exitapp'
 ]
 
 export function buildKeyWordCompletions(): CompletionItem[] {
