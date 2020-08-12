@@ -25,6 +25,16 @@ export interface FuncNode extends SymbolNode {
     params: ParameterInformation[]
 }
 
+export interface Word {
+    name: string
+    range: Range
+}
+
+export interface ReferenceInfomation {
+    name: string
+    line: number
+}
+
 export namespace SymbolNode {
     export function create(name: string, kind: SymbolKind, range: Range, subnode?: SymbolNode[]): SymbolNode {
         let result:SymbolNode = {
@@ -54,6 +64,24 @@ export namespace FuncNode {
     }
 }
 
+export namespace Word {
+    export function create(name: string, range: Range): Word {
+        return {
+            name: name,
+            range: range
+        };
+    }
+}
+
+export namespace ReferenceInfomation {
+    export function create(name: string, line: number): ReferenceInfomation {
+        return {
+            name: name,
+            line: line
+        };
+    }
+}
+
 // export interface CommentNode {
 //     text: string
 //     range: Range
@@ -65,15 +93,18 @@ export class Lexer {
     private classname: string|undefined = '';
     private classendline: number = 0;
     private symboltree: SymbolNode[]|null;
+    private referenceTable: {[key: string]: ReferenceInfomation[]} = {};
     private done: boolean = false;
+    private Ilogger: (message: string) => void;
     document: TextDocument;
 
-    constructor (document: TextDocument){
+    constructor (Ilogger: (message: string) => void ,document: TextDocument){
         this.document = document;
+        this.Ilogger = Ilogger;
         this.symboltree = null;
     }
 
-    public Parse(): Lexer {
+    public Parse(isEndByBrace: boolean = false): Lexer {
         this.line = 0;
         const lineCount = Math.min(this.document.lineCount, 10000);
 
@@ -83,6 +114,9 @@ export class Lexer {
         while (this.line < lineCount-1) {
             this.JumpMeanless();
             let text = this.GetText();
+            if (isEndByBrace && text.search(/^[\s\t]*}/) >= 0) {
+                break;
+            }
             try {
                 if (Symbol = this.GetMethodInfo(text, this.classname)) {
                     result.push(Symbol);
@@ -176,34 +210,44 @@ export class Lexer {
         let word = this.getWordAtPosition(position);
         let nodeList:SymbolNode[] = [];
         for (let tree = this.getTree(), i=0; i < tree.length; i++) {
-            if (tree[i].name === word) {
+            if (tree[i].name === word.name) {
                 nodeList.push(tree[i]);
             }
         }
         return nodeList;
     }
 
-    private getWordAtPosition(position: Position): string {
+    private getWordAtPosition(position: Position): Word {
         let reg = /[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+/;
         const context = this.document.getText(Range.create(Position.create(position.line, 0), Position.create(position.line+1, 0)));
-        let word = '';
-        for (let pos = position.character, c = this.getChar(context, pos); c !== ''; --pos) {
+        let wordName = '';
+        let start: Position;
+        let end: Position;
+        let pos: number;
+
+        // Scan start
+        pos = position.character 
+        for (let c = this.getChar(context, pos); c !== ''; --pos) {
             if(c.search(reg) >= 0) {
-                word = c + word;
+                wordName = c + wordName;
                 c = this.getChar(context, pos-1);
             } else {
                 break;
             }
         }
-        for (let pos = position.character+1, c = this.getChar(context, pos); c !== ''; pos++) {
+        start = Position.create(position.line, pos+1); // why start need +1?
+        // Scan end
+        pos = position.character+1
+        for (let c = this.getChar(context, pos); c !== ''; pos++) {
             if(c.search(reg) >= 0) {
-                word += c;
+                wordName += c;
                 c = this.getChar(context, pos+1);
             } else {
                 break;
             }
         }
-        return word;
+        end = Position.create(position.line, pos);
+        return Word.create(wordName, Range.create(start, end));
     }
 
     private getChar(context: string, pos: number): string {
@@ -299,6 +343,15 @@ export class Lexer {
         return text;
     }
 
+    private addReference(variable: string, symbol: string, line: number): void {
+        if (this.referenceTable[symbol]) {
+            this.referenceTable[symbol].push(ReferenceInfomation.create(variable, line));
+        }
+        else {
+            this.referenceTable[symbol] = [ReferenceInfomation.create(variable, line)];
+        }
+    }
+
     protected GetSymbolRange(text: string, symbolName: string, pairstr:string, fullmatch: string, maxrange: number = 300): Range {
         let startIndex = fullmatch.search(symbolName);
         let startLine = this.line;
@@ -318,6 +371,8 @@ export class Lexer {
             this.JumpMeanless();
             nextSearchStr = this.GetText();
             if (nextSearchStr.search(/^[ \t]*({)/) < 0) {
+                let templ = text.split(':=', 2);
+                this.addReference(templ[0].trim(), templ[1].trim(), startLine);
                 throw "Not a symbol";
             }
         }

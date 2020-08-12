@@ -22,5 +22,8 @@ AutoHotKey language support for VS Code
 ## Further Plan
 
 * [x] Language server
+* [ ] Build-in Function hint
+* [ ] Better syntax tree
+* [ ] Function debounce 
 * [ ] Syntax analyze based parser  
 * [ ] Enable documentation markdown

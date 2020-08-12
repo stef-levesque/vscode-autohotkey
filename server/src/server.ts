@@ -57,6 +57,7 @@ let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let treedict: {[key: string]: Lexer} = {};
+let Ilogger = connection.console.log;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -155,7 +156,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'languageServerExample'
+			section: 'AutoHotKey'
 		});
 		documentSettings.set(resource, result);
 	}
@@ -218,7 +219,7 @@ connection.onDefinition((params: DefinitionParams, token: CancellationToken, wor
 })
 
 documents.onDidOpen(async e => {
-	let docLexer: Lexer = new Lexer(e.document);
+	let docLexer: Lexer = new Lexer(Ilogger ,e.document);
 	docLexer.Parse();
 	treedict[e.document.uri] = docLexer;
 });
@@ -305,13 +306,7 @@ connection.onCompletion(
 // the completion list.
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
-		} else if (item.kind === CompletionItemKind.Keyword) {
+		if (item.kind === CompletionItemKind.Keyword) {
 			;
 		} else if (item.kind === CompletionItemKind.Method) {
 			item.detail = item.data;
