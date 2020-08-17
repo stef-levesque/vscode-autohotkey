@@ -40,9 +40,8 @@ import {
 } from './utilities/constants'
 
 import { 
-	Lexer,
-	SymbolNode
- } from './ahkparser'
+	Lexer
+} from './ahkparser'
 import { WorkDoneProgress } from 'vscode-languageserver/lib/progress';
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -57,7 +56,7 @@ let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let treedict: {[key: string]: Lexer} = {};
-let Ilogger = connection.console.log;
+let logger = connection.console.log;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -219,7 +218,7 @@ connection.onDefinition((params: DefinitionParams, token: CancellationToken, wor
 })
 
 documents.onDidOpen(async e => {
-	let docLexer: Lexer = new Lexer(Ilogger ,e.document);
+	let docLexer: Lexer = new Lexer(logger ,e.document);
 	docLexer.Parse();
 	treedict[e.document.uri] = docLexer;
 });
@@ -235,7 +234,7 @@ documents.onDidClose(e => {
 documents.onDidChangeContent(change => {
 	let docLexer = treedict[change.document.uri];
 	docLexer.document = change.document;
-	docLexer.Parse()
+	docLexer.Analyze()
 	// validateTextDocument(change.document);
 });
 

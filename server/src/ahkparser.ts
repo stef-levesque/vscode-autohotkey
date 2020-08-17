@@ -6,7 +6,8 @@ import {
     SymbolKind,
     ParameterInformation,
     CompletionItem,
-    CompletionItemKind
+    CompletionItemKind,
+    RemoteConsole
 } from 'vscode-languageserver';
 
 import {
@@ -89,57 +90,20 @@ export namespace ReferenceInfomation {
 
 export class Lexer {
     private line = 0;
+    private currentText: string|undefined;
     private lineCommentFlag: boolean = false;
     private classname: string|undefined = '';
     private classendline: number = 0;
     private symboltree: SymbolNode[]|null;
     private referenceTable: {[key: string]: ReferenceInfomation[]} = {};
     private done: boolean = false;
-    private Ilogger: (message: string) => void;
+    private logger: RemoteConsole['log'];
     document: TextDocument;
 
-    constructor (Ilogger: (message: string) => void ,document: TextDocument){
+    constructor (logger: RemoteConsole['log'],document: TextDocument){
         this.document = document;
-        this.Ilogger = Ilogger;
+        this.logger = logger;
         this.symboltree = null;
-    }
-
-    public Parse(isEndByBrace: boolean = false): Lexer {
-        this.line = 0;
-        const lineCount = Math.min(this.document.lineCount, 10000);
-
-        let Symbol: SymbolNode|undefined;
-        const result: SymbolNode[] = [];
-
-        while (this.line < lineCount-1) {
-            this.JumpMeanless();
-            let text = this.GetText();
-            if (isEndByBrace && text.search(/^[\s\t]*}/) >= 0) {
-                break;
-            }
-            try {
-                if (Symbol = this.GetMethodInfo(text, this.classname)) {
-                    result.push(Symbol);
-                }
-                else if (Symbol = this.GetClassInfo(text)) {
-                    result.push(Symbol);
-                }
-                else if (Symbol = this.GetLabelInfo(text)) {
-                    result.push(Symbol);
-                }
-            }
-            catch (e) {
-                continue;
-            }
-            finally {
-                this.line++;
-            }
-            if (this.line > this.classendline) {
-                this.classname = undefined;
-            }
-        }
-        this.symboltree = result;
-        return this;
     }
 
     getTree(): SymbolNode[] {
@@ -258,65 +222,169 @@ export class Lexer {
         }
     }
 
+    private advanceLine(): void {
+        if (this.line < this.document.lineCount-1) {
+            this.line++;
+            this.currentText = this.GetText();
+        } else {
+            this.currentText = undefined;
+        }
+    }
+
+    public Parse(): void {
+        this.line = 0;
+        this.advanceLine();
+        this.symboltree = this.Analyze();
+    }
+
+    public Analyze(isEndByBrace: boolean = false, maxLine: number = 10000): SymbolNode[] {
+        const lineCount = Math.min(this.document.lineCount, maxLine);
+
+        let Symbol: SymbolNode|undefined;
+        const result: SymbolNode[] = [];
+        const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
+        const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
+        const VarReg = /^[\s\t]*([a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)(?=[\s\t]*:?=)/;
+        let match:RegExpMatchArray|null;
+        let unclosedBrace = 1;
+
+        while (this.currentText) {
+            if (this.line > lineCount-1 && 
+                (isEndByBrace && unclosedBrace <= 0)) {
+                break;
+            }
+            this.advanceLine();
+            this.JumpMeanless();
+            let startLine = this.line;
+            try {
+                if ((match = this.currentText.match(FuncReg)) && this.isVaildBlockStart()) {
+                    switch (match[1].toLocaleLowerCase()) {
+                        // skip if() and while()
+                        case 'if':
+                        case 'while':
+                            unclosedBrace++;
+                            break;
+                    
+                        default:
+                            result.push(this.GetMethodInfo(match, startLine));
+                            break;
+                    }
+                }
+                else if ((match = this.currentText.match(ClassReg)) && this.isVaildBlockStart()) {
+                    result.push(this.GetClassInfo(match, startLine));
+                }
+                else if (Symbol = this.GetLabelInfo()) {
+                    result.push(Symbol);
+                } 
+                else if (match = this.currentText.match(VarReg)) {
+                    unclosedBrace += this.getUnclosedNum();
+                    result.push(this.GetVarInfo(match))
+                }
+                else {
+                    unclosedBrace += this.getUnclosedNum();
+                }
+            }
+            catch (error) {
+                // TODO: log every parse error here
+                // this.logger(error.stringfy())
+                continue;
+            }
+            if (this.line > this.classendline) {
+                this.classname = undefined;
+            }
+        }
+        return result;
+    }
+
     /**
-    * @param text document line content
-    * @param scopename class name of a function
+     * verify is a vaild block start
+     * if not is add reference of this symbol
+     */
+    private isVaildBlockStart(): boolean {
+        // search if there is a "{" in the rest of the line
+        // if not we go next line 
+        let line = this.line;
+        let text = this.currentText as string;
+        if (this.currentText && this.currentText.search(/^\s*{/) < 0) {
+            this.advanceLine();
+            // we jump Meanless line, space line and comment line
+            this.JumpMeanless();
+            if (this.currentText === undefined) {
+                return false;
+            }
+            if (this.currentText.search(/^[ \t]*({)/) >= 0) {
+                return true;
+            }
+        } 
+        let templ = text.split(':=', 2);
+        this.addReference(templ[0].trim(), templ[1].trim(), line);
+        return false;
+    }
+
+    private getUnclosedNum(): number {
+        let nextSearchStr = <string>this.currentText;
+        let unclosedPairNum:number = 0;
+        let a_LPair = nextSearchStr.match(/[\s\t]*{/g);
+        let a_RPair = nextSearchStr.match(/[\s\t]*}/g);
+
+        if (a_LPair) {
+            unclosedPairNum += a_LPair.length;
+        }
+        if (a_RPair) {
+            unclosedPairNum -= a_RPair.length;
+        }
+        return unclosedPairNum;
+    }
+
+    /**
+    * @param match fullmatch array of a method
+    * @param startLine start line of a method
     */
-    private GetMethodInfo(text: string, scopename?: string): FuncNode|undefined {
+    private GetMethodInfo(match: RegExpMatchArray, startLine: number): FuncNode {
         // if we match the funcName(param*), 
         // then we check if it is a function definition
-        let range: Range;
-        let SymbolFunc: FuncNode;
-        let methodMatch = text.match(/^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/);
-        if (methodMatch) {
-            let l = this.line;
-            let name:string = (<{[key: string]: string}>methodMatch['groups'])['funcname']
-            try {
-                range = this.GetSymbolRange(text, name, methodMatch[2], methodMatch[0]);
-            }
-            catch(error) {
-                // reset flag 
-                this.lineCommentFlag = false;
-                throw "get wrong";
-            }
-            if (!scopename) {
-                SymbolFunc = FuncNode.create(name, SymbolKind.Function, range, this.PParams(methodMatch[2]));
-            } 
-            else {
-                SymbolFunc = FuncNode.create(name, SymbolKind.Method, range, this.PParams(methodMatch[2]));
-            }
-            return SymbolFunc;
+        let name:string = (<{[key: string]: string}>match['groups'])['funcname']
+        let sub = this.Analyze(true, 500);
+        let endMatch: RegExpMatchArray|null;
+        if (this.currentText && (endMatch = this.currentText.match(/^[ \t]*(})/))) {
+            let endLine = this.line;
+            let endIndex = endMatch[0].length;
+            return FuncNode.create(name, 
+                                   SymbolKind.Function,
+                                   Range.create(Position.create(startLine, 0), Position.create(endLine, endIndex)),
+                                   this.PParams(match[2]),
+                                   sub);
         }
+        return FuncNode.create(name, 
+                        SymbolKind.Function,
+                        Range.create(Position.create(startLine, 0), Position.create(startLine, 0)),
+                        this.PParams(match[2]));
     }
 
     /**
     * @param text document line content
     */
-    private GetClassInfo(text: string):SymbolNode|undefined {
+    private GetClassInfo(match: RegExpMatchArray, startLine: number):SymbolNode {
         // if we match the funcName(param*), 
         // then we check if it is a function definition
-        let range: Range;
-        let methodMatch = text.match(/^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i);
-        if (methodMatch) {
-            let l = this.line;
-            let name:string = (<{[key: string]: string}>methodMatch['groups'])['classname'];
-            try {
-                range = this.GetSymbolRange(text,name, "", methodMatch[0], 1000)
-            }
-            catch(error) {
-                // reset flag 
-                this.lineCommentFlag = false;
-                throw "get wrong"
-            }
-            finally {
-                this.line = l;
-            }
-            let SymbolFunc = SymbolNode.create(name, SymbolKind.Class, range);
-            return SymbolFunc;
+        let name:string = (<{[key: string]: string}>match['groups'])['classname']
+        let sub = this.Analyze(true, 1000);
+        let endMatch: RegExpMatchArray|null;
+        if (this.currentText && (endMatch = this.currentText.match(/^[ \t]*(})/))) {
+            let endLine = this.line;
+            let endIndex = endMatch[0].length;
+            return SymbolNode.create(name, 
+                                   SymbolKind.Class,
+                                   Range.create(Position.create(startLine, 0), Position.create(endLine, endIndex)),
+                                   sub);
         }
+        return SymbolNode.create(name, 
+                        SymbolKind.Class,
+                        Range.create(Position.create(startLine, 0), Position.create(startLine, 0)));
     }
 
-    private GetLabelInfo(text: string):SymbolNode|undefined {
+    private GetLabelInfo():SymbolNode|undefined {
+        let text = <string>this.currentText;
         let match = text.match(/^[\t\s]*(?!;)(?<labelname>[a-zA-Z0-9\Q@#$_\[\]?~`!%^&*\+\-()={}|\:;"'<>./\E]+):(?=([\t\s]*|[\t\s]+\Q;\E))/);
         if (match) {
             let range = Range.create(Position.create(this.line, 0), Position.create(this.line, 0));
@@ -325,6 +393,13 @@ export class Lexer {
                 return SymbolNode.create(labelname.slice(0, labelname.length-1), SymbolKind.Event, range);
             return SymbolNode.create(labelname, SymbolKind.Null, range);
         }
+    }
+
+    private GetVarInfo(match: RegExpMatchArray): SymbolNode {
+        let index = match[0].length - match[1].length;
+        return SymbolNode.create(match[1], 
+                                SymbolKind.Variable,
+                                Range.create(Position.create(this.line, index), Position.create(this.line, index)));
     }
 
     private PParams(s_params: string): ParameterInformation[] {
@@ -352,80 +427,8 @@ export class Lexer {
         }
     }
 
-    protected GetSymbolRange(text: string, symbolName: string, pairstr:string, fullmatch: string, maxrange: number = 300): Range {
-        let startIndex = fullmatch.search(symbolName);
-        let startLine = this.line;
-        let nextSearchStr = text.slice(startIndex+pairstr.length+symbolName.length);
-        let endline:number;
-        let endIndex:number;
-
-        // skip if() and while()
-        if (fullmatch.search(/^[\s\t]*(if|while)[\s\t]*\(/i) >= 0) {
-            throw "if or while declear"
-        }
-        // search if there is a "{" in the rest of the line
-        // if not we go next line 
-        if (nextSearchStr.search(/^\s*{/) < 0) {
-            this.line++;
-            // we jump Meanless line, space line and comment line
-            this.JumpMeanless();
-            nextSearchStr = this.GetText();
-            if (nextSearchStr.search(/^[ \t]*({)/) < 0) {
-                let templ = text.split(':=', 2);
-                this.addReference(templ[0].trim(), templ[1].trim(), startLine);
-                throw "Not a symbol";
-            }
-        }
-        // here we found it
-        this.line++;
-
-        try {
-            this.FindCloseBrace(maxrange);
-        } catch (error) {
-            throw error;
-        }
-
-        endline = this.line;
-        endIndex = (<RegExpMatchArray>this.GetText().match(/^[ \t]*(})/))[0].length;
-        return Range.create(Position.create(startLine, startIndex), 
-                                Position.create(endline, endIndex));
-    }
-
-    /**
-     *  go to next line search "}"
-     *  though ahk premit end function with "}" after "{" immediately, but I do not premit it.
-     *  I said calculation.
-     */
-    protected FindCloseBrace(maxrange: number): void {
-        let unclosedPairNum = 1;
-        let nextSearchStr = this.GetText();
-        let maxLine = Math.min(this.document.lineCount, this.line+maxrange);
-        
-        while (unclosedPairNum !== 0) {
-            // Exclude "{}" pairs of if and while
-            // by count how many this kind of pairs we meet
-            if (this.line > maxLine-1) {
-                throw "Break symbol!";
-            }
-            this.JumpMeanless();
-            nextSearchStr = this.GetText();
-
-            let a_LPair = nextSearchStr.match(/[\s\t]*{/g);
-            let a_RPair = nextSearchStr.match(/[\s\t]*}/g);
-
-            if (a_LPair) {
-                unclosedPairNum += a_LPair.length;
-            }
-            if (a_RPair) {
-                unclosedPairNum -= a_RPair.length;
-            }
-            
-            this.line++;
-        }
-        this.line--
-    }
-
-    public PComment(text:string):boolean {
+    public PComment():boolean {
+        let text = <string>this.currentText;
         if (this.lineCommentFlag === true) {
             // end of block commentss
             if (text.search(/^[ \t]*\*\//) >= 0) {
@@ -445,16 +448,13 @@ export class Lexer {
     }
 
     protected JumpMeanless() {
-        let text = this.GetText()
-        while (this.PComment(text) || text.trim() === "") {
-            this.line++;
+        while ((this.currentText && this.currentText.trim() === "") ||
+                this.PComment()) {
+            this.advanceLine();
             if (this.line >= this.document.lineCount-1) {
                 break;
-            } else {
-                text = this.GetText();
             }
         }
         this.lineCommentFlag = false;
     }
-
 }
