@@ -40,9 +40,10 @@ import {
 } from './utilities/constants'
 
 import { 
-	Lexer
+	Lexer, SymbolNode
 } from './ahkparser'
 import { WorkDoneProgress } from 'vscode-languageserver/lib/progress';
+import { type } from 'os';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -57,6 +58,8 @@ let hasDiagnosticRelatedInformationCapability: boolean = false;
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let treedict: {[key: string]: Lexer} = {};
 let logger = connection.console.log;
+
+type Maybe<T> = T | undefined;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -162,21 +165,31 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	return result;
 }
 
+function flatTree(tree: SymbolNode[]): SymbolNode[] {
+	let result: SymbolNode[] = [];
+	tree.map(info => {
+		result.push(info);
+		if (info.subnode) {
+			result.push(...flatTree(info.subnode));
+		}
+	});
+	return result;
+}
+
 connection.onDocumentSymbol((params: DocumentSymbolParams): SymbolInformation[] => {
 	let tree = treedict[params.textDocument.uri].getTree();
-	let result: SymbolInformation[] = [];
-	for(let i=0,len=tree.length; i<len; i++) {
-		result.push(SymbolInformation.create(
-			tree[i].name,
-			tree[i].kind,
-			tree[i].range,
+
+	return flatTree(tree).map(info => {
+		return SymbolInformation.create(
+			info.name,
+			info.kind,
+			info.range,
 			params.textDocument.uri
-		));
-	}
-	return result;
+		);
+	});
 });
 
-connection.onSignatureHelp((positionParams: SignatureHelpParams, cancellation: CancellationToken): SignatureHelp|undefined => {
+connection.onSignatureHelp((positionParams: SignatureHelpParams, cancellation: CancellationToken): Maybe<SignatureHelp> => {
 	const { position } = positionParams;
 	const { uri } = positionParams.textDocument;
 	let docLexer = treedict[uri];
@@ -190,7 +203,10 @@ connection.onSignatureHelp((positionParams: SignatureHelpParams, cancellation: C
 	if (info) {
 		return {
 			signatures: [
-				SignatureInformation.create(docLexer.getFuncPrototype(info.func), undefined, ...info.func.params)
+				SignatureInformation.create(docLexer.getFuncPrototype(info.func), undefined, 
+					...info.func.params.map((param): ParameterInformation => {
+						return ParameterInformation.create(param.name);
+					}))
 			],
 			activeParameter: info.index,
 			activeSignature: 0
@@ -201,7 +217,7 @@ connection.onSignatureHelp((positionParams: SignatureHelpParams, cancellation: C
 	}
 })
 
-connection.onDefinition((params: DefinitionParams, token: CancellationToken, worokDoneProgress: WorkDoneProgress): Definition|undefined =>{
+connection.onDefinition((params: DefinitionParams, token: CancellationToken, worokDoneProgress: WorkDoneProgress): Maybe<Definition> =>{
 	if (token.isCancellationRequested) {
 		return undefined;
 	}
@@ -218,7 +234,7 @@ connection.onDefinition((params: DefinitionParams, token: CancellationToken, wor
 })
 
 documents.onDidOpen(async e => {
-	let docLexer: Lexer = new Lexer(logger ,e.document);
+	let docLexer: Lexer = new Lexer(e.document);
 	docLexer.Parse();
 	treedict[e.document.uri] = docLexer;
 });
@@ -293,11 +309,10 @@ connection.onDidChangeWatchedFiles(_change => {
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
 	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
-		let sci: CompletionItem[] = treedict[_textDocumentPosition.textDocument.uri].convertTreeCompletion();
-		return sci.concat(keyWordCompletions);
+		let docLexer = treedict[_textDocumentPosition.textDocument.uri];
+		return docLexer.getGlobalCompletion()
+			.concat(docLexer.getScopedCompletion(_textDocumentPosition.position))
+			.concat(keyWordCompletions);
 	}
 );
 

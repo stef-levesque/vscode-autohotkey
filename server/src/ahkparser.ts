@@ -1,10 +1,7 @@
 import {
 	Position,
 	Range,
-	Location,
-	SymbolInformation,
     SymbolKind,
-    ParameterInformation,
     CompletionItem,
     CompletionItemKind,
     RemoteConsole
@@ -23,12 +20,23 @@ export interface SymbolNode {
 }
 
 export interface FuncNode extends SymbolNode {
-    params: ParameterInformation[]
+    params: Parameter[]
 }
 
 export interface Word {
     name: string
     range: Range
+}
+
+export interface Parameter {
+    /**
+     * Name of a parameter
+     */
+    name: string
+    /**
+     * default value of a parameter
+     */
+    defaultVal?: string
 }
 
 export interface ReferenceInfomation {
@@ -51,7 +59,7 @@ export namespace SymbolNode {
 }
 
 export namespace FuncNode {
-    export function create(name: string, kind: SymbolKind, range: Range, params: ParameterInformation[], subnode?: SymbolNode[]): FuncNode {
+    export function create(name: string, kind: SymbolKind, range: Range, params: Parameter[], subnode?: SymbolNode[]): FuncNode {
         let result:FuncNode = {
             name: name,
             kind: kind,
@@ -74,6 +82,12 @@ export namespace Word {
     }
 }
 
+namespace Parameter {
+    export function create(name: string): Parameter {
+        return {name: name};
+    }
+}
+
 export namespace ReferenceInfomation {
     export function create(name: string, line: number): ReferenceInfomation {
         return {
@@ -89,59 +103,110 @@ export namespace ReferenceInfomation {
 // }
 
 export class Lexer {
-    private line = 0;
+    private line = -1;
     private currentText: string|undefined;
     private lineCommentFlag: boolean = false;
-    private classname: string|undefined = '';
-    private classendline: number = 0;
-    private symboltree: SymbolNode[]|null;
+    private symboltree: Array<SymbolNode|FuncNode>|null;
     private referenceTable: {[key: string]: ReferenceInfomation[]} = {};
     private done: boolean = false;
-    private logger: RemoteConsole['log'];
+    // private logger: RemoteConsole['log'];
     document: TextDocument;
 
-    constructor (logger: RemoteConsole['log'],document: TextDocument){
+    constructor (document: TextDocument){
         this.document = document;
-        this.logger = logger;
         this.symboltree = null;
     }
 
-    getTree(): SymbolNode[] {
+    public getTree(): Array<SymbolNode|FuncNode> {
         // await this.done;
-        return <SymbolNode[]>this.symboltree;
+        return <Array<SymbolNode|FuncNode>>this.symboltree;
     }
 
     public getFuncPrototype(symbol: FuncNode): string {
         let result = symbol.name + '(';
         symbol.params.forEach(param => {
-            result += param.label + ', ';
+            result += param.name;
+            if (param.defaultVal) {
+                result += ' := ' + param.defaultVal;
+            }
+            result += ', '
         })
         return result.slice(0, -2)+')';
     }
 
-    public convertTreeCompletion(): CompletionItem[] {
-        let symbol: SymbolNode[] = this.getTree();
-		let sci: CompletionItem[] = [];
-		
-		for(let i=0,len=symbol.length; i<len; i++) {
-			let info = symbol[i];
-			let ci = CompletionItem.create(info.name);
-			if (info.kind === SymbolKind.Function) {
-				ci['kind'] = CompletionItemKind.Function;
-				ci.data = this.getFuncPrototype(<FuncNode>info);
-			} else if (info.kind === SymbolKind.Method) {
-				ci['kind'] = CompletionItemKind.Method;
-				ci.data = this.getFuncPrototype(<FuncNode>info);
-			} else if (info.kind === SymbolKind.Class) {
-				ci['kind'] = CompletionItemKind.Class;
-			} else if (info.kind === SymbolKind.Event) {
-				ci['kind'] = CompletionItemKind.Event;
-			} else if (info.kind === SymbolKind.Null) {
-				ci['kind'] = CompletionItemKind.Text;
-			} 
-			sci.push(ci);
+    public convertParamsCompletion(node: SymbolNode): CompletionItem[] {
+        if (node.kind === SymbolKind.Function) {
+            let params =  (<FuncNode>node).params
+            return params.map(param => {
+                let pc = CompletionItem.create(param.name);
+                pc.kind = CompletionItemKind.Variable;
+                return pc;
+            })
         }
-        return sci;
+        else {
+            return [];
+        }
+    }
+
+    public getGlobalCompletion(): CompletionItem[] {
+		return this.getTree().map(node => {
+            return this.convertTreeCompletion(node);
+        });
+    }
+
+    public getScopedCompletion(pos: Position): CompletionItem[] {
+        let node = this.searchNode(pos, this.getTree());
+        
+        if (node && node.subnode) {
+            return node.subnode.map(node => {
+                return this.convertTreeCompletion(node);
+            }).concat(...this.convertParamsCompletion(node));
+        }
+        else {
+            return [];
+        }
+        
+    }
+
+    public searchNode(pos: Position, tree: Array<SymbolNode|FuncNode>): SymbolNode|FuncNode|undefined {
+        for (const node of tree) {
+            if (pos.line > node.range.start.line && pos.line < node.range.end.line) {
+                if (node.subnode) {
+                    let subScopedNode = this.searchNode(pos, node.subnode);
+                    if (subScopedNode) {
+                        return subScopedNode;
+                    } 
+                    else {
+                        return node;
+                    }
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Convert a node to comletion item
+     * @param info node to be converted
+     */
+    private convertTreeCompletion(info: SymbolNode): CompletionItem {
+        let ci = CompletionItem.create(info.name);
+        if (info.kind === SymbolKind.Function) {
+            ci['kind'] = CompletionItemKind.Function;
+            ci.data = this.getFuncPrototype(<FuncNode>info);
+        } else if (info.kind === SymbolKind.Method) {
+            ci['kind'] = CompletionItemKind.Method;
+            ci.data = this.getFuncPrototype(<FuncNode>info);
+        } else if (info.kind === SymbolKind.Variable) {
+            ci.kind = CompletionItemKind.Variable;
+        } else if (info.kind === SymbolKind.Class) {
+            ci['kind'] = CompletionItemKind.Class;
+        } else if (info.kind === SymbolKind.Event) {
+            ci['kind'] = CompletionItemKind.Event;
+        } else if (info.kind === SymbolKind.Null) {
+            ci['kind'] = CompletionItemKind.Text;
+			} 
+        return ci;
     }
 
     public getFuncAtPosition(position: Position): {func: FuncNode, index: number}|undefined {
@@ -232,33 +297,28 @@ export class Lexer {
     }
 
     public Parse(): void {
-        this.line = 0;
+        this.line = -1;
         this.advanceLine();
         this.symboltree = this.Analyze();
     }
 
-    public Analyze(isEndByBrace: boolean = false, maxLine: number = 10000): SymbolNode[] {
+    public Analyze(isEndByBrace: boolean = false, maxLine: number = 10000): Array<SymbolNode|FuncNode> {
         const lineCount = Math.min(this.document.lineCount, maxLine);
 
         let Symbol: SymbolNode|undefined;
-        const result: SymbolNode[] = [];
+        const result: Array<SymbolNode|FuncNode> = [];
         const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
         const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
         const VarReg = /^[\s\t]*([a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)(?=[\s\t]*:?=)/;
         let match:RegExpMatchArray|null;
-        let unclosedBrace = 1;
+        let unclosedBrace = 0;
 
-        while (this.currentText) {
-            if (this.line > lineCount-1 && 
-                (isEndByBrace && unclosedBrace <= 0)) {
-                break;
-            }
-            this.advanceLine();
+        while (this.currentText && this.line <= lineCount-1) {
             this.JumpMeanless();
             let startLine = this.line;
             try {
                 if ((match = this.currentText.match(FuncReg)) && this.isVaildBlockStart()) {
-                    switch (match[1].toLocaleLowerCase()) {
+                    switch (match[1].toLowerCase()) {
                         // skip if() and while()
                         case 'if':
                         case 'while':
@@ -287,11 +347,13 @@ export class Lexer {
             catch (error) {
                 // TODO: log every parse error here
                 // this.logger(error.stringfy())
+                // abandone a line while error
                 continue;
             }
-            if (this.line > this.classendline) {
-                this.classname = undefined;
+            if (isEndByBrace && unclosedBrace <= 0) {
+                break;
             }
+            this.advanceLine();
         }
         return result;
     }
@@ -362,7 +424,8 @@ export class Lexer {
     }
 
     /**
-    * @param text document line content
+    * @param match match result
+    * @param startLine startline of this symbol
     */
     private GetClassInfo(match: RegExpMatchArray, startLine: number):SymbolNode {
         // if we match the funcName(param*), 
@@ -402,11 +465,17 @@ export class Lexer {
                                 Range.create(Position.create(this.line, index), Position.create(this.line, index)));
     }
 
-    private PParams(s_params: string): ParameterInformation[] {
+    private PParams(s_params: string): Parameter[] {
         s_params = s_params.slice(1, -1);
-        let result: ParameterInformation[] = [];
-        s_params.split(',').forEach(param =>{
-            result.push(ParameterInformation.create(param.trim()));
+        let result: Parameter[] = [];
+        s_params.split(',').map(param =>{
+            let paraminfo = Parameter.create(param.trim());
+            // check if the parameter has a default value
+            let l = paraminfo.name.split(/:?=/);
+            if (l.length > 1) {
+                paraminfo.defaultVal = l[1];
+            }
+            result.push(paraminfo);
         });
         return result;
     }
@@ -440,6 +509,7 @@ export class Lexer {
             return true;
         }
         // start of block comments
+        // TODO: Support Docs comments
         else if (text.search(/^[ \t]*\/\*/) >= 0) {
             this.lineCommentFlag = true;
             return true;
