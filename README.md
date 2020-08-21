@@ -14,7 +14,7 @@ AutoHotKey language support for VS Code
 * Comment blocks
 * Snippets
 * Code Completion
-* Doucment symbol(class, method, label, hotkey) 
+* Doucment symbol(class, method, variable, label, hotkey) 
 * Goto Definition(limited support)
 * Signature Helper (tooltip for method parameters)
 
@@ -23,7 +23,16 @@ AutoHotKey language support for VS Code
 
 * [x] Language server
 * [ ] Build-in Function hint
-* [ ] Better syntax tree
+* [x] Better syntax tree
+* [ ] Enumerate include 
 * [ ] Function debounce 
 * [ ] Syntax analyze based parser  
 * [ ] Enable documentation markdown
+
+## Thanks
+
+1. vinnyjames
+2. stef-levesque
+3. denolfe
+4. Microsoft lsp-simple
+

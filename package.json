@@ -1,7 +1,7 @@
 {
 	"name": "ahk-simple-ls",
 	"description": "Simple implementation of an ahk language server in node.",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"author": "helsmy",
 	"license": "LGPLv3.0",
 	"repository": {
