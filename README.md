@@ -1,4 +1,4 @@
-# Visual Studio Code Autohotkey Simple language Server
+# Visual Studio Code Autohotkey Simple Support
 
 A personal edition modified from [vscode-autohotkey](https://github.com/vinnyjames/vscode-autohotkey)  
 And Microsoft lsp-simple

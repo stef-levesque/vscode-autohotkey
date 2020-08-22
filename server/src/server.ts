@@ -44,6 +44,7 @@ import {
 } from './ahkparser'
 import { WorkDoneProgress } from 'vscode-languageserver/lib/progress';
 import { type } from 'os';
+import { promises } from 'dns';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -176,7 +177,8 @@ function flatTree(tree: SymbolNode[]): SymbolNode[] {
 	return result;
 }
 
-connection.onDocumentSymbol((params: DocumentSymbolParams): SymbolInformation[] => {
+connection.onDocumentSymbol(
+	(params: DocumentSymbolParams): SymbolInformation[] => {
 	let tree = treedict[params.textDocument.uri].getTree();
 
 	return flatTree(tree).map(info => {
@@ -189,7 +191,8 @@ connection.onDocumentSymbol((params: DocumentSymbolParams): SymbolInformation[] 
 	});
 });
 
-connection.onSignatureHelp((positionParams: SignatureHelpParams, cancellation: CancellationToken): Maybe<SignatureHelp> => {
+connection.onSignatureHelp(
+	async (positionParams: SignatureHelpParams, cancellation: CancellationToken): Promise<Maybe<SignatureHelp>> => {
 	const { position } = positionParams;
 	const { uri } = positionParams.textDocument;
 	let docLexer = treedict[uri];
@@ -217,7 +220,8 @@ connection.onSignatureHelp((positionParams: SignatureHelpParams, cancellation: C
 	}
 })
 
-connection.onDefinition((params: DefinitionParams, token: CancellationToken, worokDoneProgress: WorkDoneProgress): Maybe<Definition> =>{
+connection.onDefinition(
+	async (params: DefinitionParams, token: CancellationToken, worokDoneProgress: WorkDoneProgress): Promise<Maybe<Definition>> =>{
 	if (token.isCancellationRequested) {
 		return undefined;
 	}
@@ -308,8 +312,18 @@ connection.onDidChangeWatchedFiles(_change => {
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		let docLexer = treedict[_textDocumentPosition.textDocument.uri];
+	async (_textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<Maybe<CompletionItem[]>> => {
+		if (token.isCancellationRequested) {
+			return undefined;
+		}
+		const {position, textDocument} = _textDocumentPosition;
+		let docLexer = treedict[textDocument.uri];
+
+		let result = docLexer.getSuffixNodes(position);
+		if (result) {
+			return result.map(docLexer.convertNodeCompletion.bind(docLexer));
+		}
+
 		return docLexer.getGlobalCompletion()
 			.concat(docLexer.getScopedCompletion(_textDocumentPosition.position))
 			.concat(keyWordCompletions);

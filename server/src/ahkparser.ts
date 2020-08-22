@@ -102,6 +102,11 @@ export namespace ReferenceInfomation {
 //     range: Range
 // }
 
+// if belong to FuncNode
+function isFuncNode(props: any): props is FuncNode{
+    return typeof (props as FuncNode)['params'] !== 'undefined';
+}
+
 export class Lexer {
     private line = -1;
     private currentText: string|undefined;
@@ -124,7 +129,7 @@ export class Lexer {
 
     public getFuncPrototype(symbol: FuncNode): string {
         let result = symbol.name + '(';
-        symbol.params.forEach(param => {
+        symbol.params.map(param => {
             result += param.name;
             if (param.defaultVal) {
                 result += ' := ' + param.defaultVal;
@@ -150,29 +155,90 @@ export class Lexer {
 
     public getGlobalCompletion(): CompletionItem[] {
 		return this.getTree().map(node => {
-            return this.convertTreeCompletion(node);
+            return this.convertNodeCompletion(node);
         });
     }
 
     public getScopedCompletion(pos: Position): CompletionItem[] {
-        let node = this.searchNode(pos, this.getTree());
+        let node = this.searchNodeAtPosition(pos, this.getTree());
         
         if (node && node.subnode) {
             return node.subnode.map(node => {
-                return this.convertTreeCompletion(node);
+                return this.convertNodeCompletion(node);
             }).concat(...this.convertParamsCompletion(node));
         }
         else {
             return [];
         }
-        
     }
 
-    public searchNode(pos: Position, tree: Array<SymbolNode|FuncNode>): SymbolNode|FuncNode|undefined {
+    /**
+     * Get all nodes of a particular token.
+     * return all possible nodes or empty list
+     * @param position 
+     */
+    public getSuffixNodes(position: Position): (SymbolNode|FuncNode)[]|undefined {
+        const context = this.document.getText(Range.create(Position.create(position.line, 0), Position.create(position.line+1, 0)));
+        let suffix = this.getWordAtPosition(position);
+        let perfixs: string[] = [];
+        let temppos = (suffix.name === '') ? suffix.range.start.character : suffix.range.start.character-1;
+        // let w = this.document.getText(suffix.range);
+
+        // Push perfixs into perfixs stack
+        while (this.getChar(context, temppos) === '.') {
+            let word = this.getWordAtPosition(Position.create(position.line, temppos-1));
+            perfixs.push(word.name);
+            temppos = word.range.start.character-1;
+        }
+        let perfix: string|undefined;
+        let nodeList: SymbolNode[] = this.getTree();
+        
+        // Search tree
+        let isFound = false;
+        while (perfix = perfixs.pop()) {
+            isFound = false;
+            if (perfix === 'this') {
+                let classNode = this.searchNodeAtPosition(position, this.getTree(), SymbolKind.Class);
+                if (classNode && classNode.subnode) {
+                    nodeList = classNode.subnode;
+                } 
+                else {
+                    return undefined;
+                }
+            }
+            for(const node of nodeList) {
+                if (node.name === perfix && node.subnode) {
+                    nodeList = node.subnode;
+                    isFound = true;
+                    break;
+                }
+            }
+            // TODO: Check reference here
+            if (!isFound) {
+                return undefined;
+            }
+        }
+
+        if (isFound) {
+            return nodeList;
+        }
+        return undefined;
+    }
+
+    /**
+     * search at given tree to 
+     * find the deepest node that
+     * covers the given condition
+     *  
+     * @param pos position to search
+     * @param tree AST tree for search
+     * @param kind symbol kind of search item
+     */
+    public searchNodeAtPosition(pos: Position, tree: Array<SymbolNode|FuncNode>, kind:SymbolKind = SymbolKind.Function): SymbolNode|FuncNode|undefined {
         for (const node of tree) {
-            if (pos.line > node.range.start.line && pos.line < node.range.end.line) {
+            if (pos.line > node.range.start.line && pos.line < node.range.end.line && node.kind === kind) {
                 if (node.subnode) {
-                    let subScopedNode = this.searchNode(pos, node.subnode);
+                    let subScopedNode = this.searchNodeAtPosition(pos, node.subnode);
                     if (subScopedNode) {
                         return subScopedNode;
                     } 
@@ -189,15 +255,12 @@ export class Lexer {
      * Convert a node to comletion item
      * @param info node to be converted
      */
-    private convertTreeCompletion(info: SymbolNode): CompletionItem {
+    public convertNodeCompletion(info: SymbolNode): CompletionItem {
         let ci = CompletionItem.create(info.name);
-        if (info.kind === SymbolKind.Function) {
+        if (isFuncNode(info)) {
             ci['kind'] = CompletionItemKind.Function;
-            ci.data = this.getFuncPrototype(<FuncNode>info);
-        } else if (info.kind === SymbolKind.Method) {
-            ci['kind'] = CompletionItemKind.Method;
-            ci.data = this.getFuncPrototype(<FuncNode>info);
-        } else if (info.kind === SymbolKind.Variable) {
+            ci.data = this.getFuncPrototype(info);
+        }  else if (info.kind === SymbolKind.Variable) {
             ci.kind = CompletionItemKind.Variable;
         } else if (info.kind === SymbolKind.Class) {
             ci['kind'] = CompletionItemKind.Class;
@@ -235,10 +298,13 @@ export class Lexer {
     }
 
     getDefinitionAtPosition(position: Position): SymbolNode[] {
-        
         let word = this.getWordAtPosition(position);
+        let tree = this.getSuffixNodes(position);
+        if (!tree) {
+            tree = this.getTree()
+        }
         let nodeList:SymbolNode[] = [];
-        for (let tree = this.getTree(), i=0; i < tree.length; i++) {
+        for (let i=0; i < tree.length; i++) {
             if (tree[i].name === word.name) {
                 nodeList.push(tree[i]);
             }
@@ -248,14 +314,16 @@ export class Lexer {
 
     private getWordAtPosition(position: Position): Word {
         let reg = /[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+/;
-        const context = this.document.getText(Range.create(Position.create(position.line, 0), Position.create(position.line+1, 0)));
+        let context = this.document.getText(Range.create(Position.create(position.line, 0), Position.create(position.line+1, 0)));
+        context = context.slice(0, context.length-2);
         let wordName = '';
         let start: Position;
         let end: Position;
         let pos: number;
 
+        // if given position is beyond line length, start at last character
+        pos = (position.character >= context.length) ? context.length-1 : position.character
         // Scan start
-        pos = position.character 
         for (let c = this.getChar(context, pos); c !== ''; --pos) {
             if(c.search(reg) >= 0) {
                 wordName = c + wordName;
@@ -264,9 +332,10 @@ export class Lexer {
                 break;
             }
         }
-        start = Position.create(position.line, pos+1); // why start need +1?
+        pos = (pos+1 >= context.length) ? context.length-1 : pos+1
+        start = Position.create(position.line, pos); // why start need +1?
         // Scan end
-        pos = position.character+1
+        pos = position.character+1 
         for (let c = this.getChar(context, pos); c !== ''; pos++) {
             if(c.search(reg) >= 0) {
                 wordName += c;
@@ -275,12 +344,15 @@ export class Lexer {
                 break;
             }
         }
+        // if end is beyond line length, end at last character
+        pos = (pos >= context.length) ? context.length-1 : pos
         end = Position.create(position.line, pos);
         return Word.create(wordName, Range.create(start, end));
     }
 
     private getChar(context: string, pos: number): string {
         try {
+            // if (context[pos] === '\r' || context[pos] === '\t')
             return context[pos] ? context[pos] : '';
         } catch (err) {
             return '';
