@@ -103,8 +103,8 @@ export namespace ReferenceInfomation {
 // }
 
 // if belong to FuncNode
-function isFuncNode(props: any): props is FuncNode{
-    return typeof (props as FuncNode)['params'] !== 'undefined';
+function isFuncNode(node: SymbolNode): node is FuncNode{
+    return typeof (node as FuncNode)['params'] !== 'undefined';
 }
 
 export class Lexer {
@@ -383,7 +383,7 @@ export class Lexer {
         const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
         const VarReg = /^[\s\t]*([a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)(?=[\s\t]*:?=)/;
         let match:RegExpMatchArray|null;
-        let unclosedBrace = 0;
+        let unclosedBrace = 1;
 
         while (this.currentText && this.line <= lineCount-1) {
             this.JumpMeanless();
@@ -439,7 +439,11 @@ export class Lexer {
         // if not we go next line 
         let line = this.line;
         let text = this.currentText as string;
-        if (this.currentText && this.currentText.search(/^\s*{/) < 0) {
+        if (text.search(/{/) >= 0) {
+            this.advanceLine();
+            return true;
+        } 
+        else {
             this.advanceLine();
             // we jump Meanless line, space line and comment line
             this.JumpMeanless();
@@ -447,9 +451,10 @@ export class Lexer {
                 return false;
             }
             if (this.currentText.search(/^[ \t]*({)/) >= 0) {
+                this.advanceLine();
                 return true;
             }
-        } 
+        }
         let templ = text.split(':=', 2);
         this.addReference(templ[0].trim(), templ[1].trim(), line);
         return false;
