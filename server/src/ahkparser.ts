@@ -382,7 +382,8 @@ export class Lexer {
     private getWordAtPosition(position: Position): Word {
         let reg = /[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+/;
         let context = this.document.getText(Range.create(Position.create(position.line, 0), Position.create(position.line+1, 0)));
-        context = context.slice(0, context.length-2);
+        // remove new line char
+        context = context.replace(/[\r\n]/, '');
         let wordName = '';
         let start: Position;
         let end: Position;

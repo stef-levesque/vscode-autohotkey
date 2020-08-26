@@ -18,6 +18,8 @@ AutoHotKey language support for VS Code
 * Goto Definition(limited support)
 * Signature Helper (tooltip for method parameters)
 
+![](pic/completion.png)
+![](pic/signature.png)
 
 ## Further Plan
 

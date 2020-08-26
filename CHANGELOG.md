@@ -6,3 +6,7 @@
 2. Improve Completion
 3. Improve Completion and go to definition (0.1.1)
 4. Fixs bugs about function range. (0.1.2)
+
+## 0.2.0
+
+1. new parser for signature help

@@ -91,11 +91,19 @@ export class Tokenizer {
         return createToken(TokenType.number, sNum, offset);
     }
 
+    IsEscapeChar(): boolean {
+        if (this.Peek() === "\"") {
+            this.Advance();
+            return true;
+        }
+        return false;
+    }
+
     GetString(): Token {
         let str:string = "";
         let offset = this.pos;
         this.Advance();
-        while(this.currChar !== "\"") {
+        while(this.currChar !== "\"" || this.IsEscapeChar()) {
             str += this.currChar;
             this.Advance()
         }
