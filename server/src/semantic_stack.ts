@@ -11,51 +11,34 @@ import {
 	Token
 } from "./tokenizer";
 import { throws } from 'assert';
+import { 
+	IAssign,
+	IASTNode,
+	IBinOp,
+	IFunctionCall,
+	IMethodCall,
+	INodeResult,
+	IOffRange,
+	IPropertCall,
+	IVariable,
+	INoOpt,
+	Offrange,
+	FunctionCall,
+	PropertCall,
+	MethodCall,
+	IUnaryOperator,
+	ILiteral,
+	Expr
+ } from "./asttypes";
 
-interface AST {
-	isWrong: boolean
+export function isExpr(node: IASTNode): node is IBinOp {
+	if ((node as IBinOp)['right'] === undefined) {
+		return false;
+	}
+	return true;
 }
 
-interface NoOperat extends AST {
-	
-}
-
-interface Expr extends AST {
-	token: Token
-	expr: any
-}
-
-interface Variable extends AST {
-	name: string
-	token: Token
-}
-
-interface Assign extends AST {
-	left: Variable
-	operator: Token
-	right: any
-}
-
-interface FunctionCall extends AST {
-	name: string
-	actualParams: any[]
-	token: Token
-}
-
-interface MethodCall extends FunctionCall {
-	/**
-	 * reference class of a method
-	 */
-	ref: Token[]
-}
-
-interface PropertCall extends AST {
-	name: string
-	token: Token
-	ref: Token[]
-}
-
-class SemanticStack {
+export class SemanticStack {
 	private tokenizer: Tokenizer;
 	private currentToken: Token;
 
@@ -78,40 +61,123 @@ class SemanticStack {
 		}
 	}
 
-	variable(): Variable {
+	variable(): INodeResult<IVariable> {
 		let token = this.currentToken;
 		this.eat(TokenType.id);
 		return {
-			name: token.content,
-			token: token,
-			isWrong: false
+			errors: false,
+			value: {
+				name: token.content,
+				token: token,
+				offrange: new Offrange(token.offset, token.offset)
+			}
 		};
 	}
 
-	expr(): Expr | NoOperat {
+	literal(): INodeResult<ILiteral> {
 		let token = this.currentToken;
-		while (this.currentToken.type !== TokenType.id && this.currentToken.type !== TokenType.comma) {
-			this.eat(this.currentToken.type);
-		}
-		if (this.currentToken.type === TokenType.id) {
-			let expr = this.parseStatement();
-			return {
-				token: token,
-				expr: expr,
-				isWrong: false
-			}
+		if (this.currentToken.type === TokenType.string) {
+			this.eat(TokenType.string);
+		} 
+		else if (this.currentToken.type === TokenType.number) {
+			this.eat(TokenType.number);
 		}
 		return {
-			isWrong: false
-		} as NoOperat
-
+			errors: false,
+			value: {
+				token: token,
+				value: token.content,
+				offrange: new Offrange(token.offset, token.offset)
+			}
+		};
 	}
 
-	assignment(): Assign {
+	factor() {
+		let token = this.currentToken
+		let node: Expr;
+		if (this.currentToken.type === TokenType.string ||
+				 this.currentToken.type === TokenType.number) {
+			node = this.literal();
+		}
+		else if (this.currentToken.type === TokenType.unknown) {
+			this.eat(TokenType.unknown);
+			node = {errors: false, value: {operator: token, left: this.expr(), offrange: new Offrange(token.offset, token.offset)}};
+		}
+		else if (this.currentToken.type === TokenType.openParen) {
+			this.eat(TokenType.openParen);
+			node = this.expr();
+			this.eat(TokenType.closeParen);
+		}
+		else {
+			switch (this.tokenizer.currChar) {
+				case '(':
+					node = this.funcCall();
+					break;
+				case '.':
+					node = this.classCall();
+					break;
+				default:
+					node = this.variable();
+					break;
+			}
+		}
+		return node;
+	}
+
+	expr(): Expr {
+		// while (this.currentToken.type !== TokenType.id && this.currentToken.type !== TokenType.comma) {
+		// 	this.eat(this.currentToken.type);
+		// }
+		try {
+			let node = this.factor();
+			
+			while (this.currentToken.type === TokenType.unknown || 
+				   this.currentToken.type === TokenType.dot || 
+				   this.currentToken.type === TokenType.id) {
+				let token = this.currentToken;
+				if (this.currentToken.type === TokenType.unknown) {
+					this.eat(TokenType.unknown);
+				} 
+				else if (this.currentToken.type === TokenType.dot) {
+					this.eat(TokenType.dot);
+				}
+				// Implicit connection expression
+				else {
+					token = {
+						content: '',
+						type: TokenType.unknown,
+						offset: this.currentToken.offset
+					}
+				}
+				return {
+					errors: false,
+					value: {
+						left: node,
+						operator: token,
+						right: this.factor(),
+						offrange: new Offrange(token.offset, token.offset)
+					}
+				}
+			}
+			return {
+				errors: node.errors,
+				value: node.value
+			};
+		} 
+		catch (err) {
+			return {
+				errors: true,
+				value: {
+					offrange: new Offrange(this.currentToken.offset, this.currentToken.offset)
+				}
+			};
+		}
+	}
+
+	assignment(): INodeResult<IAssign> {
 		let left = this.variable();
 		let isWrong = false;
 
-		this.eat(TokenType.id);
 		let token: Token = this.currentToken;
 		if (this.currentToken.type === TokenType.aassign) {
 			this.eat(TokenType.aassign);
@@ -124,22 +190,25 @@ class SemanticStack {
 		}
 		let exprNode = this.expr();
 		return {
-			left: left,
-			operator: token,
-			right: exprNode,
-			isWrong: isWrong
-		}
+			errors: isWrong,
+			value: {
+				left: left.value,
+				operator: token,
+				right: exprNode,
+				offrange: new Offrange(token.offset, token.offset)
+			}
+		};
 
 	}
 
-	funcCall(): FunctionCall {
+	funcCall(): INodeResult<IFunctionCall> {
 		let token = this.currentToken;
 		let funcName = token.content;
 		let iserror = false;
 
 		this.eat(TokenType.id);
 		this.eat(TokenType.openParen);
-		let actualParams = [];
+		let actualParams: INodeResult<IBinOp | INoOpt>[] = [];
 		if (this.currentToken.type !== TokenType.closeParen) {
 			actualParams.push(this.expr());
 		}
@@ -157,15 +226,13 @@ class SemanticStack {
 		}
 		
 		return {
-			name: funcName,
-			actualParams: actualParams,
-			token: token,
-			isWrong: iserror
+			errors: iserror,
+			value: new FunctionCall(funcName, actualParams, token, new Offrange(token.offset, token.offset))
 		};
 	}
 
-	classCall(): MethodCall|PropertCall {
-		let classref: Token[] = [];
+	classCall(): INodeResult<IMethodCall|IPropertCall> {
+		let classref: Token[] = [this.currentToken];
 
 		this.eat(TokenType.id);
 		this.eat(TokenType.dot);
@@ -174,35 +241,38 @@ class SemanticStack {
 			this.eat(TokenType.id);
 			this.eat(TokenType.dot);
 		}
+
+		let token = this.currentToken;
 		if (this.currentToken.type === TokenType.id) {
 			if (this.tokenizer.currChar === '(') {
-				let callNode = this.funcCall() as MethodCall;
-				callNode.ref = classref;
-				return callNode;
+				let callNode = this.funcCall();
+				return {
+					errors: callNode.errors,
+					value: new MethodCall(callNode.value.name, 
+								callNode.value.actualParams, 
+								callNode.value.token, 
+								classref, 
+								callNode.value.offrange)
+				};
 			} 
 			return {
-				name: this.currentToken.content,
-				token: this.currentToken,
-				ref: classref,
-				isWrong: false
-				
+				errors: false,
+				value: new PropertCall(this.currentToken.content, this.currentToken, classref, new Offrange(token.offset, token.offset))
 			}
 		}
 		return {
-			name: '',
-			token: this.currentToken,
-			ref: classref,
-			isWrong: true
+			errors: true,
+			value: new PropertCall(this.currentToken.content, this.currentToken, classref, new Offrange(token.offset, token.offset))
 		}
 
 	}
 
-	parseStatement() {
+	statement() {
 		// let node: any;
 		// Start at first id
 		while (this.currentToken.type !== TokenType.id) {
 			if (this.currentToken.type === TokenType.EOF) {
-				return [];
+				return undefined;
 			}
 			this.eat(this.currentToken.type);
 		}

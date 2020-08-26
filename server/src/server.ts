@@ -254,7 +254,7 @@ documents.onDidClose(e => {
 documents.onDidChangeContent(change => {
 	let docLexer = treedict[change.document.uri];
 	docLexer.document = change.document;
-	docLexer.Analyze()
+	docLexer.Parse()
 	// validateTextDocument(change.document);
 });
 

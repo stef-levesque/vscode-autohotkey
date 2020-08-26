@@ -11,7 +11,10 @@ import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 import { promises } from 'dns';
-
+import { SemanticStack, isExpr } from './semantic_stack'
+import { SemanticTokensBuilder } from 'vscode-languageserver/lib/sematicTokens.proposed';
+import { FunctionCall, MethodCall, INodeResult, IFunctionCall, IASTNode, IMethodCall, Expr, IBinOp, IPropertCall, IAssign } from './asttypes';
+import { Token } from './tokenizer';
 export interface SymbolNode {
     name: string
     kind: SymbolKind
@@ -190,11 +193,18 @@ export class Lexer {
             perfixs.push(word.name);
             temppos = word.range.start.character-1;
         }
+        
+        return this.searchSuffix(perfixs, position);
+    }
+
+    /**
+     * Get suffixs list of a given perfixs list
+     * @param perfixs perfix list for search(top scope at last)
+     */
+    searchSuffix(perfixs: string[], position: Position): (SymbolNode|FuncNode)[]|undefined {
+        let isFound = false;
         let perfix: string|undefined;
         let nodeList: SymbolNode[] = this.getTree();
-        
-        // Search tree
-        let isFound = false;
         while (perfix = perfixs.pop()) {
             isFound = false;
             if (perfix === 'this') {
@@ -273,28 +283,85 @@ export class Lexer {
     }
 
     public getFuncAtPosition(position: Position): {func: FuncNode, index: number}|undefined {
-        const reg = /[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+\((?=.*?)(?!\))/g;
         const context = this.document.getText(Range.create(Position.create(position.line, 0), position));
-        let m = context.match(reg);
-        let p = context.split(reg);
-        if (m) {
-            const funcName = m[m.length-1].slice(0, -1);
-            const tree = this.getTree();
+        
+        let stmtStack = new SemanticStack(context);
+        let stmt: INodeResult<IFunctionCall| IMethodCall | IPropertCall | IAssign>|undefined;
+        try {
+            stmt = stmtStack.statement();
+        }
+        catch (err) {
+            return undefined;
+        }
+        if (!stmt) {
+            return undefined;
+        }
+        let perfixs: string[]|undefined;
+        
+        let node: INodeResult<IASTNode> = stmt;
+        if (isExpr(stmt.value)) {
+            node = stmt.value.right;
+            while(isExpr(node.value)) {
+                node = node.value.right;
+            }
+        }
+        
+        stmt = node as INodeResult<IFunctionCall | IMethodCall | IPropertCall | IAssign>;
+        
+        if (stmt.value instanceof FunctionCall) {
+            if (!stmt.errors) {
+                return undefined;
+            }
+            let lastnode = this.getUnfinishedFunc(stmt.value);
+            if (!lastnode) {
+                lastnode = stmt.value;
+            } 
+            if (lastnode instanceof MethodCall) {
+                perfixs = lastnode.ref.map(r => {
+                    return r.content;
+                });
+            }
+
+            const funcName = lastnode.name;
+            const tree = perfixs ? this.searchSuffix(perfixs.reverse(), position) : this.getTree();
             let func:FuncNode;
-            for (let i=0,len=tree.length; i<len; i++) {
-                if (tree[i].name === funcName && (tree[i].kind === SymbolKind.Function)) {
-                    func = <FuncNode>tree[i];
-                    if (func.range.start.line === position.line) {
-                        return undefined;
-                    }
-                    let index = p[p.length-1].split(',').length - 1
-                    return {
-                        func: func,
-                        index: index
+            if (tree) {
+                for (let i=0,len=tree.length; i<len; i++) {
+                    if (tree[i].name === funcName && (tree[i].kind === SymbolKind.Function)) {
+                        func = <FuncNode>tree[i];
+                        if (func.range.start.line === position.line) {
+                            return undefined;
+                        }
+                        let index = lastnode.actualParams.length===0 ?
+                                    lastnode.actualParams.length:
+                                    lastnode.actualParams.length-1;
+                        return {
+                            func: func,
+                            index: index
+                        };
                     }
                 }
             }
         }
+        return undefined;
+    }
+
+    getUnfinishedFunc(node: IFunctionCall): IFunctionCall|undefined {
+        let perfixs: string[]|undefined;
+        // let lastParam: any
+        let lastParam = node.actualParams[node.actualParams.length-1] as INodeResult<IASTNode>;
+        if (!lastParam.errors) {
+            return undefined;
+        }
+        if (lastParam.value instanceof FunctionCall) {
+            let lastnode = this.getUnfinishedFunc(lastParam.value);
+            if (lastnode) {
+                if (node instanceof FunctionCall) {
+                    return lastnode
+                }
+            }
+        }
+        return node;
     }
 
     getDefinitionAtPosition(position: Position): SymbolNode[] {

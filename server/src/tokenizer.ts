@@ -107,7 +107,7 @@ export class Tokenizer {
         let str:string = this.currChar;
         let offset = this.pos;
         this.Advance();
-        while(this.currChar.search(/[a-zA-Z0-9_\u4e00-\u9fa5]/) >= 0) {
+        while(this.currChar.search(/[a-zA-Z0-9_\u4e00-\u9fa5]/) >= 0 && this.currChar.length === 1) {
             str += this.currChar;
             this.Advance()
         }

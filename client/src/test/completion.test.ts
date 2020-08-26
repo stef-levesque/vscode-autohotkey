@@ -8,13 +8,13 @@ import * as assert from 'assert';
 import { getDocUri, activate } from './helper';
 
 suite('Should do completion', () => {
-	const docUri = getDocUri('completion.txt');
+	const docUri = getDocUri('completion.ahk');
 
-	test('Completes JS/TS in txt file', async () => {
-		await testCompletion(docUri, new vscode.Position(0, 0), {
+	test('Completes global symbol', async () => {
+		await testCompletion(docUri, new vscode.Position(31-1, 0), {
 			items: [
-				{ label: 'JavaScript', kind: vscode.CompletionItemKind.Text },
-				{ label: 'TypeScript', kind: vscode.CompletionItemKind.Text }
+				{ label: 'TestFunc', kind: vscode.CompletionItemKind.Function },
+				{ label: 'TestClass', kind: vscode.CompletionItemKind.Class }
 			]
 		});
 	});
@@ -36,7 +36,12 @@ async function testCompletion(
 
 	assert.ok(actualCompletionList.items.length >= 2);
 	expectedCompletionList.items.forEach((expectedItem, i) => {
-		const actualItem = actualCompletionList.items[i];
+		let actualItem = actualCompletionList.items[i];
+		actualCompletionList.items.map(item => {
+			if (item.label === expectedItem.label) {
+				actualItem = item;
+			}
+		});
 		assert.equal(actualItem.label, expectedItem.label);
 		assert.equal(actualItem.kind, expectedItem.kind);
 	});
