@@ -15,6 +15,7 @@ import { SemanticStack, isExpr } from './semantic_stack'
 import { SemanticTokensBuilder } from 'vscode-languageserver/lib/sematicTokens.proposed';
 import { FunctionCall, MethodCall, INodeResult, IFunctionCall, IASTNode, IMethodCall, Expr, IBinOp, IPropertCall, IAssign } from './asttypes';
 import { Token } from './tokenizer';
+import { open } from 'fs';
 export interface SymbolNode {
     name: string
     kind: SymbolKind
@@ -24,6 +25,10 @@ export interface SymbolNode {
 
 export interface FuncNode extends SymbolNode {
     params: Parameter[]
+}
+
+export interface ClassNode extends SymbolNode {
+    extends: string[]
 }
 
 export interface Word {
@@ -110,12 +115,32 @@ function isFuncNode(node: SymbolNode): node is FuncNode{
     return typeof (node as FuncNode)['params'] !== 'undefined';
 }
 
+function setDiffSet<T>(set1: Set<T>, set2: Set<T>) {
+    let d12: Array<T> = [], d21: Array<T> = [];
+    for(let item of set1) {
+        if (!set2.has(item)) {
+            d12.push(item);
+        }
+    }
+    for(let item of set2) {
+        if (!set1.has(item)) {
+            d21.push(item);
+        }
+    }
+    return {
+        d12: d12,
+        d21: d21
+    };
+}
+
 export class Lexer {
     private line = -1;
     private currentText: string|undefined;
     private lineCommentFlag: boolean = false;
     private symboltree: Array<SymbolNode|FuncNode>|null;
+    private includetree: {[key: string]: Array<SymbolNode|FuncNode|ClassNode>}|undefined;
     private referenceTable: {[key: string]: ReferenceInfomation[]} = {};
+    private includeFile: Set<string> = new Set();
     private done: boolean = false;
     // private logger: RemoteConsole['log'];
     document: TextDocument;
@@ -211,6 +236,8 @@ export class Lexer {
                 let classNode = this.searchNodeAtPosition(position, this.getTree(), SymbolKind.Class);
                 if (classNode && classNode.subnode) {
                     nodeList = classNode.subnode;
+                    isFound = true;
+                    continue;
                 } 
                 else {
                     return undefined;
@@ -244,11 +271,14 @@ export class Lexer {
      * @param tree AST tree for search
      * @param kind symbol kind of search item
      */
-    public searchNodeAtPosition(pos: Position, tree: Array<SymbolNode|FuncNode>, kind:SymbolKind = SymbolKind.Function): SymbolNode|FuncNode|undefined {
+    public searchNodeAtPosition(pos: Position, tree: Array<SymbolNode|FuncNode>, kind?:SymbolKind): SymbolNode|FuncNode|undefined {
         for (const node of tree) {
-            if (pos.line > node.range.start.line && pos.line < node.range.end.line && node.kind === kind) {
+            if (pos.line > node.range.start.line && pos.line < node.range.end.line) {
                 if (node.subnode) {
-                    let subScopedNode = this.searchNodeAtPosition(pos, node.subnode);
+                    if (kind && !(node.kind === kind)) {
+                       continue;
+                    }
+                    let subScopedNode = this.searchNodeAtPosition(pos, node.subnode, kind);
                     if (subScopedNode) {
                         return subScopedNode;
                     } 
@@ -383,7 +413,7 @@ export class Lexer {
         let reg = /[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+/;
         let context = this.document.getText(Range.create(Position.create(position.line, 0), Position.create(position.line+1, 0)));
         // remove new line char
-        context = context.replace(/[\r\n]/, '');
+        context = context.replace(/[\r\n]/, '').replace(/[\r\n]/, '');
         let wordName = '';
         let start: Position;
         let end: Position;
@@ -439,17 +469,21 @@ export class Lexer {
     public Parse(): void {
         this.line = -1;
         this.advanceLine();
+        let oldInclude = this.includeFile;
         this.symboltree = this.Analyze();
+        // d12 need delete, d21 need add
+        let {d12, d21} = setDiffSet(oldInclude, this.includeFile);
     }
 
     public Analyze(isEndByBrace: boolean = false, maxLine: number = 10000): Array<SymbolNode|FuncNode> {
-        const lineCount = Math.min(this.document.lineCount, maxLine);
+        const lineCount = Math.min(this.document.lineCount, this.line + maxLine);
 
         let Symbol: SymbolNode|undefined;
         const result: Array<SymbolNode|FuncNode> = [];
         const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
         const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
         const VarReg = /^[\s\t]*([a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)(?=[\s\t]*:?=)/;
+        const includeReg = /#include <?([a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+(\.ahk))?>?/i
         let match:RegExpMatchArray|null;
         let unclosedBrace = 1;
 
@@ -481,6 +515,9 @@ export class Lexer {
                     result.push(this.GetVarInfo(match))
                 }
                 else {
+                    if (match = this.currentText.match(includeReg)) {
+                        this.checkInclude(match);
+                    }
                     unclosedBrace += this.getUnclosedNum();
                 }
             }
@@ -541,6 +578,15 @@ export class Lexer {
             unclosedPairNum -= a_RPair.length;
         }
         return unclosedPairNum;
+    }
+
+    private checkInclude(match: RegExpMatchArray): void {
+        if (match[2] === undefined) {
+            this.includeFile.add(match[1]+'.ahk')
+        }
+        else {
+            this.includeFile.add(match[1])
+        }
     }
 
     /**

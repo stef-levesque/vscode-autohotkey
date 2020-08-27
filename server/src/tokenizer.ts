@@ -104,6 +104,9 @@ export class Tokenizer {
         let offset = this.pos;
         this.Advance();
         while(this.currChar !== "\"" || this.IsEscapeChar()) {
+            if (this.currChar === "EOF" || this.currChar === '\n' || this.currChar === '\r') {
+                break;
+            }
             str += this.currChar;
             this.Advance()
         }

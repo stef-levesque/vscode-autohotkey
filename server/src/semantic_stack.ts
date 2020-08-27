@@ -92,6 +92,7 @@ export class SemanticStack {
 		};
 	}
 
+	// For this is simple parser, we don't care about operator level
 	factor() {
 		let token = this.currentToken
 		let node: Expr;

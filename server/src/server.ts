@@ -42,10 +42,6 @@ import {
 import { 
 	Lexer, SymbolNode
 } from './ahkparser'
-import { WorkDoneProgress } from 'vscode-languageserver/lib/progress';
-import { type } from 'os';
-import { promises } from 'dns';
-
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 let connection = createConnection(ProposedFeatures.all);
@@ -221,7 +217,7 @@ connection.onSignatureHelp(
 })
 
 connection.onDefinition(
-	async (params: DefinitionParams, token: CancellationToken, worokDoneProgress: WorkDoneProgress): Promise<Maybe<Definition>> =>{
+	async (params: DefinitionParams, token: CancellationToken): Promise<Maybe<Definition>> =>{
 	if (token.isCancellationRequested) {
 		return undefined;
 	}
