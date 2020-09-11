@@ -1,25 +1,29 @@
 {
-	"name": "vscode-autohotkey",
-	"displayName": "AutoHotkey",
+	"name": "vscode-autohotkey-vj",
+	"displayName": "AutoHotkey++",
 	"description": "AutoHotkey language support for VS Code",
-	"version": "0.2.2",
-	"publisher": "slevesque",
+	"version": "3.0.0",
+	"publisher": "vinnyjames",
 	"engines": {
-		"vscode": "^1.0.0"
+		"vscode": "^1.30.0"
 	},
+	"activationEvents": [
+		"*"
+	],
+	"main": "./out/extension",
 	"categories": [
-		"Languages",
+		"Programming Languages",
 		"Snippets"
 	],
 	"license": "SEE LICENSE IN LICENSE.md",
 	"icon": "icon.png",
 	"bugs": {
-		"url": "https://github.com/stef-levesque/vscode-autohotkey/issues"
+		"url": "https://github.com/vinnyjames/vscode-autohotkey/issues"
 	},
-	"homepage": "https://github.com/stef-levesque/vscode-autohotkey/blob/master/README.md",
+	"homepage": "https://github.com/vinnyjames/vscode-autohotkey/blob/master/README.md",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/stef-levesque/vscode-autohotkey.git"
+		"url": "https://github.com/vinnyjames/vscode-autohotkey.git"
 	},
 	"galleryBanner": {
 		"color": "#5c2d91",
@@ -31,20 +35,51 @@
 		"ahk"
 	],
 	"contributes": {
-		"languages": [{
-			"id": "ahk",
-			"aliases": ["AutoHotkey", "autohotkey", "ahk"],
-			"extensions": [".ahk"],
-			"configuration": "./ahk.configuration.json"
-		}],
-		"grammars": [{
-			"language": "ahk",
-			"scopeName": "source.ahk",
-			"path": "./syntaxes/ahk.tmLanguage"
-		}],
-		"snippets": [{
-			"language": "ahk",
-			"path": "./snippets/ahk.json"
-		}]
+		"languages": [
+			{
+				"id": "ahk",
+				"aliases": [
+					"AutoHotkey",
+					"autohotkey",
+					"ahk"
+				],
+				"extensions": [
+					".ahk",
+					".ext"
+				],
+				"configuration": "./ahk.configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "ahk",
+				"scopeName": "source.ahk",
+				"path": "./syntaxes/ahk.tmLanguage"
+			}
+		],
+		"snippets": [
+			{
+				"language": "ahk",
+				"path": "./snippets/ahk.json"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test": "npm run compile && node ./node_modules/vscode/bin/test",
+		"tslint": "tslint -t verbose src/**/*.ts"
+	},
+	"devDependencies": {
+		"@types/node": "^8.10.58",
+		"tslint": "^5.20.0",
+		"typescript": "^3.6.4",
+		"vscode": "^1.1.36"
+	},
+	"dependencies": {
+		"n-readlines": "^1.0.0",
+		"vsce": "^1.69.0"
 	}
 }
