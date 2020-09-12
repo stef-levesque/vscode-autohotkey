@@ -14,7 +14,7 @@ import { promises } from 'dns';
 import { SemanticStack, isExpr } from './semantic_stack'
 import { SemanticTokensBuilder } from 'vscode-languageserver/lib/sematicTokens.proposed';
 import { FunctionCall, MethodCall, INodeResult, IFunctionCall, IASTNode, IMethodCall, Expr, IBinOp, IPropertCall, IAssign } from './asttypes';
-import { Token } from './tokenizer';
+import { Token, Tokenizer, TokenType } from './tokenizer';
 import { open } from 'fs';
 export interface SymbolNode {
     name: string
@@ -230,6 +230,26 @@ export class Lexer {
         let isFound = false;
         let perfix: string|undefined;
         let nodeList: SymbolNode[] = this.getTree();
+
+        // find if perfix is a reference of a class
+        perfix = perfixs[perfixs.length-1];
+        if (perfix) {
+            for (const ref in this.referenceTable) {
+                for (const variable of this.referenceTable[ref]) {
+                    if (variable.name === perfix) {
+                        perfixs.pop();
+                        for(const node of nodeList) {
+                            if (node.name === ref && node.subnode) {
+                                nodeList = node.subnode;
+                                isFound = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         while (perfix = perfixs.pop()) {
             isFound = false;
             if (perfix === 'this') {
@@ -357,8 +377,32 @@ export class Lexer {
             let func:FuncNode;
             if (tree) {
                 for (let i=0,len=tree.length; i<len; i++) {
-                    if (tree[i].name === funcName && (tree[i].kind === SymbolKind.Function)) {
-                        func = <FuncNode>tree[i];
+                    if (tree[i].name === funcName) {
+                        if (tree[i].kind === SymbolKind.Function) {
+                            func = <FuncNode>tree[i];
+                        }
+                        else if (tree[i].kind === SymbolKind.Class) {
+                            let searchtree = tree[i].subnode;
+                            if (!searchtree) {
+                                return undefined;
+                            }
+                            let findNode: FuncNode|undefined;
+                            for(const node of searchtree) {
+                                if(node.name === '__New' && (node.kind === SymbolKind.Function)) {
+                                    findNode = <FuncNode>node;
+                                    break;
+                                }
+                            }
+                            if (findNode) {
+                                func = findNode;
+                            }
+                            else {
+                                return undefined;
+                            }
+                        }
+                        else {
+                            return undefined;
+                        }
                         if (func.range.start.line === position.line) {
                             return undefined;
                         }
@@ -470,6 +514,7 @@ export class Lexer {
         this.line = -1;
         this.advanceLine();
         let oldInclude = this.includeFile;
+        this.referenceTable = {};
         this.symboltree = this.Analyze();
         // d12 need delete, d21 need add
         let {d12, d21} = setDiffSet(oldInclude, this.includeFile);
@@ -560,8 +605,8 @@ export class Lexer {
                 return true;
             }
         }
-        let templ = text.split(':=', 2);
-        this.addReference(templ[0].trim(), templ[1].trim(), line);
+        // let templ = text.split(':=', 2);
+        // this.addReference(templ[0].trim(), templ[1].trim(), line);
         return false;
     }
 
@@ -651,6 +696,26 @@ export class Lexer {
 
     private GetVarInfo(match: RegExpMatchArray): SymbolNode {
         let index = match[0].length - match[1].length;
+        const tokenizer = new Tokenizer(<string>this.currentText);
+        let tokenStack: Token[] = [];
+        tokenStack.push(tokenizer.GetNextToken());
+        tokenStack.push(tokenizer.GetNextToken());
+        tokenStack.push(tokenizer.GetNextToken());
+        let t = tokenStack.pop();
+        if (t && t.type === TokenType.newkeyword) {
+            let token = tokenizer.GetNextToken();
+            if (token.type === TokenType.id) {
+                let perfix:string[] = [token.content];
+                while (tokenizer.currChar === '.') {
+                    tokenizer.GetNextToken();
+                    token = tokenizer.GetNextToken();
+                    if (token.type === TokenType.id) {
+                        perfix.push(token.content);
+                    }
+                }
+                this.addReference(tokenStack[0].content, perfix.join('.'), this.line);
+            }
+        }
         return SymbolNode.create(match[1], 
                                 SymbolKind.Variable,
                                 Range.create(Position.create(this.line, index), Position.create(this.line, index)));

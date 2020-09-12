@@ -55,7 +55,7 @@ export interface IVariable extends IASTNode {
 }
 
 export interface IAssign extends IASTNode {
-	left: IVariable
+	left: INodeResult<IVariable|IPropertCall>
 	operator: Token
 	right: Expr
 }

@@ -18,7 +18,7 @@ export enum TokenType{
     whilekeyword, untilkeyword, breakkeyword, continuekeyword, 
     gosubkeyword, gotokeyword, returnkeyword, 
     globalkeyword, localkeyword, throwkeyword, includekeyword,
-    classkeyword, extendskeyword,
+    classkeyword, extendskeyword, newkeyword,
     EOL, EOF,
     unknown
 }
@@ -32,7 +32,7 @@ export interface Token {
 export function createToken(id:TokenType, content:string, offset:number): Token {
     return {type: id, content, offset}
 }
-let RESERVED_KEYWORDS: {[key: string]: TokenType} = {"class": TokenType.classkeyword, "extends": TokenType.extendskeyword, 
+let RESERVED_KEYWORDS: {[key: string]: TokenType} = {"class": TokenType.classkeyword, "extends": TokenType.extendskeyword, "new": TokenType.newkeyword, 
                         "if": TokenType.ifkeyword, "else": TokenType.elsekeyword, "while": TokenType.whilekeyword, 
                         "do": TokenType.dokeyword, "loop": TokenType.loopkeyword, "until":TokenType.untilkeyword, 
                         "switch": TokenType.switchkeyword, "case": TokenType.casekeyword, "break": TokenType.breakkeyword,
@@ -70,7 +70,7 @@ export class Tokenizer {
         if(this.pos >= this.document.length) {
             return "EOF";
         }
-        return this.document[this.pos];
+        return this.document[this.pos+1];
     }
 
     GetNumber(): Token {
@@ -105,6 +105,7 @@ export class Tokenizer {
         this.Advance();
         while(this.currChar !== "\"" || this.IsEscapeChar()) {
             if (this.currChar === "EOF" || this.currChar === '\n' || this.currChar === '\r') {
+                // FIXME: Error here
                 break;
             }
             str += this.currChar;
