@@ -553,6 +553,7 @@ export class Lexer {
                     result.push(this.GetClassInfo(match, startLine));
                 }
                 else if (Symbol = this.GetLabelInfo()) {
+                    unclosedBrace += this.getUnclosedNum();
                     result.push(Symbol);
                 } 
                 else if (match = this.currentText.match(VarReg)) {
@@ -729,6 +730,7 @@ export class Lexer {
             // check if the parameter has a default value
             let l = paraminfo.name.split(/:?=/);
             if (l.length > 1) {
+                paraminfo.name = l[0].trim();
                 paraminfo.defaultVal = l[1];
             }
             result.push(paraminfo);

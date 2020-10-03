@@ -130,11 +130,17 @@ export class SemanticStack {
         //     this.eat(this.currentToken.type);
         // }
         try {
-            let node = this.factor();
+            let left = this.factor();
+            let node: Expr = {
+                errors: left.errors,
+                value: left.value
+            };
             
             while (this.currentToken.type === TokenType.unknown || 
-                   this.currentToken.type === TokenType.dot || 
-                   this.currentToken.type === TokenType.id) {
+                   this.currentToken.type === TokenType.dot     || 
+                   this.currentToken.type === TokenType.id      ||
+                   this.currentToken.type === TokenType.string  ||
+                   this.currentToken.type === TokenType.number) {
                 let token = this.currentToken;
                 if (this.currentToken.type === TokenType.unknown) {
                     this.eat(TokenType.unknown);
@@ -150,20 +156,17 @@ export class SemanticStack {
                         offset: this.currentToken.offset
                     }
                 }
-                return {
+                node = {
                     errors: false,
                     value: {
-                        left: node,
+                        left: left,
                         operator: token,
-                        right: this.factor(),
+                        right: this.expr(),
                         offrange: new Offrange(token.offset, token.offset)
                     }
                 }
             }
-            return {
-                errors: node.errors,
-                value: node.value
-            };
+            return node;
         } 
         catch (err) {
             return {
