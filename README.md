@@ -5,6 +5,11 @@ And Microsoft lsp-simple
 
 AutoHotKey language support for VS Code
 
+# What's New
+
+1. Build-in Variable hint.
+   - Need documentions which is easy to be parsed by js/ts. If you find any, help please.
+
 ## Notice
 
 * This is a parser based on regular expression. The results are not guaranteed.
@@ -25,6 +30,7 @@ AutoHotKey language support for VS Code
 
 * [x] Language server
 * [ ] Build-in Function hint
+  * [x] Build-in Variable hint(Need Docs)
 * [x] Better syntax tree
 * [ ] Enumerate include 
 * [ ] Function debounce 
