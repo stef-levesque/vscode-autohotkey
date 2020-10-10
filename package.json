@@ -2,7 +2,7 @@
 	"name": "ahk-simple-ls",
 	"displayName": "AutoHotKey Simple Support",
 	"description": "Simple implementation of an ahk language server in node.",
-	"version": "0.2.2",
+	"version": "0.2.4",
 	"author": "helsmy",
 	"license": "LGPLv3.0",
 	"repository": {

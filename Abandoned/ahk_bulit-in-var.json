@@ -1,0 +1,561 @@
+{"A_AhkPath": {
+	"prefix": "A_AhkPath",
+	"body": "A_AhkPath"
+  },
+  "A_AhkVersion": {
+	"prefix": "A_AhkVersion",
+	"body": "A_AhkVersion"
+  },
+  "A_AppData": {
+	"prefix": "A_AppData",
+	"body": "A_AppData"
+  },
+  "A_AppDataCommon": {
+	"prefix": "A_AppDataCommon",
+	"body": "A_AppDataCommon"
+  },
+  "A_AutoTrim": {
+	"prefix": "A_AutoTrim",
+	"body": "A_AutoTrim"
+  },
+  "A_BatchLines": {
+	"prefix": "A_BatchLines",
+	"body": "A_BatchLines"
+  },
+  "A_CaretX": {
+	"prefix": "A_CaretX",
+	"body": "A_CaretX"
+  },
+  "A_CaretY": {
+	"prefix": "A_CaretY",
+	"body": "A_CaretY"
+  },
+  "A_ComputerName": {
+	"prefix": "A_ComputerName",
+	"body": "A_ComputerName"
+  },
+  "A_ControlDelay": {
+	"prefix": "A_ControlDelay",
+	"body": "A_ControlDelay"
+  },
+  "A_Cursor": {
+	"prefix": "A_Cursor",
+	"body": "A_Cursor"
+  },
+  "A_DD": {
+	"prefix": "A_DD",
+	"body": "A_DD"
+  },
+  "A_DDD": {
+	"prefix": "A_DDD",
+	"body": "A_DDD"
+  },
+  "A_DDDD": {
+	"prefix": "A_DDDD",
+	"body": "A_DDDD"
+  },
+  "A_DefaultMouseSpeed": {
+	"prefix": "A_DefaultMouseSpeed",
+	"body": "A_DefaultMouseSpeed"
+  },
+  "A_Desktop": {
+	"prefix": "A_Desktop",
+	"body": "A_Desktop"
+  },
+  "A_DesktopCommon": {
+	"prefix": "A_DesktopCommon",
+	"body": "A_DesktopCommon"
+  },
+  "A_DetectHiddenText": {
+	"prefix": "A_DetectHiddenText",
+	"body": "A_DetectHiddenText"
+  },
+  "A_DetectHiddenWindows": {
+	"prefix": "A_DetectHiddenWindows",
+	"body": "A_DetectHiddenWindows"
+  },
+  "A_EndChar": {
+	"prefix": "A_EndChar",
+	"body": "A_EndChar"
+  },
+  "A_EventInfo": {
+	"prefix": "A_EventInfo",
+	"body": "A_EventInfo"
+  },
+  "A_ExitReason": {
+	"prefix": "A_ExitReason",
+	"body": "A_ExitReason"
+  },
+  "A_FileEncoding": {
+	"prefix": "A_FileEncoding",
+	"body": "A_FileEncoding"
+  },
+  "A_FormatFloat": {
+	"prefix": "A_FormatFloat",
+	"body": "A_FormatFloat"
+  },
+  "A_FormatInteger": {
+	"prefix": "A_FormatInteger",
+	"body": "A_FormatInteger"
+  },
+  "A_Gui": {
+	"prefix": "A_Gui",
+	"body": "A_Gui"
+  },
+  "A_GuiEvent": {
+	"prefix": "A_GuiEvent",
+	"body": "A_GuiEvent"
+  },
+  "A_GuiControl": {
+	"prefix": "A_GuiControl",
+	"body": "A_GuiControl"
+  },
+  "A_GuiControlEvent": {
+	"prefix": "A_GuiControlEvent",
+	"body": "A_GuiControlEvent"
+  },
+  "A_GuiHeight": {
+	"prefix": "A_GuiHeight",
+	"body": "A_GuiHeight"
+  },
+  "A_GuiWidth": {
+	"prefix": "A_GuiWidth",
+	"body": "A_GuiWidth"
+  },
+  "A_GuiX": {
+	"prefix": "A_GuiX",
+	"body": "A_GuiX"
+  },
+  "A_GuiY": {
+	"prefix": "A_GuiY",
+	"body": "A_GuiY"
+  },
+  "A_Hour": {
+	"prefix": "A_Hour",
+	"body": "A_Hour"
+  },
+  "A_IconFile": {
+	"prefix": "A_IconFile",
+	"body": "A_IconFile"
+  },
+  "A_IconHidden": {
+	"prefix": "A_IconHidden",
+	"body": "A_IconHidden"
+  },
+  "A_IconNumber": {
+	"prefix": "A_IconNumber",
+	"body": "A_IconNumber"
+  },
+  "A_IconTip": {
+	"prefix": "A_IconTip",
+	"body": "A_IconTip"
+  },
+  "A_Index": {
+	"prefix": "A_Index",
+	"body": "A_Index"
+  },
+  "A_IPAddress1": {
+	"prefix": "A_IPAddress1",
+	"body": "A_IPAddress1"
+  },
+  "A_IPAddress2": {
+	"prefix": "A_IPAddress2",
+	"body": "A_IPAddress2"
+  },
+  "A_IPAddress3": {
+	"prefix": "A_IPAddress3",
+	"body": "A_IPAddress3"
+  },
+  "A_IPAddress4": {
+	"prefix": "A_IPAddress4",
+	"body": "A_IPAddress4"
+  },
+  "A_Is64bitOS": {
+	"prefix": "A_Is64bitOS",
+	"body": "A_Is64bitOS"
+  },
+  "A_IsAdmin": {
+	"prefix": "A_IsAdmin",
+	"body": "A_IsAdmin"
+  },
+  "A_IsCompiled": {
+	"prefix": "A_IsCompiled",
+	"body": "A_IsCompiled"
+  },
+  "A_IsCritical": {
+	"prefix": "A_IsCritical",
+	"body": "A_IsCritical"
+  },
+  "A_IsPaused": {
+	"prefix": "A_IsPaused",
+	"body": "A_IsPaused"
+  },
+  "A_IsSuspended": {
+	"prefix": "A_IsSuspended",
+	"body": "A_IsSuspended"
+  },
+  "A_IsUnicode": {
+	"prefix": "A_IsUnicode",
+	"body": "A_IsUnicode"
+  },
+  "A_KeyDelay": {
+	"prefix": "A_KeyDelay",
+	"body": "A_KeyDelay"
+  },
+  "A_Language": {
+	"prefix": "A_Language",
+	"body": "A_Language"
+  },
+  "A_LastError": {
+	"prefix": "A_LastError",
+	"body": "A_LastError"
+  },
+  "A_LineFile": {
+	"prefix": "A_LineFile",
+	"body": "A_LineFile"
+  },
+  "A_LineNumber": {
+	"prefix": "A_LineNumber",
+	"body": "A_LineNumber"
+  },
+  "A_LoopField": {
+	"prefix": "A_LoopField",
+	"body": "A_LoopField"
+  },
+  "A_LoopFileAttrib": {
+	"prefix": "A_LoopFileAttrib",
+	"body": "A_LoopFileAttrib"
+  },
+  "A_LoopFileDir": {
+	"prefix": "A_LoopFileDir",
+	"body": "A_LoopFileDir"
+  },
+  "A_LoopFileExt": {
+	"prefix": "A_LoopFileExt",
+	"body": "A_LoopFileExt"
+  },
+  "A_LoopFileFullPath": {
+	"prefix": "A_LoopFileFullPath",
+	"body": "A_LoopFileFullPath"
+  },
+  "A_LoopFileLongPath": {
+	"prefix": "A_LoopFileLongPath",
+	"body": "A_LoopFileLongPath"
+  },
+  "A_LoopFileName": {
+	"prefix": "A_LoopFileName",
+	"body": "A_LoopFileName"
+  },
+  "A_LoopFileShortName": {
+	"prefix": "A_LoopFileShortName",
+	"body": "A_LoopFileShortName"
+  },
+  "A_LoopFileShortPath": {
+	"prefix": "A_LoopFileShortPath",
+	"body": "A_LoopFileShortPath"
+  },
+  "A_LoopFileSize": {
+	"prefix": "A_LoopFileSize",
+	"body": "A_LoopFileSize"
+  },
+  "A_LoopFileSizeKB": {
+	"prefix": "A_LoopFileSizeKB",
+	"body": "A_LoopFileSizeKB"
+  },
+  "A_LoopFileSizeMB": {
+	"prefix": "A_LoopFileSizeMB",
+	"body": "A_LoopFileSizeMB"
+  },
+  "A_LoopFileTimeAccessed": {
+	"prefix": "A_LoopFileTimeAccessed",
+	"body": "A_LoopFileTimeAccessed"
+  },
+  "A_LoopFileTimeCreated": {
+	"prefix": "A_LoopFileTimeCreated",
+	"body": "A_LoopFileTimeCreated"
+  },
+  "A_LoopFileTimeModified": {
+	"prefix": "A_LoopFileTimeModified",
+	"body": "A_LoopFileTimeModified"
+  },
+  "A_LoopReadLine": {
+	"prefix": "A_LoopReadLine",
+	"body": "A_LoopReadLine"
+  },
+  "A_LoopRegKey": {
+	"prefix": "A_LoopRegKey",
+	"body": "A_LoopRegKey"
+  },
+  "A_LoopRegName": {
+	"prefix": "A_LoopRegName",
+	"body": "A_LoopRegName"
+  },
+  "A_LoopRegSubkey": {
+	"prefix": "A_LoopRegSubkey",
+	"body": "A_LoopRegSubkey"
+  },
+  "A_LoopRegTimeModified": {
+	"prefix": "A_LoopRegTimeModified",
+	"body": "A_LoopRegTimeModified"
+  },
+  "A_LoopRegType": {
+	"prefix": "A_LoopRegType",
+	"body": "A_LoopRegType"
+  },
+  "A_MDay": {
+	"prefix": "A_MDay",
+	"body": "A_MDay"
+  },
+  "A_Min": {
+	"prefix": "A_Min",
+	"body": "A_Min"
+  },
+  "A_MM": {
+	"prefix": "A_MM",
+	"body": "A_MM"
+  },
+  "A_MMM": {
+	"prefix": "A_MMM",
+	"body": "A_MMM"
+  },
+  "A_MMMM": {
+	"prefix": "A_MMMM",
+	"body": "A_MMMM"
+  },
+  "A_Mon": {
+	"prefix": "A_Mon",
+	"body": "A_Mon"
+  },
+  "A_MouseDelay": {
+	"prefix": "A_MouseDelay",
+	"body": "A_MouseDelay"
+  },
+  "A_MSec": {
+	"prefix": "A_MSec",
+	"body": "A_MSec"
+  },
+  "A_MyDocuments": {
+	"prefix": "A_MyDocuments",
+	"body": "A_MyDocuments"
+  },
+  "A_Now": {
+	"prefix": "A_Now",
+	"body": "A_Now"
+  },
+  "A_NowUTC": {
+	"prefix": "A_NowUTC",
+	"body": "A_NowUTC"
+  },
+  "A_NumBatchLines": {
+	"prefix": "A_NumBatchLines",
+	"body": "A_NumBatchLines"
+  },
+  "A_OSType": {
+	"prefix": "A_OSType",
+	"body": "A_OSType"
+  },
+  "A_OSVersion": {
+	"prefix": "A_OSVersion",
+	"body": "A_OSVersion"
+  },
+  "A_PriorHotkey": {
+	"prefix": "A_PriorHotkey",
+	"body": "A_PriorHotkey"
+  },
+  "A_PriorKey": {
+	"prefix": "A_PriorKey",
+	"body": "A_PriorKey"
+  },
+  "A_ProgramFiles": {
+	"prefix": "A_ProgramFiles",
+	"body": "A_ProgramFiles"
+  },
+  "A_Programs": {
+	"prefix": "A_Programs",
+	"body": "A_Programs"
+  },
+  "A_ProgramsCommon": {
+	"prefix": "A_ProgramsCommon",
+	"body": "A_ProgramsCommon"
+  },
+  "A_PtrSize": {
+	"prefix": "A_PtrSize",
+	"body": "A_PtrSize"
+  },
+  "A_RegView": {
+	"prefix": "A_RegView",
+	"body": "A_RegView"
+  },
+  "A_ScreenDPI": {
+	"prefix": "A_ScreenDPI",
+	"body": "A_ScreenDPI"
+  },
+  "A_ScreenHeight": {
+	"prefix": "A_ScreenHeight",
+	"body": "A_ScreenHeight"
+  },
+  "A_ScreenWidth": {
+	"prefix": "A_ScreenWidth",
+	"body": "A_ScreenWidth"
+  },
+  "A_ScriptDir": {
+	"prefix": "A_ScriptDir",
+	"body": "A_ScriptDir"
+  },
+  "A_ScriptFullPath": {
+	"prefix": "A_ScriptFullPath",
+	"body": "A_ScriptFullPath"
+  },
+  "A_ScriptHwnd": {
+	"prefix": "A_ScriptHwnd",
+	"body": "A_ScriptHwnd"
+  },
+  "A_ScriptName": {
+	"prefix": "A_ScriptName",
+	"body": "A_ScriptName"
+  },
+  "A_Sec": {
+	"prefix": "A_Sec",
+	"body": "A_Sec"
+  },
+  "A_Space": {
+	"prefix": "A_Space",
+	"body": "A_Space"
+  },
+  "A_StartMenu": {
+	"prefix": "A_StartMenu",
+	"body": "A_StartMenu"
+  },
+  "A_StartMenuCommon": {
+	"prefix": "A_StartMenuCommon",
+	"body": "A_StartMenuCommon"
+  },
+  "A_Startup": {
+	"prefix": "A_Startup",
+	"body": "A_Startup"
+  },
+  "A_StartupCommon": {
+	"prefix": "A_StartupCommon",
+	"body": "A_StartupCommon"
+  },
+  "A_StringCaseSense": {
+	"prefix": "A_StringCaseSense",
+	"body": "A_StringCaseSense"
+  },
+  "A_Tab": {
+	"prefix": "A_Tab",
+	"body": "A_Tab"
+  },
+  "A_Temp": {
+	"prefix": "A_Temp",
+	"body": "A_Temp"
+  },
+  "A_ThisFunc": {
+	"prefix": "A_ThisFunc",
+	"body": "A_ThisFunc"
+  },
+  "A_ThisHotkey": {
+	"prefix": "A_ThisHotkey",
+	"body": "A_ThisHotkey"
+  },
+  "A_ThisLabel": {
+	"prefix": "A_ThisLabel",
+	"body": "A_ThisLabel"
+  },
+  "A_ThisMenu": {
+	"prefix": "A_ThisMenu",
+	"body": "A_ThisMenu"
+  },
+  "A_ThisMenuItem": {
+	"prefix": "A_ThisMenuItem",
+	"body": "A_ThisMenuItem"
+  },
+  "A_ThisMenuItemPos": {
+	"prefix": "A_ThisMenuItemPos",
+	"body": "A_ThisMenuItemPos"
+  },
+  "A_TickCount": {
+	"prefix": "A_TickCount",
+	"body": "A_TickCount"
+  },
+  "A_TimeIdle": {
+	"prefix": "A_TimeIdle",
+	"body": "A_TimeIdle"
+  },
+  "A_TimeIdlePhysical": {
+	"prefix": "A_TimeIdlePhysical",
+	"body": "A_TimeIdlePhysical"
+  },
+  "A_TimeSincePriorHotkey": {
+	"prefix": "A_TimeSincePriorHotkey",
+	"body": "A_TimeSincePriorHotkey"
+  },
+  "A_TimeSinceThisHotkey": {
+	"prefix": "A_TimeSinceThisHotkey",
+	"body": "A_TimeSinceThisHotkey"
+  },
+  "A_TitleMatchMode": {
+	"prefix": "A_TitleMatchMode",
+	"body": "A_TitleMatchMode"
+  },
+  "A_TitleMatchModeSpeed": {
+	"prefix": "A_TitleMatchModeSpeed",
+	"body": "A_TitleMatchModeSpeed"
+  },
+  "A_UserName": {
+	"prefix": "A_UserName",
+	"body": "A_UserName"
+  },
+  "A_WDay": {
+	"prefix": "A_WDay",
+	"body": "A_WDay"
+  },
+  "A_WinDelay": {
+	"prefix": "A_WinDelay",
+	"body": "A_WinDelay"
+  },
+  "A_WinDir": {
+	"prefix": "A_WinDir",
+	"body": "A_WinDir"
+  },
+  "A_WorkingDir": {
+	"prefix": "A_WorkingDir",
+	"body": "A_WorkingDir"
+  },
+  "A_YDay": {
+	"prefix": "A_YDay",
+	"body": "A_YDay"
+  },
+  "A_Year": {
+	"prefix": "A_Year",
+	"body": "A_Year"
+  },
+  "A_YWeek": {
+	"prefix": "A_YWeek",
+	"body": "A_YWeek"
+  },
+  "A_YYYY": {
+	"prefix": "A_YYYY",
+	"body": "A_YYYY"
+  },
+  "Clipboard": {
+	"prefix": "Clipboard",
+	"body": "Clipboard"
+  },
+  "ClipboardAll": {
+	"prefix": "ClipboardAll",
+	"body": "ClipboardAll"
+  },
+  "ComSpec": {
+	"prefix": "ComSpec",
+	"body": "ComSpec"
+  },
+  "ErrorLevel": {
+	"prefix": "ErrorLevel",
+	"body": "ErrorLevel"
+  },
+  "ProgramFiles": {
+	"prefix": "ProgramFiles",
+	"body": "ProgramFiles"
+  }
+}

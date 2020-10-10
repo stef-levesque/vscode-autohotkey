@@ -35,6 +35,7 @@ import {
 import {
 	keywords,
 	buildKeyWordCompletions,
+	buildbuiltin_variable,
 	// serverName,
 	languageServer
 } from './utilities/constants'
@@ -53,6 +54,7 @@ let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
+let builtinVariableCompletions: CompletionItem[] = buildbuiltin_variable();
 let treedict: {[key: string]: Lexer} = {};
 let logger = connection.console.log;
 
@@ -322,7 +324,7 @@ connection.onCompletion(
 
 		return docLexer.getGlobalCompletion()
 			.concat(docLexer.getScopedCompletion(_textDocumentPosition.position))
-			.concat(keyWordCompletions);
+			.concat(keyWordCompletions).concat(builtinVariableCompletions);
 	}
 );
 
@@ -336,6 +338,15 @@ connection.onCompletionResolve(
 			item.detail = item.data;
 		} else if (item.kind === CompletionItemKind.Function) {
 			item.detail = item.data;
+		} 
+		else if (item.kind === CompletionItemKind.Variable) {
+			if (item.data) {
+				// TODO: Localized documents.
+				item.documentation = {
+					kind: 'markdown',
+					value: '**Built-in Variable**'
+				};
+			}
 		}
 		return item;
 	}
