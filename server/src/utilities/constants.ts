@@ -16,7 +16,7 @@ export const keywords = [
 ]
 
 // builtin_variable and its docs
-const builtin_variable = [
+export const builtin_variable = [
     ["A_Space", "此变量包含单个空格字符. 请参阅AutoTrim了解详情."],
     ["A_Tab", "此变量包含单个 tab 字符. 请参阅AutoTrim了解详情."],
     ["A_Args", "[v1.1.27+] 读/写: 包含一个命令行参数数组. 有关详细信息, 请参阅向脚本传递命令行参数."],
@@ -185,11 +185,12 @@ export function buildKeyWordCompletions(): CompletionItem[] {
 }
 
 export function buildbuiltin_variable(): CompletionItem[] {
-	return builtin_variable.map(bti_var_info => {
+	return builtin_variable.map((bti_var_info, index) => {
 		return {
-			kind: CompletionItemKind.Variable,
-			label: bti_var_info[0],
-			data: bti_var_info[1]
+            kind: CompletionItemKind.Variable,
+            detail: 'Built-in Variable',
+            label: bti_var_info[0],
+            data: index
 		}
 	});
 }

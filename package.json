@@ -56,7 +56,7 @@
 			"type": "object",
 			"title": "AutoHotKey",
 			"properties": {
-				"languageServer.trace.server": {
+				"AutohotkeyLanguageServer.trace.server": {
 					"scope": "window",
 					"type": "string",
 					"enum": [
@@ -65,7 +65,17 @@
 						"verbose"
 					],
 					"default": "off",
-					"description": "(Not yet implemented)Traces the communication between VS Code and the language server."
+					"description": "Traces the communication between VS Code and the language server."
+				},
+				"AutohotkeyLanguageServer.docLang": {
+					"scope": "resource",
+					"type": "string",
+					"enum": [
+						"no",
+						"CN"
+					],
+					"default": "no",
+					"description": "Which language document to be used."
 				}
 			}
 		}

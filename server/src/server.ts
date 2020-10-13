@@ -36,6 +36,7 @@ import {
 	keywords,
 	buildKeyWordCompletions,
 	buildbuiltin_variable,
+	builtin_variable,
 	// serverName,
 	languageServer
 } from './utilities/constants'
@@ -121,35 +122,44 @@ connection.onInitialized(() => {
 	}
 });
 
-// The example settings
-interface ExampleSettings {
+// The AHK Language Server settings
+enum docLangName {
+	CN = 'CN',
+	NO = 'no'		// No Doc
+};
+
+interface AHKLSSettings {
 	maxNumberOfProblems: number;
+	docLang: docLangName;			// which language doc to be used
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
-let globalSettings: ExampleSettings = defaultSettings;
+const defaultSettings: AHKLSSettings = { 
+	maxNumberOfProblems: 1000,
+	docLang: docLangName.NO
+};
+let globalSettings: AHKLSSettings = defaultSettings;
 
 // Cache the settings of all open documents
-let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+let documentSettings: Map<string, Thenable<AHKLSSettings>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
 	} else {
-		globalSettings = <ExampleSettings>(
+		globalSettings = <AHKLSSettings>(
 			(change.settings.languageServerExample || defaultSettings)
 		);
 	}
 
 	// Revalidate all open text documents
-	// documents.all().forEach(validateTextDocument);
+	documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+function getDocumentSettings(resource: string): Thenable<AHKLSSettings> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
@@ -157,7 +167,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'AutoHotKey'
+			section: 'AutohotkeyLanguageServer'
 		});
 		documentSettings.set(resource, result);
 	}
@@ -253,55 +263,14 @@ documents.onDidChangeContent(change => {
 	let docLexer = treedict[change.document.uri];
 	docLexer.document = change.document;
 	docLexer.Parse()
-	// validateTextDocument(change.document);
+	validateTextDocument(change.document);
 });
 
-// async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-// 	// In this simple example we get the settings for every validate run.
-// 	let settings = await getDocumentSettings(textDocument.uri);
-
-// 	// The validator creates diagnostics for all uppercase words length 2 and more
-// 	let text = textDocument.getText();
-// 	let pattern = /\b[A-Z]{2,}\b/g;
-// 	let m: RegExpExecArray | null;
-
-// 	let problems = 0;
-// 	let diagnostics: Diagnostic[] = [];
-// 	while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-// 		problems++;
-// 		let diagnostic: Diagnostic = {
-// 			severity: DiagnosticSeverity.Warning,
-// 			range: {
-// 				start: textDocument.positionAt(m.index),
-// 				end: textDocument.positionAt(m.index + m[0].length)
-// 			},
-// 			message: `${m[0]} is all uppercase.`,
-// 			source: 'ex'
-// 		};
-// 		if (hasDiagnosticRelatedInformationCapability) {
-// 			diagnostic.relatedInformation = [
-// 				{
-// 					location: {
-// 						uri: textDocument.uri,
-// 						range: Object.assign({}, diagnostic.range)
-// 					},
-// 					message: 'Spelling matters'
-// 				},
-// 				{
-// 					location: {
-// 						uri: textDocument.uri,
-// 						range: Object.assign({}, diagnostic.range)
-// 					},
-// 					message: 'Particularly for names'
-// 				}
-// 			];
-// 		}
-// 		diagnostics.push(diagnostic);
-// 	}
-
-// 	// Send the computed diagnostics to VSCode.
-// 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-// }
+async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+	// In this simple example we get the settings for every validate run.
+	let result = await getDocumentSettings(textDocument.uri);
+	connection.console.log(result.docLang);
+}
 
 connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
@@ -338,13 +307,12 @@ connection.onCompletionResolve(
 			item.detail = item.data;
 		} else if (item.kind === CompletionItemKind.Function) {
 			item.detail = item.data;
-		} 
-		else if (item.kind === CompletionItemKind.Variable) {
-			if (item.data) {
+		} else if (item.kind === CompletionItemKind.Variable) {
+			if (item.detail === 'Built-in Variable') {
 				// TODO: Localized documents.
 				item.documentation = {
 					kind: 'markdown',
-					value: '**Built-in Variable**'
+					value: builtin_variable[item.data][1]
 				};
 			}
 		}

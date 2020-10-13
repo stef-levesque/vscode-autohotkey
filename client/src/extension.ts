@@ -47,8 +47,8 @@ export function activate(context: ExtensionContext) {
 
 	// Create the language client and start the client.
 	client = new LanguageClient(
-		'AHK-Simple-LS',
-		'AutoHotKey Language Server',
+		'AutohotkeyLanguageServer',
+		'Autohotkey Language Server',
 		serverOptions,
 		clientOptions
 	);
