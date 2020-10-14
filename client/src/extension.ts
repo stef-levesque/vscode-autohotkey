@@ -4,7 +4,12 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import { 
+	workspace, 
+	ExtensionContext,
+	DocumentSelector,
+	languages
+} from 'vscode';
 
 import {
 	LanguageClient,
@@ -12,6 +17,8 @@ import {
 	ServerOptions,
 	TransportKind
 } from 'vscode-languageclient';
+
+import { FormatProvider } from "./formattingProvider";
 
 let client: LanguageClient;
 
@@ -45,6 +52,11 @@ export function activate(context: ExtensionContext) {
 		}
 	};
 
+	// TODO: Implement in language server
+	const ds: DocumentSelector = { language: "ahk" };
+	const fpHandler = languages.registerDocumentFormattingEditProvider(ds, new FormatProvider());
+	context.subscriptions.push(fpHandler);
+
 	// Create the language client and start the client.
 	client = new LanguageClient(
 		'AutohotkeyLanguageServer',
@@ -52,7 +64,7 @@ export function activate(context: ExtensionContext) {
 		serverOptions,
 		clientOptions
 	);
-
+	
 	// Start the client. This will also launch the server
 	client.start();
 }

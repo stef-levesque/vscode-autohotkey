@@ -269,7 +269,7 @@ documents.onDidChangeContent(change => {
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let result = await getDocumentSettings(textDocument.uri);
-	connection.console.log(result.documentLanguage);
+	// connection.console.log(result.documentLanguage);
 }
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -332,3 +332,4 @@ documents.listen(connection);
 
 // Listen on the connection
 connection.listen();
+connection.console.log('Starting AHK Server')

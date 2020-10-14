@@ -47,4 +47,6 @@ AutoHotKey language support for VS Code
 2. stef-levesque
 3. denolfe
 4. Microsoft lsp-simple
+5. bitwiseman(js-beautify)
+6. 天黑请闭眼(modify js-beautify for ahk)
 

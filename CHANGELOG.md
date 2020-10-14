@@ -7,6 +7,7 @@
 3. support completion and signature help of reference  (0.2.2)
 4. New configuration `documentLanguage` (0.2.5)
 5. Fix bugs about unworking configuration (0.2.5)
+6. add doc formation (0.2.6)
 
 ## 0.1.0
 
