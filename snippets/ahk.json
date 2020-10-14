@@ -1136,6 +1136,10 @@
       "prefix": "Exp()",
       "body": "Exp(${1:Number})"
     },
+    "Exception()": {
+      "prefix": "Exception()",
+      "body":　"Exception(${1:Message} ${2:[, What}, ${3:Extra]})"
+    },
     "FileExist()": {
       "prefix": "FileExist()",
       "body": "FileExist(\"${1:FilePattern}\")"

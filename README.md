@@ -5,9 +5,12 @@ And Microsoft lsp-simple
 
 AutoHotKey language support for VS Code
 
-# What's New
+## What's New
 
-1. Build-in Variable hint.
+1. New configuration `documentLanguage`
+   - Which lanuage document is shown for code completion hint
+   - Only chinese document of build-in varible avaible now   
+2. Build-in Variable hint.
    - Need documentions which is easy to be parsed by js/ts. If you find any, help please.
 
 ## Notice
@@ -19,7 +22,7 @@ AutoHotKey language support for VS Code
 * Comment blocks
 * Snippets
 * Code Completion
-* Doucment symbol(class, method, variable, label, hotkey) 
+* Document symbol(class, method, variable, label, hotkey) 
 * Goto Definition(limited support)
 * Signature Helper (tooltip for method parameters)
 
@@ -32,6 +35,7 @@ AutoHotKey language support for VS Code
 * [ ] Build-in Function hint
   * [x] Build-in Variable hint(Need Docs)
 * [x] Better syntax tree
+* [ ] Code formation
 * [ ] Enumerate include 
 * [ ] Function debounce 
 * [ ] Syntax analyze based parser  

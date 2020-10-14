@@ -130,7 +130,7 @@ enum docLangName {
 
 interface AHKLSSettings {
 	maxNumberOfProblems: number;
-	docLang: docLangName;			// which language doc to be used
+	documentLanguage: docLangName;			// which language doc to be used
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
@@ -138,7 +138,7 @@ interface AHKLSSettings {
 // but could happen with other clients.
 const defaultSettings: AHKLSSettings = { 
 	maxNumberOfProblems: 1000,
-	docLang: docLangName.NO
+	documentLanguage: docLangName.NO
 };
 let globalSettings: AHKLSSettings = defaultSettings;
 
@@ -269,7 +269,7 @@ documents.onDidChangeContent(change => {
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let result = await getDocumentSettings(textDocument.uri);
-	connection.console.log(result.docLang);
+	connection.console.log(result.documentLanguage);
 }
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -300,21 +300,27 @@ connection.onCompletion(
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
-		if (item.kind === CompletionItemKind.Keyword) {
-			;
-		} else if (item.kind === CompletionItemKind.Method) {
-			item.detail = item.data;
-		} else if (item.kind === CompletionItemKind.Function) {
-			item.detail = item.data;
-		} else if (item.kind === CompletionItemKind.Variable) {
-			if (item.detail === 'Built-in Variable') {
-				// TODO: Localized documents.
-				item.documentation = {
-					kind: 'markdown',
-					value: builtin_variable[item.data][1]
-				};
-			}
+	async (item: CompletionItem): Promise<CompletionItem> => {
+		switch (item.kind) {
+			case CompletionItemKind.Function:
+			case CompletionItemKind.Method:
+				item.detail = item.data;
+				break;
+			case CompletionItemKind.Variable:
+				if (item.detail === 'Built-in Variable') {
+					// TODO: configuration for each document.
+					let uri = documents.all()[0].uri;
+					let cfg = await documentSettings.get(uri);
+					if (cfg?.documentLanguage === docLangName.CN)
+					// item.data contains the infomation index(in builtin_variable)
+					// of variable
+					item.documentation = {
+						kind: 'markdown',
+						value: builtin_variable[item.data][1]
+					};
+				}
+			default:
+				break;
 		}
 		return item;
 	}

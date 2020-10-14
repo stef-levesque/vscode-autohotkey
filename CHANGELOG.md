@@ -5,6 +5,8 @@
 1. new parser for signature help
 2. fix completion(in class) and signature help(when string is passed) bugs
 3. support completion and signature help of reference  (0.2.2)
+4. New configuration `documentLanguage` (0.2.5)
+5. Fix bugs about unworking configuration (0.2.5)
 
 ## 0.1.0
 

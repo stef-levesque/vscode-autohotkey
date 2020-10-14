@@ -2,7 +2,7 @@
 	"name": "ahk-simple-ls",
 	"displayName": "AutoHotKey Simple Support",
 	"description": "Simple implementation of an ahk language server in node.",
-	"version": "0.2.4",
+	"version": "0.2.5",
 	"author": "helsmy",
 	"license": "LGPLv3.0",
 	"repository": {
@@ -67,7 +67,7 @@
 					"default": "off",
 					"description": "Traces the communication between VS Code and the language server."
 				},
-				"AutohotkeyLanguageServer.docLang": {
+				"AutohotkeyLanguageServer.documentLanguage": {
 					"scope": "resource",
 					"type": "string",
 					"enum": [
@@ -75,7 +75,7 @@
 						"CN"
 					],
 					"default": "no",
-					"description": "Which language document to be used."
+					"description": "Which language document(for built-in functions[not available now] and varibles) to be used.'no' means no documents shown"
 				}
 			}
 		}
