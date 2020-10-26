@@ -136,6 +136,7 @@ function setDiffSet<T>(set1: Set<T>, set2: Set<T>) {
 export class Lexer {
     private line = -1;
     private currentText: string|undefined;
+    private currentrawText: string = '';
     private lineCommentFlag: boolean = false;
     private symboltree: Array<SymbolNode|FuncNode>|null;
     private includetree: {[key: string]: Array<SymbolNode|FuncNode|ClassNode>}|undefined;
@@ -504,7 +505,8 @@ export class Lexer {
     private advanceLine(): void {
         if (this.line < this.document.lineCount-1) {
             this.line++;
-            this.currentText = this.GetText();
+            this.currentrawText = this.GetText();
+            this.currentText = this.currentrawText.replace(/"(""|.)*?"/g, '""');
         } else {
             this.currentText = undefined;
         }
@@ -524,13 +526,14 @@ export class Lexer {
         const lineCount = Math.min(this.document.lineCount, this.line + maxLine);
 
         let Symbol: SymbolNode|undefined;
-        const result: Array<SymbolNode|FuncNode> = [];
+        const result: Array<SymbolNode | FuncNode> = [];
         const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
         const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
-        const VarReg = /^[\s\t]*([a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)(?=[\s\t]*:?=)/;
+        const VarReg = /\s*\b((?<!\.)[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*)(\.[a-zA-Z0-9\u4e00-\u9fa5#_@$]+)*?\s*([+\-*/.:]=|\+\+|\-\-)/g;
         const includeReg = /#include <?([a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+(\.ahk))?>?/i
         let match:RegExpMatchArray|null;
         let unclosedBrace = 1;
+        let varnames = new Map();
 
         while (this.currentText && this.line <= lineCount-1) {
             this.JumpMeanless();
@@ -558,7 +561,16 @@ export class Lexer {
                 } 
                 else if (match = this.currentText.match(VarReg)) {
                     unclosedBrace += this.getUnclosedNum();
-                    result.push(this.GetVarInfo(match))
+                    for (let i = 0; i < match.length; i++) {
+                        let name = match[i].replace(/[+\-*/.:].+/, '').trim();
+                        if (varnames.has(name.toLowerCase())) {
+                            continue;
+                        }
+                        varnames.set(name.toLowerCase(), 1);
+                        let pos = this.currentrawText.indexOf(match[i]);
+                        result.push(SymbolNode.create(name, SymbolKind.Variable,
+                            Range.create(Position.create(this.line, pos), Position.create(this.line, pos + name.length))));
+                    }
                 }
                 else {
                     if (match = this.currentText.match(includeReg)) {
@@ -685,13 +697,14 @@ export class Lexer {
 
     private GetLabelInfo():SymbolNode|undefined {
         let text = <string>this.currentText;
-        let match = text.match(/^[\t\s]*(?!;)(?<labelname>[a-zA-Z0-9\Q@#$_\[\]?~`!%^&*\+\-()={}|\:;"'<>./\E]+):(?=([\t\s]*|[\t\s]+\Q;\E))/);
+        let match = text.match(/^\s*(?<labelname>[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*):\s*(\s;.*)?$/);
+        let range = Range.create(Position.create(this.line, 0), Position.create(this.line, 0));
         if (match) {
-            let range = Range.create(Position.create(this.line, 0), Position.create(this.line, 0));
-            let labelname = (<{[key: string]: string}>match['groups'])['labelname'];
-            if (labelname[labelname.length-1] === ":" && labelname[labelname.length-2] !== ":")
-                return SymbolNode.create(labelname.slice(0, labelname.length-1), SymbolKind.Event, range);
+            let labelname = (<{ [key: string]: string }>match['groups'])['labelname'];
             return SymbolNode.create(labelname, SymbolKind.Null, range);
+        } else if (match = text.match(/^\s*(?<labelname>[\x09\x20-\x7E]+)::/)) {
+            let labelname = (<{ [key: string]: string }>match['groups'])['labelname'];
+            return SymbolNode.create(labelname, SymbolKind.Event, range);
         }
     }
 
