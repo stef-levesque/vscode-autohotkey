@@ -10,12 +10,12 @@ import {
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
-import { promises } from 'dns';
 import { SemanticStack, isExpr } from './semantic_stack'
 import { SemanticTokensBuilder } from 'vscode-languageserver/lib/sematicTokens.proposed';
 import { FunctionCall, MethodCall, INodeResult, IFunctionCall, IASTNode, IMethodCall, Expr, IBinOp, IPropertCall, IAssign } from './asttypes';
 import { Token, Tokenizer, TokenType } from './tokenizer';
-import { open } from 'fs';
+import { BuiltinFuncNode } from "./utilities/constants";
+import { builtin_function } from './utilities/builtins';
 export interface SymbolNode {
     name: string
     kind: SymbolKind
@@ -42,13 +42,23 @@ export interface Parameter {
      */
     name: string
     /**
+     * This parameter is optional or not
+     */
+    isOptional?: boolean
+    /**
      * default value of a parameter
      */
     defaultVal?: string
 }
 
 export interface ReferenceInfomation {
+    /**
+     * name of reference symbol
+     */
     name: string
+    /**
+     * line of reference symbol been refered
+     */
     line: number
 }
 
@@ -142,11 +152,13 @@ export class Lexer {
     private referenceTable: {[key: string]: ReferenceInfomation[]} = {};
     private includeFile: Set<string> = new Set();
     private done: boolean = false;
+    private readonly builtinFunction: BuiltinFuncNode[]; 
     // private logger: RemoteConsole['log'];
     document: TextDocument;
 
-    constructor (document: TextDocument){
+    constructor (document: TextDocument, builtinFunction: BuiltinFuncNode[]){
         this.document = document;
+        this.builtinFunction = builtin_function;
         this.symboltree = null;
     }
 
@@ -155,16 +167,21 @@ export class Lexer {
         return <Array<SymbolNode|FuncNode>>this.symboltree;
     }
 
-    public getFuncPrototype(symbol: FuncNode): string {
+    public getFuncPrototype(symbol: FuncNode|BuiltinFuncNode): string {
         let result = symbol.name + '(';
-        symbol.params.map(param => {
+        symbol.params.map((param, index, array) => {
             result += param.name;
+            if (param.isOptional) {
+                result += '[Optional]'
+            }
             if (param.defaultVal) {
                 result += ' := ' + param.defaultVal;
             }
-            result += ', '
+            if (array.length-1 !== index) {
+                result += ', ';
+            }
         })
-        return result.slice(0, -2)+')';
+        return result+')';
     }
 
     public convertParamsCompletion(node: SymbolNode): CompletionItem[] {
@@ -173,18 +190,22 @@ export class Lexer {
             return params.map(param => {
                 let pc = CompletionItem.create(param.name);
                 pc.kind = CompletionItemKind.Variable;
+                pc.detail = '(parameter) '+param.name;
                 return pc;
             })
         }
-        else {
-            return [];
-        }
+        return [];
     }
 
     public getGlobalCompletion(): CompletionItem[] {
 		return this.getTree().map(node => {
             return this.convertNodeCompletion(node);
-        });
+        }).concat(this.builtinFunction.map(node => {
+            let ci = CompletionItem.create(node.name);
+            ci.data = this.getFuncPrototype(node);
+            ci.kind = CompletionItemKind.Function;
+            return ci;
+        }));
     }
 
     public getScopedCompletion(pos: Position): CompletionItem[] {
@@ -332,7 +353,7 @@ export class Lexer {
         return ci;
     }
 
-    public getFuncAtPosition(position: Position): {func: FuncNode, index: number}|undefined {
+    public getFuncAtPosition(position: Position): {func: FuncNode|BuiltinFuncNode, index: number}|undefined {
         const context = this.document.getText(Range.create(Position.create(position.line, 0), position));
         
         let stmtStack = new SemanticStack(context);
@@ -375,6 +396,7 @@ export class Lexer {
             const funcName = lastnode.name;
             const tree = perfixs ? this.searchSuffix(perfixs.reverse(), position) : this.getTree();
             let func:FuncNode;
+            // first, search in the document syntax tree
             if (tree) {
                 for (let i=0,len=tree.length; i<len; i++) {
                     if (tree[i].name === funcName) {
@@ -415,7 +437,22 @@ export class Lexer {
                         };
                     }
                 }
+                // then find if symbol is in built-in function tree
+                for (let node of this.builtinFunction) {
+                    if (node.name === funcName) {
+                        let index = lastnode.actualParams.length===0 ?
+                                    lastnode.actualParams.length:
+                                    lastnode.actualParams.length-1;
+                        return {
+                            func: node,
+                            index: index
+                        }
+                    }
+                }
+                return undefined;
             }
+            // finally search if is built-in method
+            // TODO: finish signature about built-in method
         }
         return undefined;
     }

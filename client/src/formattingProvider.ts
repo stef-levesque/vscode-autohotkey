@@ -18,6 +18,16 @@ export class FormatProvider implements vscode.DocumentFormattingEditProvider {
     }
 }
 
+enum MODE {
+    BlockStatement = 'BlockStatement',
+    Statement      = 'Statement',
+    ObjectLiteral  = 'ObjectLiteral',
+    ArrayLiteral   = 'ArrayLiteral',
+    ForInitializer = 'ForInitializer',
+    Conditional    = 'Conditional',
+    Expression     = 'Expression'       //'(EXPRESSION)'
+};
+
 class Beautifier {
     public beautify : any;
     constructor(js_source_text : string, options : any) {
@@ -28,7 +38,24 @@ class Beautifier {
         let prefix: string, flag_store: any[];
         let input_wanted_newline: boolean, output_space_before_token: boolean, following_bracket : boolean;
         let input_length: number, n_newlines: number, last_LF : number, bracketnum : number, whitespace_before_token: any[];
-        let handlers, MODE: { BlockStatement: any; Statement: any; ArrayLiteral: any; Expression: any; ForInitializer: any; Conditional: any; ObjectLiteral: any; };
+        let handlers = {
+            'TK_START_EXPR': handle_start_expr,
+            'TK_END_EXPR': handle_end_expr,
+            'TK_START_BLOCK': handle_start_block,
+            'TK_END_BLOCK': handle_end_block,
+            'TK_WORD': handle_word,
+            'TK_RESERVED': handle_word,
+            'TK_SEMICOLON': handle_semicolon,
+            'TK_STRING': handle_string,
+            'TK_EQUALS': handle_equals,
+            'TK_OPERATOR': handle_operator,
+            'TK_COMMA': handle_comma,
+            'TK_BLOCK_COMMENT': handle_block_comment,
+            'TK_INLINE_COMMENT': handle_inline_comment,
+            'TK_COMMENT': handle_comment,
+            'TK_DOT': handle_dot,
+            'TK_UNKNOWN': handle_unknown
+        };
         let preindent_string = '';
         let acorn = {
             "isIdentifierChar" : function (code) {
@@ -62,35 +89,7 @@ class Beautifier {
         reserved_words = line_starters.concat(['in', 'else', 'until', 'get', 'set', 'catch', 'finally']);
         following_bracket = false;
         bracketnum = 0, last_LF = -1;
-
-        MODE = {
-            BlockStatement: 'BlockStatement',
-            Statement: 'Statement',
-            ObjectLiteral: 'ObjectLiteral',
-            ArrayLiteral: 'ArrayLiteral',
-            ForInitializer: 'ForInitializer',
-            Conditional: 'Conditional',
-            Expression: 'Expression' //'(EXPRESSION)'
-        };
-
-        handlers = {
-            'TK_START_EXPR': handle_start_expr,
-            'TK_END_EXPR': handle_end_expr,
-            'TK_START_BLOCK': handle_start_block,
-            'TK_END_BLOCK': handle_end_block,
-            'TK_WORD': handle_word,
-            'TK_RESERVED': handle_word,
-            'TK_SEMICOLON': handle_semicolon,
-            'TK_STRING': handle_string,
-            'TK_EQUALS': handle_equals,
-            'TK_OPERATOR': handle_operator,
-            'TK_COMMA': handle_comma,
-            'TK_BLOCK_COMMENT': handle_block_comment,
-            'TK_INLINE_COMMENT': handle_inline_comment,
-            'TK_COMMENT': handle_comment,
-            'TK_DOT': handle_dot,
-            'TK_UNKNOWN': handle_unknown
-        };
+        
 
         function create_flags(flags_base : any, mode : any) {
             let next_indent_level = 0;
