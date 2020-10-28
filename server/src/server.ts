@@ -36,11 +36,13 @@ import {
 	keywords,
 	buildKeyWordCompletions,
 	buildbuiltin_variable,
-	builtin_variable,
+	buildBuiltinFunctionNode,
 	// serverName,
-	languageServer
+	languageServer,
+	BuiltinFuncNode
 } from './utilities/constants'
 
+import { builtin_variable } from "./utilities/builtins";
 import { 
 	Lexer, SymbolNode
 } from './ahkparser'
@@ -56,6 +58,7 @@ let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let builtinVariableCompletions: CompletionItem[] = buildbuiltin_variable();
+let builtinFunctions: BuiltinFuncNode[] = buildBuiltinFunctionNode();
 let treedict: {[key: string]: Lexer} = {};
 let logger = connection.console.log;
 
@@ -246,7 +249,7 @@ connection.onDefinition(
 })
 
 documents.onDidOpen(async e => {
-	let docLexer: Lexer = new Lexer(e.document);
+	let docLexer: Lexer = new Lexer(e.document, builtinFunctions);
 	docLexer.Parse();
 	treedict[e.document.uri] = docLexer;
 });
