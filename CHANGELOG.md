@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.3.0
+
+1. improved parser, better analysis of variables
+2. support v2 formation
+
 ## 0.2.0
 
 1. new parser for signature help

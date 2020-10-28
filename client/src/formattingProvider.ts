@@ -39,22 +39,22 @@ class Beautifier {
         let input_wanted_newline: boolean, output_space_before_token: boolean, following_bracket: boolean, keep_Object_line: boolean, begin_line: boolean;
         let input_length: number, n_newlines: number, last_LF: number, bracketnum: number, whitespace_before_token: any[];
         let handlers = {
-            'TK_START_EXPR': handle_start_expr,
-            'TK_END_EXPR': handle_end_expr,
-            'TK_START_BLOCK': handle_start_block,
-            'TK_END_BLOCK': handle_end_block,
-            'TK_WORD': handle_word,
-            'TK_RESERVED': handle_word,
-            'TK_SEMICOLON': handle_semicolon,
-            'TK_STRING': handle_string,
-            'TK_EQUALS': handle_equals,
-            'TK_OPERATOR': handle_operator,
-            'TK_COMMA': handle_comma,
-            'TK_BLOCK_COMMENT': handle_block_comment,
+            'TK_START_EXPR'    : handle_start_expr,
+            'TK_END_EXPR'      : handle_end_expr,
+            'TK_START_BLOCK'   : handle_start_block,
+            'TK_END_BLOCK'     : handle_end_block,
+            'TK_WORD'          : handle_word,
+            'TK_RESERVED'      : handle_word,
+            'TK_SEMICOLON'     : handle_semicolon,
+            'TK_STRING'        : handle_string,
+            'TK_EQUALS'        : handle_equals,
+            'TK_OPERATOR'      : handle_operator,
+            'TK_COMMA'         : handle_comma,
+            'TK_BLOCK_COMMENT' : handle_block_comment,
             'TK_INLINE_COMMENT': handle_inline_comment,
-            'TK_COMMENT': handle_comment,
-            'TK_DOT': handle_dot,
-            'TK_UNKNOWN': handle_unknown
+            'TK_COMMENT'       : handle_comment,
+            'TK_DOT'           : handle_dot,
+            'TK_UNKNOWN'       : handle_unknown
         };
 
         let preindent_string = '';

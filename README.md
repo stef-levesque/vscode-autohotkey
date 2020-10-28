@@ -7,10 +7,12 @@ AutoHotKey language support for VS Code
 
 ## What's New
 
-1. New configuration `documentLanguage`
+1. Docment formation, supports both v1 and v2 
+2. Parser improved
+3. New configuration `documentLanguage`
    - Which lanuage document is shown for code completion hint
    - Only chinese document of build-in varible avaible now   
-2. Build-in Variable and Function(partly) hint.
+4. Build-in Variable and Function(partly) hint.
    - Need documentions which is easy to be parsed by js/ts. If you find any, help please.
 
 ## Notice
@@ -36,6 +38,10 @@ AutoHotKey language support for VS Code
 ### Signature Help
 
 ![](pic/signature.png)
+
+### Formate Document
+
+![](pic/format.png)
 
 ## Further Plan
 

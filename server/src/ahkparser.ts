@@ -439,7 +439,7 @@ export class Lexer {
                     }
                 }
                 // then find if symbol is in built-in function tree
-                for (let node of this.builtinFunction) {
+                for (const node of this.builtinFunction) {
                     if (node.name === funcName) {
                         let index = lastnode.actualParams.length===0 ?
                                     lastnode.actualParams.length:
@@ -570,7 +570,7 @@ export class Lexer {
         const includeReg = /#include <?([a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+(\.ahk))?>?/i
         let match:RegExpMatchArray|null;
         let unclosedBrace = 1;
-        let varnames = new Map();
+        let varnames: Set<string> = new Set();
 
         while (this.currentText && this.line <= lineCount-1) {
             this.JumpMeanless();
@@ -596,17 +596,18 @@ export class Lexer {
                     unclosedBrace += this.getUnclosedNum();
                     result.push(Symbol);
                 } 
+                // improved var match and parse
+                // thanks to 天黑请闭眼
                 else if (match = this.currentText.match(VarReg)) {
                     unclosedBrace += this.getUnclosedNum();
                     for (let i = 0; i < match.length; i++) {
                         let name = match[i].replace(/[+\-*/.:].+/, '').trim();
+                        // FIXME: wrong when refer class after first assign
                         if (varnames.has(name.toLowerCase())) {
                             continue;
                         }
-                        varnames.set(name.toLowerCase(), 1);
-                        let pos = this.currentrawText.indexOf(match[i]);
-                        result.push(SymbolNode.create(name, SymbolKind.Variable,
-                            Range.create(Position.create(this.line, pos), Position.create(this.line, pos + name.length))));
+                        varnames.add(name.toLowerCase());
+                        result.push(this.GetVarInfo(name));
                     }
                 }
                 else {
@@ -745,9 +746,16 @@ export class Lexer {
         }
     }
 
-    private GetVarInfo(match: RegExpMatchArray): SymbolNode {
-        let index = match[0].length - match[1].length;
-        const tokenizer = new Tokenizer(<string>this.currentText);
+    /**
+     * Return variable symbol node
+     * @param match matched variable name string
+     */
+    private GetVarInfo(match: string): SymbolNode {
+        // get position of current variable in current line
+        let index = (<string>this.currentText).search(match);
+        // cut string at this position for parse of tokenizer
+        const s = (<string>this.currentText).slice(index);
+        const tokenizer = new Tokenizer(s);
         let tokenStack: Token[] = [];
         tokenStack.push(tokenizer.GetNextToken());
         tokenStack.push(tokenizer.GetNextToken());
@@ -767,7 +775,7 @@ export class Lexer {
                 this.addReference(tokenStack[0].content, perfix.join('.'), this.line);
             }
         }
-        return SymbolNode.create(match[1], 
+        return SymbolNode.create(match, 
                                 SymbolKind.Variable,
                                 Range.create(Position.create(this.line, index), Position.create(this.line, index)));
     }
