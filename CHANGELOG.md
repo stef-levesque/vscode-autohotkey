@@ -4,6 +4,7 @@
 
 1. improved parser, better analysis of variables
 2. support v2 formation
+3. fix parse wrong on class property (0.3.1)
 
 ## 0.2.0
 

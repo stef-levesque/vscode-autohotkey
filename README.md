@@ -7,7 +7,7 @@ AutoHotKey language support for VS Code
 
 ## What's New
 
-1. Docment formation, supports both v1 and v2 
+1. Document formation, supports both v1 and v2 
 2. Parser improved
 3. New configuration `documentLanguage`
    - Which lanuage document is shown for code completion hint
@@ -26,7 +26,7 @@ AutoHotKey language support for VS Code
 * Snippets
 * Code Completion
 * Document symbol(class, method, variable, label, hotkey) 
-* Goto Definition(limited support)
+* Goto Definition
 * Signature Helper (tooltip for method parameters)
 
 ## Preveiw
@@ -39,7 +39,7 @@ AutoHotKey language support for VS Code
 
 ![](pic/signature.png)
 
-### Formate Document
+### Format Document
 
 ![](pic/format.png)
 

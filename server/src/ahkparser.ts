@@ -28,7 +28,7 @@ export interface FuncNode extends SymbolNode {
 }
 
 export interface ClassNode extends SymbolNode {
-    extends: string[]
+    extends: string[] 
 }
 
 export interface Word {
@@ -566,7 +566,7 @@ export class Lexer {
         const result: Array<SymbolNode | FuncNode> = [];
         const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
         const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
-        const VarReg = /\s*\b((?<!\.)[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*)(\.[a-zA-Z0-9\u4e00-\u9fa5#_@$]+)*?\s*([+\-*/.:]=|\+\+|\-\-)/g;
+        const VarReg = /\s*\b((?<!\.)[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*)(\.[a-zA-Z0-9\u4e00-\u9fa5#_@$]+)*?\s*(?=[+\-*/.:]=|\+\+|\-\-)/g;
         const includeReg = /#include <?([a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+(\.ahk))?>?/i
         let match:RegExpMatchArray|null;
         let unclosedBrace = 1;
@@ -601,7 +601,7 @@ export class Lexer {
                 else if (match = this.currentText.match(VarReg)) {
                     unclosedBrace += this.getUnclosedNum();
                     for (let i = 0; i < match.length; i++) {
-                        let name = match[i].replace(/[+\-*/.:].+/, '').trim();
+                        let name = match[i].trim();
                         // FIXME: wrong when refer class after first assign
                         if (varnames.has(name.toLowerCase())) {
                             continue;
@@ -720,6 +720,21 @@ export class Lexer {
         let name:string = (<{[key: string]: string}>match['groups'])['classname']
         let sub = this.Analyze(true, 1000);
         let endMatch: RegExpMatchArray|null;
+        // class property belongs to method's subnode which is wrong
+        // fix it here
+        let propertList: SymbolNode[] = [];
+        for (const fNode of sub) {
+            if (fNode.subnode) {
+                fNode.subnode.forEach((node, i) => {
+                    if (node.kind === SymbolKind.Property) {
+                        propertList.push(node);
+                        fNode.subnode?.splice(i, 1);
+                    }
+                });
+            }
+        }
+        sub.push(...propertList);
+        // get end of class
         if (this.currentText && (endMatch = this.currentText.match(/^[ \t]*(})/))) {
             let endLine = this.line;
             let endIndex = endMatch[0].length;
@@ -752,12 +767,11 @@ export class Lexer {
      */
     private GetVarInfo(match: string): SymbolNode {
         // get position of current variable in current line
-        let index = (<string>this.currentText).search(match);
-        // cut string at this position for parse of tokenizer
-        const s = (<string>this.currentText).slice(index);
+        const index = (<string>this.currentText).search(match);
+        // cut string to assignment token for parsing of tokenizer
+        const s = (<string>this.currentText).slice(index+match.length);
         const tokenizer = new Tokenizer(s);
         let tokenStack: Token[] = [];
-        tokenStack.push(tokenizer.GetNextToken());
         tokenStack.push(tokenizer.GetNextToken());
         tokenStack.push(tokenizer.GetNextToken());
         let t = tokenStack.pop();
@@ -773,6 +787,17 @@ export class Lexer {
                     }
                 }
                 this.addReference(tokenStack[0].content, perfix.join('.'), this.line);
+            }
+        }
+        // check if var is a propert
+        if (match.search('.') >= 0) {
+            let propertList: string[] = match.split('.')
+            if (propertList[0] === 'this') {
+                // property is return as subnode of method
+                // will be fixed in GetClassInfo
+                return SymbolNode.create(propertList[1], 
+                            SymbolKind.Property,
+                            Range.create(Position.create(this.line, index), Position.create(this.line, index)));
             }
         }
         return SymbolNode.create(match, 

@@ -1,7 +1,7 @@
 {
 	"name": "ahk-simple-ls",
 	"description": "an autohotkey language server in node.",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"author": "helsmy",
 	"license": "LGPLv3.0",
 	"engines": {

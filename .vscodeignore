@@ -13,3 +13,4 @@ client/node_modules/**
 !client/node_modules/vscode-languageserver-types/**
 !client/node_modules/semver/**
 *.vsix
+Abandoned
