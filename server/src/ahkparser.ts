@@ -742,6 +742,8 @@ export class Lexer {
                     }
                 });
             }
+            else if (fNode.kind === SymbolKind.Variable)
+                fNode.kind = SymbolKind.Property
         }
         sub.push(...propertyList);
         // get end of class
