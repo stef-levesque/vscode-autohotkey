@@ -180,10 +180,11 @@ function getDocumentSettings(resource: string): Thenable<AHKLSSettings> {
 function flatTree(tree: SymbolNode[]): SymbolNode[] {
 	let result: SymbolNode[] = [];
 	tree.map(info => {
-		result.push(info);
-		if (info.subnode) {
+		 // FIXME: temporary soluation, invaild -1 line marked builtin property
+		if (info.range.start.line !== -1) 
+			result.push(info);
+		if (info.subnode)
 			result.push(...flatTree(info.subnode));
-		}
 	});
 	return result;
 }

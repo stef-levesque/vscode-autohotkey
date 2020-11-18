@@ -14,8 +14,11 @@ import { SemanticStack, isExpr } from './semantic_stack'
 import { SemanticTokensBuilder } from 'vscode-languageserver/lib/sematicTokens.proposed';
 import { FunctionCall, MethodCall, INodeResult, IFunctionCall, IASTNode, IMethodCall, Expr, IBinOp, IPropertCall, IAssign } from './asttypes';
 import { Token, Tokenizer, TokenType } from './tokenizer';
-import { BuiltinFuncNode } from "./utilities/constants";
+import { 
+    BuiltinFuncNode
+} from "./utilities/constants";
 import { builtin_function } from './utilities/builtins';
+import { threadId } from 'worker_threads';
 export interface SymbolNode {
     name: string
     kind: SymbolKind
@@ -172,15 +175,9 @@ export class Lexer {
         let result = symbol.name + '(';
         symbol.params.map((param, index, array) => {
             result += param.name;
-            if (param.isOptional) {
-                result += '[Optional]'
-            }
-            if (param.defaultVal) {
-                result += ' := ' + param.defaultVal;
-            }
-            if (array.length-1 !== index) {
-                result += ', ';
-            }
+            if (param.isOptional) result += '[Optional]';
+            if (param.defaultVal) result += ' := ' + param.defaultVal;
+            if (array.length-1 !== index) result += ', ';
         })
         return result+')';
     }
@@ -261,7 +258,8 @@ export class Lexer {
                     if (variable.name === perfix) {
                         perfixs.pop();
                         for(const node of nodeList) {
-                            if (node.name === ref && node.subnode) {
+                            // ahk is case insensitive
+                            if (node.name.toLowerCase() === ref.toLowerCase() && node.subnode) {
                                 nodeList = node.subnode;
                                 isFound = true;
                                 break;
@@ -286,9 +284,13 @@ export class Lexer {
                 }
             }
             for(const node of nodeList) {
-                if (node.name === perfix && node.subnode) {
-                    nodeList = node.subnode;
-                    isFound = true;
+                if (node.name === perfix) {
+                    // TODO: support search multilayers
+                    if (node.subnode)
+                    {
+                        nodeList = node.subnode;
+                        isFound = true;
+                    }
                     break;
                 }
             }
@@ -484,7 +486,9 @@ export class Lexer {
         }
         let nodeList:SymbolNode[] = [];
         for (let i=0; i < tree.length; i++) {
-            if (tree[i].name === word.name) {
+            if (tree[i].name === word.name &&
+                 // FIXME: temporary soluation, invaild -1 line marked builtin property
+                tree[i].range.start.line !== -1) {
                 nodeList.push(tree[i]);
             }
         }
@@ -715,25 +719,31 @@ export class Lexer {
     * @param startLine startline of this symbol
     */
     private GetClassInfo(match: RegExpMatchArray, startLine: number):SymbolNode {
-        // if we match the funcName(param*), 
-        // then we check if it is a function definition
         let name:string = (<{[key: string]: string}>match['groups'])['classname']
         let sub = this.Analyze(true, 1000);
         let endMatch: RegExpMatchArray|null;
+        // FIXME: temporary soluation, invaild -1 line marked builtin property
+        const invaildRange: Range = Range.create(
+            Position.create(-1, -1),
+            Position.create(-1, -1)
+        );
         // class property belongs to method's subnode which is wrong
         // fix it here
-        let propertList: SymbolNode[] = [];
+        let propertyList: SymbolNode[] = [
+            SymbolNode.create('base', SymbolKind.Property, invaildRange),
+            SymbolNode.create('__class', SymbolKind.Property, invaildRange)
+        ];
         for (const fNode of sub) {
             if (fNode.subnode) {
                 fNode.subnode.forEach((node, i) => {
                     if (node.kind === SymbolKind.Property) {
-                        propertList.push(node);
+                        propertyList.push(node);
                         fNode.subnode?.splice(i, 1);
                     }
                 });
             }
         }
-        sub.push(...propertList);
+        sub.push(...propertyList);
         // get end of class
         if (this.currentText && (endMatch = this.currentText.match(/^[ \t]*(})/))) {
             let endLine = this.line;
@@ -786,16 +796,16 @@ export class Lexer {
                         perfix.push(token.content);
                     }
                 }
-                this.addReference(tokenStack[0].content, perfix.join('.'), this.line);
+                this.addReference(match, perfix.join('.'), this.line);
             }
         }
-        // check if var is a propert
-        if (match.search('.') >= 0) {
-            let propertList: string[] = match.split('.')
-            if (propertList[0] === 'this') {
+        // check if var is a property
+        if (match.search(/\./) >= 0) {
+            let propertyList: string[] = match.split('.')
+            if (propertyList[0] === 'this') {
                 // property is return as subnode of method
                 // will be fixed in GetClassInfo
-                return SymbolNode.create(propertList[1], 
+                return SymbolNode.create(propertyList[1], 
                             SymbolKind.Property,
                             Range.create(Position.create(this.line, index), Position.create(this.line, index)));
             }
