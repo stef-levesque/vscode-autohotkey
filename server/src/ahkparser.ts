@@ -13,7 +13,8 @@ import {
 import { SemanticStack, isExpr } from './semantic_stack'
 import { SemanticTokensBuilder } from 'vscode-languageserver/lib/sematicTokens.proposed';
 import { FunctionCall, MethodCall, INodeResult, IFunctionCall, IASTNode, IMethodCall, Expr, IBinOp, IPropertCall, IAssign } from './asttypes';
-import { Token, Tokenizer, TokenType } from './tokenizer';
+import { Token, TokenType } from './utilities/types';
+import { Tokenizer } from './tokenizer'
 import { 
     BuiltinFuncNode
 } from "./utilities/constants";
@@ -785,7 +786,7 @@ export class Lexer {
         tokenStack.push(tokenizer.GetNextToken());
         tokenStack.push(tokenizer.GetNextToken());
         let t = tokenStack.pop();
-        if (t && t.type === TokenType.newkeyword) {
+        if (t && t.type === TokenType.new) {
             let token = tokenizer.GetNextToken();
             if (token.type === TokenType.id) {
                 let perfix:string[] = [token.content];

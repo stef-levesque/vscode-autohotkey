@@ -5,12 +5,8 @@
  * Only parse a line.
  */
 
-import { 
-    Tokenizer,
-    TokenType,
-    Token
-} from "./tokenizer";
-import { throws } from 'assert';
+import { Token, TokenType } from './utilities/types';
+import { Tokenizer } from './tokenizer'
 import { 
     IAssign,
     IASTNode,
@@ -97,11 +93,12 @@ export class SemanticStack {
         let token = this.currentToken
         let node: Expr;
         if (this.currentToken.type === TokenType.string ||
-                 this.currentToken.type === TokenType.number) {
+            this.currentToken.type === TokenType.number) {
             node = this.literal();
         }
-        else if (this.currentToken.type === TokenType.unknown) {
-            this.eat(TokenType.unknown);
+        else if (this.currentToken.type === TokenType.plus || 
+                 this.currentToken.type === TokenType.minus) {
+            this.eat(this.currentToken.type);
             node = {errors: false, value: {operator: token, left: this.expr(), offrange: new Offrange(token.offset, token.offset)}};
         }
         else if (this.currentToken.type === TokenType.openParen) {
@@ -136,11 +133,13 @@ export class SemanticStack {
                 value: left.value
             };
             
-            while (this.currentToken.type === TokenType.unknown || 
+            while (this.currentToken.type === TokenType.number  || 
                    this.currentToken.type === TokenType.dot     || 
                    this.currentToken.type === TokenType.id      ||
                    this.currentToken.type === TokenType.string  ||
-                   this.currentToken.type === TokenType.number) {
+                   (this.currentToken.type >= TokenType.plus    &&
+                    this.currentToken.type <= TokenType.less)   ||
+                   this.currentToken.type === TokenType.unknown) {
                 let token = this.currentToken;
                 if (this.currentToken.type === TokenType.unknown) {
                     this.eat(TokenType.unknown);
@@ -197,8 +196,8 @@ export class SemanticStack {
         catch (err) {
             isWrong = true;
         }
-        if (this.currentToken.type === TokenType.newkeyword) {
-            this.eat(TokenType.newkeyword);
+        if (this.currentToken.type === TokenType.new) {
+            this.eat(TokenType.new);
             // TODO: process class new statement
             // let classNewNode: INodeResult<IFunctionCall|IMethodCall|IPropertCall>
             // if (this.tokenizer.currChar === '(') {
