@@ -7,8 +7,8 @@ AutoHotKey language support for VS Code
 
 ## What's New
 
-1. Document formation, supports both v1 and v2 
-2. Parser improved
+1. Folding region comment (comments marked region able to be folded, see in preview and feature)
+2. Document formation, supports both v1 and v2 
 3. New configuration `documentLanguage`
    - Which lanuage document is shown for code completion hint
    - Only chinese document of build-in varible avaible now   
@@ -28,6 +28,9 @@ AutoHotKey language support for VS Code
 * Document symbol(class, method, variable, label, hotkey) 
 * Goto Definition
 * Signature Helper (tooltip for method parameters)
+* Folding region commnet
+  * mark region start by `;[region]`
+  * mark region end by   `;[endregion]`
 
 ## Preveiw
 
@@ -42,6 +45,10 @@ AutoHotKey language support for VS Code
 ### Format Document
 
 ![](pic/format.png)
+
+### Folding Region
+
+![](pic/folding.gif)
 
 ## Further Plan
 
