@@ -5,7 +5,7 @@
  * Only parse a line.
  */
 
-import { Token, TokenType } from './utilities/types';
+import { createToken, Token, TokenType } from './utilities/types';
 import { Tokenizer } from './tokenizer'
 import { 
     IAssign,
@@ -65,7 +65,7 @@ export class SemanticStack {
             value: {
                 name: token.content,
                 token: token,
-                offrange: new Offrange(token.offset, token.offset)
+                offrange: new Offrange(token.start, token.end)
             }
         };
     }
@@ -83,43 +83,127 @@ export class SemanticStack {
             value: {
                 token: token,
                 value: token.content,
-                offrange: new Offrange(token.offset, token.offset)
+                offrange: new Offrange(token.start, token.end)
             }
         };
     }
 
     // For this is simple parser, we don't care about operator level
-    factor() {
+    factor(): Expr{
         let token = this.currentToken
         let node: Expr;
-        if (this.currentToken.type === TokenType.string ||
-            this.currentToken.type === TokenType.number) {
-            node = this.literal();
+        switch (this.currentToken.type) {
+            case TokenType.string:
+            case TokenType.number:
+                return this.literal();
+            case TokenType.plus:
+            case TokenType.minus:
+                this.eat(this.currentToken.type);
+                let exp = this.expr();
+                return {
+                    errors: false, 
+                    value: {
+                        operator: token, 
+                        expr: exp, 
+                        offrange: new Offrange(token.start, exp.value.offrange.end)
+                    }
+                };
+            case TokenType.new:
+                this.eat(TokenType.new);
+                // new a class like a function call
+                if (this.tokenizer.currChar === '(') {
+                    let node = this.funcCall();
+                    return {
+                        errors: node.errors,
+                        value: new MethodCall(
+                            '__New',
+                            node.value.actualParams,
+                            node.value.token,
+                            [node.value.token],
+                            node.value.offrange
+                        )
+                        
+                    };
+                }
+                // new a class like a class call
+                else if (this.tokenizer.currChar === '.') {
+                    let node = this.classCall();
+                    let vnode = node.value;
+                    vnode.ref.push(vnode.token);
+                    if (vnode instanceof MethodCall) {
+                        return {
+                            errors: node.errors,
+                            value: new MethodCall(
+                                '__New',
+                                vnode.actualParams,
+                                vnode.token,
+                                vnode.ref,
+                                vnode.offrange
+                            )
+                        };  
+                    }
+                    else {
+                        return {
+                            errors: node.errors,
+                            value: new MethodCall(
+                                '__New',
+                                [],             // new like property call does not have parameters
+                                vnode.token,
+                                vnode.ref,
+                                vnode.offrange
+                            )
+                        };  
+                    }
+                }
+                // new a class just by it name
+                else {
+                    if (token.type === TokenType.id) {
+                        this.eat(TokenType.id);
+                        return {
+                            errors: false,
+                            value: new MethodCall(
+                                '__New',
+                                [],             // new like property call does not have parameters
+                                token,
+                                [token],
+                                new Offrange(token.start, token.end)
+                            )
+                        };
+                    }
+                    else {
+                        // got wrong in new class
+                        return {
+                            errors: true,
+                            value: new MethodCall(
+                                '__New',
+                                [],             // new like property call does not have parameters
+                                createToken(TokenType.unknown, '', token.start, token.end),
+                                [],
+                                new Offrange(token.start, token.end)
+                            )
+                        };
+                    }
+                      
+                }
+            case TokenType.openParen:
+                this.eat(TokenType.openParen);
+                node = this.expr();
+                this.eat(TokenType.closeParen);
+                return node;
+            default:
+                switch (this.tokenizer.currChar) {
+                    case '(':
+                        node = this.funcCall();
+                        break;
+                    case '.':
+                        node = this.classCall();
+                        break;
+                    default:
+                        node = this.variable();
+                        break;
+                }
+                return node;
         }
-        else if (this.currentToken.type === TokenType.plus || 
-                 this.currentToken.type === TokenType.minus) {
-            this.eat(this.currentToken.type);
-            node = {errors: false, value: {operator: token, left: this.expr(), offrange: new Offrange(token.offset, token.offset)}};
-        }
-        else if (this.currentToken.type === TokenType.openParen) {
-            this.eat(TokenType.openParen);
-            node = this.expr();
-            this.eat(TokenType.closeParen);
-        }
-        else {
-            switch (this.tokenizer.currChar) {
-                case '(':
-                    node = this.funcCall();
-                    break;
-                case '.':
-                    node = this.classCall();
-                    break;
-                default:
-                    node = this.variable();
-                    break;
-            }
-        }
-        return node;
     }
 
     expr(): Expr {
@@ -133,35 +217,29 @@ export class SemanticStack {
                 value: left.value
             };
             
-            while (this.currentToken.type === TokenType.number  || 
-                   this.currentToken.type === TokenType.dot     || 
-                   this.currentToken.type === TokenType.id      ||
-                   this.currentToken.type === TokenType.string  ||
-                   (this.currentToken.type >= TokenType.plus    &&
+            while ((this.currentToken.type >= TokenType.number  && // all allowed operator
                     this.currentToken.type <= TokenType.less)   ||
+                   this.currentToken.type === TokenType.dot     || 
                    this.currentToken.type === TokenType.unknown) {
                 let token = this.currentToken;
-                if (this.currentToken.type === TokenType.unknown) {
-                    this.eat(TokenType.unknown);
-                } 
-                else if (this.currentToken.type === TokenType.dot) {
-                    this.eat(TokenType.dot);
-                }
                 // Implicit connection expression
-                else {
+                if (this.currentToken.type >= TokenType.number && this.currentToken.type <= TokenType.id) {
                     token = {
                         content: '',
                         type: TokenType.unknown,
-                        offset: this.currentToken.offset
+                        start: this.currentToken.start,
+                        end: this.currentToken.start
                     }
                 }
+                this.eat(this.currentToken.type);
+                const right: Expr = this.expr()
                 node = {
                     errors: false,
                     value: {
                         left: left,
                         operator: token,
-                        right: this.expr(),
-                        offrange: new Offrange(token.offset, token.offset)
+                        right: right,
+                        offrange: new Offrange(token.start, right.value.offrange.end)
                     }
                 }
             }
@@ -171,7 +249,7 @@ export class SemanticStack {
             return {
                 errors: true,
                 value: {
-                    offrange: new Offrange(this.currentToken.offset, this.currentToken.offset)
+                    offrange: new Offrange(this.currentToken.start, this.currentToken.end)
                 }
             };
         }
@@ -196,20 +274,6 @@ export class SemanticStack {
         catch (err) {
             isWrong = true;
         }
-        if (this.currentToken.type === TokenType.new) {
-            this.eat(TokenType.new);
-            // TODO: process class new statement
-            // let classNewNode: INodeResult<IFunctionCall|IMethodCall|IPropertCall>
-            // if (this.tokenizer.currChar === '(') {
-            //     classNewNode = this.funcCall();
-            // } 
-            // else if (this.tokenizer.currChar === '.') {
-            //     classNewNode = this.classCall();
-            // }
-            // else {
-            //     isWrong = true;
-            // }
-        }
         let exprNode = this.expr();
         return {
             errors: isWrong,
@@ -217,7 +281,7 @@ export class SemanticStack {
                 left: left,
                 operator: token,
                 right: exprNode,
-                offrange: new Offrange(token.offset, token.offset)
+                offrange: new Offrange(token.start, exprNode.value.offrange.end)
             }
         };
 
@@ -240,6 +304,7 @@ export class SemanticStack {
             actualParams.push(this.expr());
         }
 
+        const end: number = this.currentToken.end;
         try {
             this.eat(TokenType.closeParen);
         }
@@ -249,7 +314,7 @@ export class SemanticStack {
         
         return {
             errors: iserror,
-            value: new FunctionCall(funcName, actualParams, token, new Offrange(token.offset, token.offset))
+            value: new FunctionCall(funcName, actualParams, token, new Offrange(token.start, end))
         };
     }
 
@@ -268,6 +333,7 @@ export class SemanticStack {
         if (this.currentToken.type === TokenType.id) {
             if (this.tokenizer.currChar === '(') {
                 let callNode = this.funcCall();
+                callNode.value.offrange.start = classref[0].start;
                 return {
                     errors: callNode.errors,
                     value: new MethodCall(callNode.value.name, 
@@ -277,12 +343,13 @@ export class SemanticStack {
                                 callNode.value.offrange)
                 };
             } 
+            this.eat(TokenType.id);
             return {
                 errors: false,
                 value: new PropertCall(this.currentToken.content, 
                                        this.currentToken, 
                                        classref, 
-                                       new Offrange(token.offset, token.offset))
+                                       new Offrange(classref[0].start, token.end))
             };
         }
         return {
@@ -290,7 +357,7 @@ export class SemanticStack {
             value: new PropertCall(this.currentToken.content, 
                                    this.currentToken, 
                                    classref, 
-                                   new Offrange(token.offset, token.offset))
+                                   new Offrange(classref[0].start, token.end))
         };
 
     }

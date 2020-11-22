@@ -56,12 +56,13 @@ export enum TokenType{
 }
 
 export interface Token {
-    type:TokenType;
-    content:string; 
-    offset:number;
-}
+    type:TokenType
+    content:string 
+    start:number
+    end:number  
+};
 
-export function createToken(id:TokenType, content:string, offset:number): Token {
-    return {type: id, content, offset}
+export function createToken(type:TokenType, content:string, start:number, end: number): Token {
+    return {type: type, content, start, end};
 }
 export type ITokenMap = Map<string, TokenType>;

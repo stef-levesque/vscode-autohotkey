@@ -49,13 +49,16 @@ export class Tokenizer {
             sNum += '.';
             sNum += this.NumberAdvance();
         } 
-        else if (this.currChar === 'e' || this.currChar === 'E') {
+        if (this.currChar === 'e' || this.currChar === 'E') {
             sNum += this.currChar;
             sNum += this.NumberAdvance();
         }
-        return createToken(TokenType.number, sNum, offset);
+        return createToken(TokenType.number, sNum, offset, this.pos);
     }
 
+    /**
+     * If is a Escaped "
+     */
     private IsEscapeChar(): boolean {
         if (this.Peek() === "\"") {
             this.Advance();
@@ -77,7 +80,7 @@ export class Tokenizer {
             this.Advance()
         }
         this.Advance()
-        return createToken(TokenType.string, str, offset);
+        return createToken(TokenType.string, str, offset, this.pos);
     }
 
     private GetId(): Token {
@@ -90,9 +93,9 @@ export class Tokenizer {
         }
         let keyword = RESERVED_KEYWORDS.get(str.toLowerCase());
         if (keyword) {
-            return createToken(keyword, str, offset);
+            return createToken(keyword, str, offset, this.pos);
         }
-        return createToken(TokenType.id, str, offset);
+        return createToken(TokenType.id, str, offset, this.pos);
     }
 
     private GetMark(): Token {
@@ -102,18 +105,18 @@ export class Tokenizer {
         if (mark) {
             // 2-char token
             this.Advance().Advance();
-            currstr += this.Peek();
-            return createToken(mark, currstr, offset);
+            currstr += this.currChar;
+            return createToken(mark, currstr, offset, this.pos);
         } 
         mark = OTHER_MARK.get(currstr);
         if (mark) {
             // 1-char token
             this.Advance();
-            return createToken(mark, currstr, offset);
+            return createToken(mark, currstr, offset, this.pos);
         }
         else {
             this.Advance();
-            return createToken(TokenType.unknown, currstr, offset);
+            return createToken(TokenType.unknown, currstr, offset, this.pos);
         }
     }
 
@@ -123,17 +126,19 @@ export class Tokenizer {
                 case ' ':
                 case '\t':
                 case '\r':
+                    // skip
                     this.Advance();
-                    break;
+                    continue;
                 case '\n':
                     this.Advance();
-                    return createToken(TokenType.EOL, "\n", this.pos-1);
+                    return createToken(TokenType.EOL, "\n", this.pos-1, this.pos);
                 case '.':
                     if (this.isDigit(this.Peek())) {
                         this.GetNumber();
                     }
                     else {
-                        return createToken(TokenType.dot, ".", this.pos);
+                        this.Advance();
+                        return createToken(TokenType.dot, ".", this.pos-1, this.pos);
                     }
                 case '"':
                     return this.GetString();
@@ -145,11 +150,13 @@ export class Tokenizer {
                         return this.GetId();
                     } 
                     else {
+                        // last check if current char is a mark,
+                        // if not return a unknown token in the function
                         return this.GetMark();
                     }
             }
         }
-        return createToken(TokenType.EOF, "EOF", this.pos);
+        return createToken(TokenType.EOF, "EOF", this.pos, this.pos);
     }
 
     private isDigit(s: string): boolean {

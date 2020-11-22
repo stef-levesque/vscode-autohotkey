@@ -407,25 +407,6 @@ export class Lexer {
                         if (tree[i].kind === SymbolKind.Function) {
                             func = <FuncNode>tree[i];
                         }
-                        else if (tree[i].kind === SymbolKind.Class) {
-                            let searchtree = tree[i].subnode;
-                            if (!searchtree) {
-                                return undefined;
-                            }
-                            let findNode: FuncNode|undefined;
-                            for(const node of searchtree) {
-                                if(node.name === '__New' && (node.kind === SymbolKind.Function)) {
-                                    findNode = <FuncNode>node;
-                                    break;
-                                }
-                            }
-                            if (findNode) {
-                                func = findNode;
-                            }
-                            else {
-                                return undefined;
-                            }
-                        }
                         else {
                             return undefined;
                         }
