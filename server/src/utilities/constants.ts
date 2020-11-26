@@ -1,5 +1,5 @@
 import { CompletionItemKind, CompletionItem } from 'vscode-languageserver';
-import { Parameter } from "../ahkparser";
+import { Parameter } from "./types";
 import { 
     builtin_variable,
     builtin_function

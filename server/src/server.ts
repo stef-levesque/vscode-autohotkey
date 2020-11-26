@@ -43,9 +43,11 @@ import {
 } from './utilities/constants'
 
 import { builtin_variable } from "./utilities/builtins";
-import { 
-	Lexer, SymbolNode
-} from './ahkparser'
+import { Lexer } from './ahkparser'
+import { TreeManager } from './services/treeManager';
+import { SymbolNode } from './utilities/types';
+
+
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 let connection = createConnection(ProposedFeatures.all);
@@ -59,7 +61,7 @@ let hasDiagnosticRelatedInformationCapability: boolean = false;
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let builtinVariableCompletions: CompletionItem[] = buildbuiltin_variable();
 let builtinFunctions: BuiltinFuncNode[] = buildBuiltinFunctionNode();
-let treedict: {[key: string]: Lexer} = {};
+let DOCManager: TreeManager = new TreeManager(builtinFunctions);
 let logger = connection.console.log;
 
 type Maybe<T> = T | undefined;
@@ -191,7 +193,7 @@ function flatTree(tree: SymbolNode[]): SymbolNode[] {
 
 connection.onDocumentSymbol(
 	(params: DocumentSymbolParams): SymbolInformation[] => {
-	let tree = treedict[params.textDocument.uri].getTree();
+		const tree = DOCManager.selectDocument(params.textDocument.uri).getTree();
 
 	return flatTree(tree).map(info => {
 		return SymbolInformation.create(
@@ -207,18 +209,17 @@ connection.onSignatureHelp(
 	async (positionParams: SignatureHelpParams, cancellation: CancellationToken): Promise<Maybe<SignatureHelp>> => {
 	const { position } = positionParams;
 	const { uri } = positionParams.textDocument;
-	let docLexer = treedict[uri];
 
 	if (cancellation.isCancellationRequested) {
 		return undefined;
 	}
 
-	let info = docLexer.getFuncAtPosition(position);
+	let info = DOCManager.selectDocument(uri).getFuncAtPosition(position);
 
 	if (info) {
 		return {
 			signatures: [
-				SignatureInformation.create(docLexer.getFuncPrototype(info.func), undefined, 
+				SignatureInformation.create(DOCManager.getFuncPrototype(info.func), undefined, 
 					...info.func.params.map((param): ParameterInformation => {
 						return ParameterInformation.create(param.name);
 					}))
@@ -239,8 +240,7 @@ connection.onDefinition(
 	}
 
 	let { position } = params;
-	let docLexer = treedict[params.textDocument.uri];
-	let nodes = docLexer.getDefinitionAtPosition(position);
+	let nodes = DOCManager.selectDocument(params.textDocument.uri).getDefinitionAtPosition(position);
 	if (nodes.length) {
 		return nodes.map(node => {
 			return Location.create(params.textDocument.uri, node.range);
@@ -250,23 +250,24 @@ connection.onDefinition(
 })
 
 documents.onDidOpen(async e => {
-	let docLexer: Lexer = new Lexer(e.document, builtinFunctions);
-	docLexer.Parse();
-	treedict[e.document.uri] = docLexer;
+	let lexer = new Lexer(e.document);
+	const docInfo = lexer.Parse();
+	DOCManager.updateDocumentAST(e.document.uri, docInfo, e.document);
 });
 
 // Only keep settings for open documents
 documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
-	delete treedict[e.document.uri];
+	//TODO: better sulotion about close document
+	DOCManager.deleteUnusedDocument(e.document.uri);
 });
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
-	let docLexer = treedict[change.document.uri];
-	docLexer.document = change.document;
-	docLexer.Parse()
+	let lexer = new Lexer(change.document);
+	let docAST = lexer.Parse();
+	DOCManager.updateDocumentAST(change.document.uri, docAST, change.document);
 	validateTextDocument(change.document);
 });
 
@@ -288,15 +289,14 @@ connection.onCompletion(
 			return undefined;
 		}
 		const {position, textDocument} = _textDocumentPosition;
-		let docLexer = treedict[textDocument.uri];
 
-		let result = docLexer.getSuffixNodes(position);
+		let result = DOCManager.selectDocument(textDocument.uri).getSuffixNodes(position);
 		if (result) {
-			return result.map(docLexer.convertNodeCompletion.bind(docLexer));
+			return result.map(DOCManager.convertNodeCompletion.bind(DOCManager));
 		}
 
-		return docLexer.getGlobalCompletion()
-			.concat(docLexer.getScopedCompletion(_textDocumentPosition.position))
+		return DOCManager.getGlobalCompletion()
+			.concat(DOCManager.getScopedCompletion(_textDocumentPosition.position))
 			.concat(keyWordCompletions).concat(builtinVariableCompletions);
 	}
 );
