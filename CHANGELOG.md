@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.4.0
+
+1. improve include path parse
+2. new Class TreeManager for mananging ASTs
+3. support searching node cross ASTs
+
 ## 0.3.0
 
 1. improved parser, better analysis of variables
