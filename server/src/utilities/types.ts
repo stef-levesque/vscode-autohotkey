@@ -1,4 +1,4 @@
-import { SymbolKind, Range } from 'vscode-languageserver';
+import { SymbolKind, Range, Location } from 'vscode-languageserver';
 
 export enum TokenType{
     // literal
@@ -110,11 +110,22 @@ export interface ReferenceInfomation {
     line: number
 }
 
+/**
+ * Represent a word that likes TokenType.id
+ * Temporary solution for this regex based parser
+ * to get token of a given position
+ */
 export interface Word {
+    /**
+     * Content of a word
+     */
     name: string
     range: Range
 }
 
+/**
+ * Simple solution for representing script's symbol connections 
+ */
 export type ReferenceMap = Map<string, ReferenceInfomation[]>;
 
 export namespace SymbolNode {
@@ -170,13 +181,31 @@ export namespace ReferenceInfomation {
     }
 }
 
+export interface NodeInfomation {
+    nodes: SymbolNode[]
+    uri: string
+}
+
 // export interface CommentNode {
 //     text: string
 //     range: Range
 // }
 
+/**
+ * A simple document infomation interface,
+ * for temporary usage
+ */
 export interface IFakeDocumentInfomation {
-	tree: SymbolNode[]
-	refTable: ReferenceMap
+    /**
+     * AST of document
+     */
+    tree: SymbolNode[]
+    /**
+     * All reference information can get from document
+     */
+    refTable: ReferenceMap
+    /**
+     * Path document include file
+     */
 	include: Set<string>
 }

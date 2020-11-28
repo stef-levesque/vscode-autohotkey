@@ -240,11 +240,9 @@ connection.onDefinition(
 	}
 
 	let { position } = params;
-	let nodes = DOCManager.selectDocument(params.textDocument.uri).getDefinitionAtPosition(position);
-	if (nodes.length) {
-		return nodes.map(node => {
-			return Location.create(params.textDocument.uri, node.range);
-		});
+	let locations = DOCManager.selectDocument(params.textDocument.uri).getDefinitionAtPosition(position);
+	if (locations.length) {
+		return locations
 	}
 	return undefined;
 })
@@ -292,7 +290,7 @@ connection.onCompletion(
 
 		let result = DOCManager.selectDocument(textDocument.uri).getSuffixNodes(position);
 		if (result) {
-			return result.map(DOCManager.convertNodeCompletion.bind(DOCManager));
+			return result.nodes.map(DOCManager.convertNodeCompletion.bind(DOCManager));
 		}
 
 		return DOCManager.getGlobalCompletion()

@@ -1235,6 +1235,23 @@ export const builtin_function = [
         ]
     },
     {
+        "name": "ObjBindMethod",
+        "params": [
+            {
+                "name": "Obj",
+                "isOptional": false
+            },
+            {
+                "name": "Method",
+                "isOptional": false
+            },
+            {
+                "name": "Params*",
+                "isOptional": true
+            }
+        ]
+    },
+    {
         "name": "ComObjCreate",
         "params": [
             {

@@ -1,6 +1,8 @@
 import {
 	CompletionItem,
 	CompletionItemKind,
+    Definition,
+    Location,
 	Position,
 	Range,
 	SymbolKind
@@ -13,7 +15,8 @@ import {
 	SymbolNode, 
 	Word,
     ReferenceMap,
-    IFakeDocumentInfomation
+    IFakeDocumentInfomation,
+    NodeInfomation
 } from '../utilities/types';
 import {
 	INodeResult, 
@@ -28,7 +31,8 @@ import {
 import { SemanticStack, isExpr } from '../semantic_stack';
 import { BuiltinFuncNode } from '../utilities/constants';
 import { Lexer } from '../ahkparser';
-import { IoService } from './ioServices';
+import { IoService } from './ioService';
+import { union } from '../utilities/setOperation';
 
 // if belongs to FuncNode
 function isFuncNode(node: SymbolNode): node is FuncNode{
@@ -73,7 +77,7 @@ export class TreeManager
      */
 	private readonly builtinFunction: BuiltinFuncNode[];
 
-	private currentDocUri?: string;
+	private currentDocUri: string;
 
 	constructor(builtinFuction: BuiltinFuncNode[]) {
 		this.serverDocs = new Map();
@@ -81,7 +85,7 @@ export class TreeManager
         this.ioService = new IoService();
 		this.builtinFunction = builtinFuction;
 		this.serverConfigDoc = undefined;
-		this.currentDocUri = undefined;
+		this.currentDocUri = '';
 	}
 
     /**
@@ -89,9 +93,10 @@ export class TreeManager
      * @param uri Uri of document to be selected
      */
 	public selectDocument(uri: string) {
-		this.currentDocUri = this.serverDocs.has(uri) ? uri : undefined;
+		this.currentDocUri = this.serverDocs.has(uri) ? uri : '';
 		return this;
-	}
+    }
+    
     /**
      * Update infomation of a given document, will automatic load its includes
      * @param uri Uri of updated document
@@ -113,17 +118,25 @@ export class TreeManager
                 if (doc) {
                     let lexer = new Lexer(doc);
                     this.serverDocs.set(doc.uri, doc);
-                    this.docsAST.set(doc.uri, lexer.Parse());
+                    let incDocInfo = lexer.Parse();
+                    this.docsAST.set(doc.uri, incDocInfo);
+                    // load include document's include documents
+                    this.updateDocumentAST(doc.uri, incDocInfo, doc);
                 }
             }
         }
         else {
+            // repeated code works why?
+            // no return async always fails?
             for (const path of docinfo.include) {
                 const doc = await this.loadDocumnet(path);
                 if (doc) {
                     let lexer = new Lexer(doc);
                     this.serverDocs.set(doc.uri, doc);
-                    this.docsAST.set(doc.uri, lexer.Parse());
+                    let incDocInfo = lexer.Parse();
+                    this.docsAST.set(doc.uri, incDocInfo);
+                    // load include document's include documents
+                    this.updateDocumentAST(doc.uri, incDocInfo, doc);
                 }
             }
         }
@@ -148,11 +161,12 @@ export class TreeManager
     }
 
 	public deleteUnusedDocument(uri: string) {
-		let isUseless: boolean = true;
+        let isUseless: boolean = true;
+        const path = URI.parse(uri).fsPath
 		this.docsAST.forEach(
 			(docinfo) => {
 				// no document include, unused
-				if (docinfo.include.has(uri)) isUseless = false;
+				if (docinfo.include.has(path)) isUseless = false;
 			}
 		)
 		if (isUseless) this.docsAST.delete(uri);
@@ -196,6 +210,42 @@ export class TreeManager
 				)).trimRight();
 		}
     }
+
+    /**
+     * Find all include of a document and its includes' include
+     * @param doc Doucment Infomation to find
+     */
+    private documentAllInclude(doc: IFakeDocumentInfomation): Set<string> {
+        let incInfo = union(doc.include, new Set());
+        for (const inc of incInfo) {
+            const incUri = URI.file(inc).toString();
+            let incDoc = this.docsAST.get(incUri);
+            if (incDoc) {
+                const deepIncPath = this.documentAllInclude(incDoc);
+                incInfo = union(incInfo, deepIncPath);
+            }
+        }
+        return incInfo;
+    }
+
+    /**
+     * A simple(vegetable) way to get all include AST of a document
+     * @returns SymbolNode[]-ASTs, document uri
+     */
+    private allIncludeTreeinfomation(): Map<string, SymbolNode[]>|undefined {
+        const docinfo = this.docsAST.get(this.currentDocUri);
+        if (!docinfo) return undefined;
+        const incInfo = this.documentAllInclude(docinfo);
+        let r: Map<string, SymbolNode[]> = new Map();
+        for (const path of incInfo) {
+            const uri = URI.file(path).toString();
+            const incDocInfo = this.docsAST.get(uri);
+            if (incDocInfo) {
+                r.set(uri, incDocInfo.tree);
+            }
+        }    
+        return r;
+    }
     
     /**
      * Return the AST of current select document
@@ -237,17 +287,19 @@ export class TreeManager
     }
 
     public getGlobalCompletion(): CompletionItem[] {
-        let inc_tree: SymbolNode[] = [];
+        let incTree: SymbolNode[] = [];
         let docinfo: IFakeDocumentInfomation|undefined;
         if (this.currentDocUri)
             docinfo = this.docsAST.get(this.currentDocUri);
         if (!docinfo) return [];
-        docinfo.include.forEach(inc => {
-            const inc_uri = URI.file(inc);
-            const tree = this.docsAST.get(inc_uri.toString())?.tree;
+        const incInfo = this.documentAllInclude(docinfo);
+        incInfo.forEach(inc => {
+            const incUri = URI.file(inc);
+            const tree = this.docsAST.get(incUri.toString())?.tree;
             if (tree)
-                inc_tree.push(...tree);
-        })
+                incTree.push(...tree);
+        });
+        
         return this.getTree().map(node => this.convertNodeCompletion(node))
         .concat(this.builtinFunction.map(node => {
             let ci = CompletionItem.create(node.name);
@@ -255,7 +307,7 @@ export class TreeManager
             ci.kind = CompletionItemKind.Function;
             return ci;
         }))
-        .concat(inc_tree.map(node => this.convertNodeCompletion(node)));
+        .concat(incTree.map(node => this.convertNodeCompletion(node)));
     }
 
     public getScopedCompletion(pos: Position): CompletionItem[] {
@@ -276,7 +328,7 @@ export class TreeManager
      * return all possible nodes or empty list
      * @param position 
      */
-    public getSuffixNodes(position: Position): (SymbolNode|FuncNode)[]|undefined {
+    public getSuffixNodes(position: Position): NodeInfomation|undefined {
 		const context = this.LineTextToPosition(position);
 		if (!context) return undefined;
         let suffix = this.getWordAtPosition(position);
@@ -299,66 +351,79 @@ export class TreeManager
      * Get suffixs list of a given perfixs list
      * @param perfixs perfix list for search(top scope at last)
      */
-    searchSuffix(perfixs: string[], position: Position): (SymbolNode|FuncNode)[]|undefined {
+    private searchSuffix(perfixs: string[], position: Position): NodeInfomation|undefined {
         let isFound = false;
         let perfix: string|undefined;
-		let nodeList: SymbolNode[] = this.getTree();
+        let currTreeUri: string = this.currentDocUri;
+        let nodeList: SymbolNode[] = this.getTree();
+        let incTreeMap = this.allIncludeTreeinfomation();
 		const refTable = this.getReference();
-
+        
+        // 这写的都是什么破玩意，没有天分就不要写，还学别人写LS --武状元
         // find if perfix is a reference of a class
         // for now, reference infomation only record one layer reference
         // only check once
         perfix = perfixs[perfixs.length-1];
         if (perfix) {
             for (const [refClassName, table] of refTable.entries()) {
-                table.forEach(refinfo => {
-                    if (refinfo.name === perfix) {
-                        perfixs.pop();
-                        for(const node of nodeList) {
-                            // ahk is case insensitive
-                            if (node.name.toLowerCase() === refClassName.toLowerCase() && node.subnode) {
-                                nodeList = node.subnode;
-                                isFound = true;
-                                break;
-                            }
-                        }
-                    }
-                });
+                let find = arrayFilter(table, refinfo => refinfo.name === perfix);
+                if (find) {
+                    perfixs[perfixs.length-1] = refClassName;
+                    perfix = refClassName;
+                    break;
+                }
+                // table.forEach(refinfo => {
+                //     // replace varible name with its reference class's name
+                //     // make search process as normal search process
+                //     if (refinfo.name === perfix) {
+                //         perfixs[perfixs.length-1] = refClassName;
+                //     }
+                // });
+            }
+        }
+        else if (perfix === 'this') {
+            let classNode = this.searchNodeAtPosition(position, this.getTree(), SymbolKind.Class);
+            if (classNode && classNode.subnode) {
+                nodeList = classNode.subnode;
+                perfixs.pop();
+                isFound = true;
+            } 
+            else {
+                return undefined;
+            }
+        }
+        // Since we now only support one layer reference,
+        // thereby, only top scope symbol are located in 
+        // different document
+        if (incTreeMap) {
+            for (const [uri, tree] of incTreeMap.entries()) {
+                let find = arrayFilter(tree, item => item.name === perfix);
+                if (find) {
+                    currTreeUri = uri;
+                    if (find.subnode) nodeList = find.subnode;
+                    else nodeList = tree;
+                    perfixs.pop();
+                    isFound = true;
+                    break;
+                }
             }
         }
 
         while (perfix = perfixs.pop()) {
-            isFound = false;
-            if (perfix === 'this') {
-                let classNode = this.searchNodeAtPosition(position, this.getTree(), SymbolKind.Class);
-                if (classNode && classNode.subnode) {
-                    nodeList = classNode.subnode;
-                    isFound = true;
-                    continue;
-                } 
-                else {
-                    return undefined;
-                }
-            }
-            for(const node of nodeList) {
-                if (node.name === perfix) {
-                    // TODO: support search multilayers
-                    if (node.subnode)
-                    {
-                        nodeList = node.subnode;
-                        isFound = true;
-                    }
-                    break;
-                }
-            }
+            let find = arrayFilter(nodeList, (item) => item.name === perfix);
+            isFound = find !== undefined;       
             // TODO: Check reference here
-            if (!isFound) {
-                return undefined;
+            if (find && find.subnode) {
+                nodeList = find.subnode;
             }
+            else if (!isFound) return undefined;
         }
 
         if (isFound) {
-            return nodeList;
+            return {
+                nodes: nodeList,
+                uri: currTreeUri
+            };
         }
         return undefined;
     }
@@ -455,7 +520,17 @@ export class TreeManager
             }
 
             const funcName = lastnode.name;
-            const tree = perfixs ? this.searchSuffix(perfixs.reverse(), position) : this.getTree();
+            let currTreeUri = this.currentDocUri;
+            let tree: SymbolNode[]|undefined;
+            if (perfixs) {
+                const suffixNodeInfo = this.searchSuffix(perfixs.reverse(), position)
+                if (suffixNodeInfo) {
+                    tree = suffixNodeInfo.nodes;
+                    currTreeUri = suffixNodeInfo.uri;
+                }
+            }
+            else tree = this.getTree();
+            // const tree = perfixs ? this.searchSuffix(perfixs.reverse(), position) : this.getTree();
             let func:FuncNode;
             // first, search in the document syntax tree
             if (tree) {
@@ -499,7 +574,7 @@ export class TreeManager
         return undefined;
     }
 
-    getUnfinishedFunc(node: IFunctionCall): IFunctionCall|undefined {
+    private getUnfinishedFunc(node: IFunctionCall): IFunctionCall|undefined {
         let perfixs: string[]|undefined;
         // let lastParam: any
         let lastParam = node.actualParams[node.actualParams.length-1] as INodeResult<IASTNode>;
@@ -517,21 +592,38 @@ export class TreeManager
         return node;
     }
 
-    getDefinitionAtPosition(position: Position): SymbolNode[] {
+    public getDefinitionAtPosition(position: Position): Location[] {
         let word = this.getWordAtPosition(position);
         let tree = this.getSuffixNodes(position);
+        let incTree = this.allIncludeTreeinfomation();
         if (!tree) {
-            tree = this.getTree()
-        }
-        let nodeList:SymbolNode[] = [];
-        for (let i=0; i < tree.length; i++) {
-            if (tree[i].name === word.name &&
-                 // FIXME: temporary soluation, invaild -1 line marked builtin property
-                tree[i].range.start.line !== -1) {
-                nodeList.push(tree[i]);
+            // FIXME: need search include AST
+            tree = {
+                nodes: this.getTree(),
+                uri: this.currentDocUri
             }
         }
-        return nodeList;
+        let locations: Location[] = [];
+        // FIXME: temporary soluation, invaild -1 line marked builtin property
+        let find = arrayFilter(tree.nodes, node => node.name === word.name && node.range.start.line !== -1);
+        if (find) locations.push(Location.create(tree.uri, find.range));
+        if (incTree) {
+            for (const [uri, nodes] of incTree) {
+                find = arrayFilter(nodes, node => node.name === word.name && node.range.start.line !== -1);
+                if (find){
+                    locations.push(Location.create(uri, find.range));
+                    break;
+                } 
+
+            }
+        }
+        // for (const node of tree.nodes) {
+        //     if (node.name === word.name &&
+        //         node.range.start.line !== -1) {
+        //         locations.push(Location.create(tree.uri, node.range));
+        //     }
+        // }
+        return locations;
     }
 
     private getWordAtPosition(position: Position): Word {
@@ -589,4 +681,13 @@ export class TreeManager
 		}
 		return new Map();
 	}
+}
+
+
+function arrayFilter<T>(list: Array<T>, callback: (item: T) => boolean): T|undefined {
+    for (const item of list) {
+        if (callback(item)) 
+            return item;
+    }
+    return undefined;
 }

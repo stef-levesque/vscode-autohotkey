@@ -180,11 +180,15 @@ export class Lexer {
         return unclosedPairNum;
     }
 
-    private checkInclude(match: string): void {
+    /**
+     * Add a normalized absolute include path 
+     * @param rawPath Raw include path of a ahk file
+     */
+    private checkInclude(rawPath: string): void {
         const scriptPath = URI.parse(this.document.uri).fsPath
         const scriptDir = dirname(scriptPath);
-        const normalized = normalize(match);
-        if (dirname(normalized) === '.') 
+        const normalized = normalize(rawPath);
+        if (dirname(normalized)[0] === '.') // if dir start as ../ or .
             this.includeFile.add(normalize(scriptDir + '\\' + normalized))
         else
             this.includeFile.add(normalized);
