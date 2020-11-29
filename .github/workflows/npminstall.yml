@@ -23,6 +23,8 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@master
+        with: 
+          repository: helsmy/vscode-autohotkey 
       - name: 'npm install'
         uses: actions/npm@master
         with:
