@@ -68,7 +68,10 @@ export class IoService {
      */
     public statDirectory(path: string): IoEntity[] {
         const isDirectory = existsSync(path) && lstatSync(path).isDirectory();
-        const directory = isDirectory ? path : dirname(path);
+        if (!isDirectory) {
+            return [];
+        }
+        const directory = path;
 
         // check if file exists then
         if (!existsSync(directory)) {

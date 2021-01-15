@@ -93,7 +93,7 @@ connection.onInitialize((params: InitializeParams) => {
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true,
-				triggerCharacters: ['.', '/']
+				triggerCharacters: ['.', '/', '<']
 			},
 			signatureHelpProvider: {
 				triggerCharacters: ['(', ',', ', ']
@@ -284,10 +284,12 @@ connection.onCompletion(
 			return undefined;
 		}
 		const {position, textDocument} = _compeltionParams;
-		if (_compeltionParams.context && _compeltionParams.context.triggerCharacter === '/') {
+		if (_compeltionParams.context && 
+			(_compeltionParams.context.triggerCharacter === '/' || _compeltionParams.context.triggerCharacter === '<')) {
 			let result = DOCManager.selectDocument(textDocument.uri).includeDirCompletion(position);
 			if (result) return result;
 		}
+
 
 		let result = DOCManager.selectDocument(textDocument.uri).getSuffixNodes(position);
 		if (result) {

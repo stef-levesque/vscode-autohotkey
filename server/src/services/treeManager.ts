@@ -38,8 +38,9 @@ import {
     extname,
     normalize
 } from 'path';
+import { homedir } from "os";
 import { Lexer } from '../parser/ahkparser';
-import { IoKind, IoService } from './ioService';
+import { IoEntity, IoKind, IoService } from './ioService';
 import { union } from '../utilities/setOperation';
 
 // if belongs to FuncNode
@@ -85,7 +86,17 @@ export class TreeManager
      */
 	private readonly builtinFunction: BuiltinFuncNode[];
 
-	private currentDocUri: string;
+    private currentDocUri: string;
+    
+    /**
+     * Standard Library directory
+     */
+    private readonly SLibDir: string;
+    
+    /**
+     * User library directory
+     */
+    private readonly ULibDir: string;
 
 	constructor() {
 		this.serverDocs = new Map();
@@ -93,7 +104,10 @@ export class TreeManager
         this.ioService = new IoService();
 		this.builtinFunction = buildBuiltinFunctionNode();
 		this.serverConfigDoc = undefined;
-		this.currentDocUri = '';
+        this.currentDocUri = '';
+        // TODO: non hardcoded Standard Library
+        this.SLibDir = 'C:\\Program Files\\AutoHotkey\\Lib'
+        this.ULibDir = homedir() + '\\Documents\\AutoHotkey\\Lib'
 	}
 
     /**
@@ -337,10 +351,30 @@ export class TreeManager
         if (!context) return undefined;
         let match = context.match(reg);
         if (!match) return undefined;
+        // get dir text
         const p = context.slice(match[0].length).trim();
         const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
-        const dir = normalize(docDir + '\\' + normalize(p));
-        const completions = this.ioService.statDirectory(dir);
+        let searchDir: string[] = []
+        // if is lib include, use lib dir
+        if (p[0] === '<') {
+            const np = normalize(p.slice(1));
+            const dir = normalize(docDir + '\\Lib\\' + np);
+            const ULibDir = normalize(this.ULibDir + '\\' + np);
+            const SLibDir = normalize(this.SLibDir + '\\' + np);
+            searchDir.push(dir, ULibDir, SLibDir);
+        } 
+        else {
+            const dir = normalize(docDir + '\\' + normalize(p));
+            searchDir.push(dir);
+        }
+        let completions: IoEntity[] = []
+        for (const dir of searchDir) {
+            completions.push(...this.ioService.statDirectory(dir));
+            // If is not '#include <', because of library search order 
+            // we must not search all directory. Once we found an exist directory, 
+            // we return it
+            if (completions.length > 0 && p !== '<') break;
+        }
         return completions.map((completion):CompletionItem => {
             let c = CompletionItem.create(completion.path);
             c.kind = completion.kind === IoKind.folder ? 
@@ -423,8 +457,6 @@ export class TreeManager
             for (const [refClassName, table] of refTable.entries()) {
                 let find = arrayFilter(table, refinfo => refinfo.name === lexem);
                 if (find) {
-                    // 只为了长度是一的时候返回没解引用的node可是太蠢了
-                    if (lexems.length === 1) return this.searchNode([lexem], position, false);
                     // No need to check reference
                     lexem = refClassName;
                     lexems[lexems.length-1] = refClassName;
@@ -432,7 +464,7 @@ export class TreeManager
                 }
             }
         }
-        else if (lexem === 'this') {
+        if (lexem === 'this') {
             let classNode = this.searchNodeAtPosition(position, this.getTree(), SymbolKind.Class);
             if (classNode) {
                 resultNode = classNode;
@@ -576,11 +608,19 @@ export class TreeManager
             }
 
             const funcName = lastnode.name;
-            const find = this.searchNode([funcName].concat(...perfixs.reverse()), position);
-            if (!find) return undefined;
             let index = lastnode.actualParams.length===0 ?
                         lastnode.actualParams.length:
                         lastnode.actualParams.length-1;
+            const find = this.searchNode([funcName].concat(...perfixs.reverse()), position);
+            // if no find, search build-in
+            if (!find) {
+                const bfind = arrayFilter(this.builtinFunction, item => item.name === funcName);
+                if (!bfind) return undefined;
+                return {
+                    func: bfind,
+                    index: index
+                }
+            }
             return {
                 func: <FuncNode>find.nodes[0],
                 index: index
@@ -609,7 +649,8 @@ export class TreeManager
     public getDefinitionAtPosition(position: Position): Location[] {
         let lexems = this.getLexemsAtPosition(position);
         if (!lexems) return [];
-        let find = this.searchNode(lexems, position);
+        // 1 length lexems means a variable, we shouldn't search reference table.
+        let find = this.searchNode(lexems, position, !(lexems.length === 1));
         if (!find) return [];
         let locations: Location[] = [];
         for (const node of find.nodes) {
