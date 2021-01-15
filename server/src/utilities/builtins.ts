@@ -582,6 +582,24 @@ export const builtin_function = [
         ]
     },
     {
+        "name": "Max",
+        "params": [
+            {
+                "name": "Number*",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "Min",
+        "params": [
+            {
+                "name": "Number*",
+                "isOptional": false
+            }
+        ]
+    },
+    {
         "name": "Mod",
         "params": [
             {

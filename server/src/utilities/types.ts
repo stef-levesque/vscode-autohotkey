@@ -10,6 +10,11 @@ export enum TokenType{
     // equals
     aassign,     // :=
     equal,       // =
+    // triple
+    /**
+     * mark: ?
+     */
+    question,
     // binary
     plus,
     minus,
@@ -41,7 +46,14 @@ export enum TokenType{
     // marks
     sharp,       // #
     dot,         // .
+    /**
+     * mark: ,
+     */
     comma,       // ,
+    /**
+     * mark: :
+     */
+    colon,       // :
 
     // keyword
     if, else, switch, case, do, loop, 
@@ -180,7 +192,8 @@ export namespace ReferenceInfomation {
         };
     }
 }
-
+// 这个interface写的莫名其妙的
+// 当初我为什么要做成node列表的？
 export interface NodeInfomation {
     nodes: SymbolNode[]
     uri: string

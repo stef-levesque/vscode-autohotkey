@@ -3,7 +3,7 @@ import {
     TokenType,
     createToken,
     ITokenMap,
-} from "./utilities/types";
+} from "../utilities/types";
 
 export class Tokenizer {
     private pos: number = 0;
@@ -291,7 +291,7 @@ const identifierTest = new RegExp(
     ["gosub", TokenType.gosub], 
     ["return", TokenType.return],
     ["global", TokenType.global], 
-    ["local", TokenType.loop], 
+    ["local", TokenType.local], 
     ["throw", TokenType.throw],
     ["include", TokenType.include], 
     ["continue", TokenType.continue]
@@ -305,5 +305,6 @@ const OTHER_MARK: ITokenMap = new Map([
     ["#", TokenType.sharp],[",",TokenType.comma], [".", TokenType.dot],
     ["+", TokenType.plus], ["-", TokenType.minus], ["*", TokenType.multi],
     ["/", TokenType.div], ["**", TokenType.power], [">", TokenType.greater],
-    ["<", TokenType.less], [">=", TokenType.greaterEqual], ["<=", TokenType.lessEqual]
+    ["<", TokenType.less], [">=", TokenType.greaterEqual], ["<=", TokenType.lessEqual],
+    ["?", TokenType.question], [":", TokenType.colon]
 ]);

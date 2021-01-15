@@ -1,4 +1,4 @@
-import { Token } from "./utilities/types";
+import { Token } from "../utilities/types";
 
 export type Expr = INodeResult<IBinOp|IUnaryOperator|ILiteral|IVariable|IFunctionCall|IMethodCall|IPropertCall|INoOpt>; 
 
@@ -30,12 +30,24 @@ export interface IASTNode {
 }
 
 export interface INoOpt extends IASTNode {
-	
+}
+
+export interface IAPair {
+	key: Expr
+	value: Expr
 }
 
 export interface ILiteral extends IASTNode {
 	token: Token
 	value: string
+}
+
+export interface IAssociativeArray extends IASTNode {
+	Pairs: IAPair[]
+}
+
+export interface IArray extends IASTNode {
+	items: Expr[]
 }
 
 export interface IUnaryOperator extends IASTNode {
@@ -85,10 +97,10 @@ export interface INodeResult<T> {
 }
 
 export class FunctionCall implements IFunctionCall {
-	name: string
-	actualParams: Expr[]
-	token: Token
-	offrange: IOffRange
+	name: string;
+	actualParams: Expr[];
+	token: Token;
+	offrange: IOffRange;
 	constructor(name: string, actualParams: Expr[], token: Token, offrange: IOffRange) {
 		this.name = name;
 		this.actualParams = actualParams;
@@ -98,7 +110,7 @@ export class FunctionCall implements IFunctionCall {
 }
 
 export class MethodCall extends FunctionCall implements IMethodCall {
-	ref: Token[]
+	ref: Token[];
 	constructor(name: string, actualParams: any[], token: Token, ref: Token[], offrange: IOffRange) {
 		super(name, actualParams, token, offrange);
 		this.ref = ref;
@@ -106,14 +118,22 @@ export class MethodCall extends FunctionCall implements IMethodCall {
 }
 
 export class PropertCall implements IPropertCall {
-	name: string
-	token: Token
-	ref: Token[]
-	offrange: IOffRange
+	name: string;
+	token: Token;
+	ref: Token[];
+	offrange: IOffRange;
 	constructor(name: string, token: Token, ref: Token[], offrange: IOffRange) {
 		this.name = name;
 		this.token = token;
 		this.ref = ref;
+		this.offrange = offrange;
+	}
+}
+
+export class NoOption implements INoOpt {
+	offrange: IOffRange;
+	none = null;
+	constructor(offrange: IOffRange) {
 		this.offrange = offrange;
 	}
 }

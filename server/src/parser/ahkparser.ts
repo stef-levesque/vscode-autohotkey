@@ -6,10 +6,12 @@ import {
     CompletionItemKind
 } from 'vscode-languageserver';
 
-import {
-	TextDocument
-} from 'vscode-languageserver-textdocument';
-import { normalize, dirname } from 'path';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+import { 
+    normalize, 
+    dirname, 
+    extname 
+} from 'path';
 import { URI } from 'vscode-uri';
 
 import { 
@@ -21,7 +23,7 @@ import {
     Token, 
     TokenType,
     IFakeDocumentInfomation
-} from './utilities/types';
+} from '../utilities/types';
 import { Tokenizer } from './tokenizer'
 export class Lexer {
     private line = -1;
@@ -188,10 +190,17 @@ export class Lexer {
         const scriptPath = URI.parse(this.document.uri).fsPath
         const scriptDir = dirname(scriptPath);
         const normalized = normalize(rawPath);
-        if (dirname(normalized)[0] === '.') // if dir start as ../ or .
-            this.includeFile.add(normalize(scriptDir + '\\' + normalized))
-        else
-            this.includeFile.add(normalized);
+        switch (extname(normalized)) {
+            case '.ahk':
+            case '':
+                if (dirname(normalized)[0] === '.') // if dir start as ../ or .
+                    this.includeFile.add(normalize(scriptDir + '\\' + normalized))
+                else
+                    this.includeFile.add(normalized);
+                break;
+            default:
+                break;
+        }
     }
 
     /**

@@ -26,24 +26,22 @@ import {
 	DefinitionParams,
 	Definition,
 	Location,
-	Position
+	Position,
+	CompletionParams
 } from 'vscode-languageserver';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 import {
-	keywords,
 	buildKeyWordCompletions,
 	buildbuiltin_variable,
-	buildBuiltinFunctionNode,
 	// serverName,
-	languageServer,
-	BuiltinFuncNode
+	languageServer
 } from './utilities/constants'
 
 import { builtin_variable } from "./utilities/builtins";
-import { Lexer } from './ahkparser'
+import { Lexer } from './parser/ahkparser'
 import { TreeManager } from './services/treeManager';
 import { SymbolNode } from './utilities/types';
 
@@ -60,8 +58,7 @@ let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let builtinVariableCompletions: CompletionItem[] = buildbuiltin_variable();
-let builtinFunctions: BuiltinFuncNode[] = buildBuiltinFunctionNode();
-let DOCManager: TreeManager = new TreeManager(builtinFunctions);
+let DOCManager: TreeManager = new TreeManager();
 let logger = connection.console.log;
 
 type Maybe<T> = T | undefined;
@@ -96,7 +93,7 @@ connection.onInitialize((params: InitializeParams) => {
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true,
-				triggerCharacters: ['.']
+				triggerCharacters: ['.', '/']
 			},
 			signatureHelpProvider: {
 				triggerCharacters: ['(', ',', ', ']
@@ -282,11 +279,15 @@ connection.onDidChangeWatchedFiles(_change => {
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	async (_textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<Maybe<CompletionItem[]>> => {
+	async (_compeltionParams: CompletionParams, token: CancellationToken): Promise<Maybe<CompletionItem[]>> => {
 		if (token.isCancellationRequested) {
 			return undefined;
 		}
-		const {position, textDocument} = _textDocumentPosition;
+		const {position, textDocument} = _compeltionParams;
+		if (_compeltionParams.context && _compeltionParams.context.triggerCharacter === '/') {
+			let result = DOCManager.selectDocument(textDocument.uri).includeDirCompletion(position);
+			if (result) return result;
+		}
 
 		let result = DOCManager.selectDocument(textDocument.uri).getSuffixNodes(position);
 		if (result) {
@@ -294,7 +295,7 @@ connection.onCompletion(
 		}
 
 		return DOCManager.getGlobalCompletion()
-			.concat(DOCManager.getScopedCompletion(_textDocumentPosition.position))
+			.concat(DOCManager.getScopedCompletion(_compeltionParams.position))
 			.concat(keyWordCompletions).concat(builtinVariableCompletions);
 	}
 );

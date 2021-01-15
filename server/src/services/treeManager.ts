@@ -27,11 +27,19 @@ import {
 	IASTNode, 
 	FunctionCall,
 	MethodCall
-} from '../asttypes';
-import { SemanticStack, isExpr } from '../semantic_stack';
-import { BuiltinFuncNode } from '../utilities/constants';
-import { Lexer } from '../ahkparser';
-import { IoService } from './ioService';
+} from '../parser/asttypes';
+import { SemanticStack, isExpr } from '../parser/semantic_stack';
+import { 
+    BuiltinFuncNode,
+    buildBuiltinFunctionNode
+} from '../utilities/constants';
+import {
+    dirname,
+    extname,
+    normalize
+} from 'path';
+import { Lexer } from '../parser/ahkparser';
+import { IoKind, IoService } from './ioService';
 import { union } from '../utilities/setOperation';
 
 // if belongs to FuncNode
@@ -79,11 +87,11 @@ export class TreeManager
 
 	private currentDocUri: string;
 
-	constructor(builtinFuction: BuiltinFuncNode[]) {
+	constructor() {
 		this.serverDocs = new Map();
         this.docsAST = new Map();
         this.ioService = new IoService();
-		this.builtinFunction = builtinFuction;
+		this.builtinFunction = buildBuiltinFunctionNode();
 		this.serverConfigDoc = undefined;
 		this.currentDocUri = '';
 	}
@@ -107,37 +115,37 @@ export class TreeManager
         // updata documnet
         this.serverDocs.set(uri, doc);
         const oldInclude = this.docsAST.get(uri)?.include
+        let useneed, useless: string[];
         // updata AST first, then its includes
         this.docsAST.set(uri, docinfo);
         if (oldInclude) {
             // useless need delete, useneed need to add
             // FIXME: delete useless include
-            const [useless, useneed] = setDiffSet(oldInclude, docinfo.include);
-            for (const path of useneed) {
-                const doc = await this.loadDocumnet(path);
-                if (doc) {
-                    let lexer = new Lexer(doc);
-                    this.serverDocs.set(doc.uri, doc);
-                    let incDocInfo = lexer.Parse();
-                    this.docsAST.set(doc.uri, incDocInfo);
-                    // load include document's include documents
-                    this.updateDocumentAST(doc.uri, incDocInfo, doc);
-                }
-            }
+            [useless, useneed] = setDiffSet(oldInclude, docinfo.include);
         }
         else {
-            // repeated code works why?
-            // no return async always fails?
-            for (const path of docinfo.include) {
-                const doc = await this.loadDocumnet(path);
-                if (doc) {
-                    let lexer = new Lexer(doc);
-                    this.serverDocs.set(doc.uri, doc);
-                    let incDocInfo = lexer.Parse();
-                    this.docsAST.set(doc.uri, incDocInfo);
-                    // load include document's include documents
-                    this.updateDocumentAST(doc.uri, incDocInfo, doc);
-                }
+            useneed = docinfo.include;
+            useless = [];
+        }
+        // this code works why?
+        // no return async always fails?
+        for (let path of useneed) {
+            // switch (extname(path)) {
+            //     case '':
+                    
+            //         break;
+            
+            //     default:
+            //         break;
+            // }
+            const doc = await this.loadDocumnet(path);
+            if (doc) {
+                let lexer = new Lexer(doc);
+                this.serverDocs.set(doc.uri, doc);
+                let incDocInfo = lexer.Parse();
+                this.docsAST.set(doc.uri, incDocInfo);
+                // load include document's include documents
+                this.updateDocumentAST(doc.uri, incDocInfo, doc);
             }
         }
             
@@ -323,14 +331,33 @@ export class TreeManager
         }
     }
 
+    public includeDirCompletion(position: Position): CompletionItem[]|undefined {
+        const context = this.LineTextToPosition(position);
+        const reg = /^\s*#include/i;
+        if (!context) return undefined;
+        let match = context.match(reg);
+        if (!match) return undefined;
+        const p = context.slice(match[0].length).trim();
+        const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
+        const dir = normalize(docDir + '\\' + normalize(p));
+        const completions = this.ioService.statDirectory(dir);
+        return completions.map((completion):CompletionItem => {
+            let c = CompletionItem.create(completion.path);
+            c.kind = completion.kind === IoKind.folder ? 
+                     CompletionItemKind.Folder :
+                     CompletionItemKind.File;
+            return c;
+        }
+        );
+    }
+
     /**
-     * Get all nodes of a particular token.
-     * return all possible nodes or empty list
+     * All words at a given position(top scope at last)
      * @param position 
      */
-    public getSuffixNodes(position: Position): NodeInfomation|undefined {
-		const context = this.LineTextToPosition(position);
-		if (!context) return undefined;
+    private getLexemsAtPosition(position: Position): string[]|undefined {
+        const context = this.getLine(position.line);
+        if (!context) return undefined;
         let suffix = this.getWordAtPosition(position);
         let perfixs: string[] = [];
         let temppos = (suffix.name === '') ? suffix.range.start.character : suffix.range.start.character-1;
@@ -343,8 +370,19 @@ export class TreeManager
             perfixs.push(word.name);
             temppos = word.range.start.character-1;
         }
+        return [suffix.name].concat(perfixs);
+    }
+
+    /**
+     * Get all nodes of a particular token.
+     * return all possible nodes or empty list
+     * @param position 
+     */
+    public getSuffixNodes(position: Position): NodeInfomation|undefined {
+        let lexems = this.getLexemsAtPosition(position);
+        if (!lexems) return undefined;
         
-        return this.searchSuffix(perfixs, position);
+        return this.searchSuffix(lexems.slice(1), position);
     }
 
     /**
@@ -352,10 +390,27 @@ export class TreeManager
      * @param perfixs perfix list for search(top scope at last)
      */
     private searchSuffix(perfixs: string[], position: Position): NodeInfomation|undefined {
-        let isFound = false;
-        let perfix: string|undefined;
+        const find = this.searchNode(perfixs, position);
+        if (!find) return undefined;
+        const node = find.nodes[0];
+        if (!node.subnode) return undefined;
+        return {
+            nodes: node.subnode,
+            uri: find.uri
+        };
+    }
+
+    /**
+     * Get node of position and lexems
+     * @param lexems all words strings(这次call，全部的分割词)
+     * @param position position of qurey word(这个call的位置)
+     */
+    private searchNode(lexems: string[], position: Position, deref: boolean = true): NodeInfomation|undefined {
+        let lexem: string|undefined;
+        // first search tree of current document
         let currTreeUri: string = this.currentDocUri;
-        let nodeList: SymbolNode[] = this.getTree();
+        let nodeList: SymbolNode[]|undefined = this.getTree();
+        let resultNode: SymbolNode|undefined = undefined;
         let incTreeMap = this.allIncludeTreeinfomation();
 		const refTable = this.getReference();
         
@@ -363,30 +418,27 @@ export class TreeManager
         // find if perfix is a reference of a class
         // for now, reference infomation only record one layer reference
         // only check once
-        perfix = perfixs[perfixs.length-1];
-        if (perfix) {
+        lexem = lexems[lexems.length-1];
+        if (lexem && deref) {
             for (const [refClassName, table] of refTable.entries()) {
-                let find = arrayFilter(table, refinfo => refinfo.name === perfix);
+                let find = arrayFilter(table, refinfo => refinfo.name === lexem);
                 if (find) {
-                    perfixs[perfixs.length-1] = refClassName;
-                    perfix = refClassName;
+                    // 只为了长度是一的时候返回没解引用的node可是太蠢了
+                    if (lexems.length === 1) return this.searchNode([lexem], position, false);
+                    // No need to check reference
+                    lexem = refClassName;
+                    lexems[lexems.length-1] = refClassName;
                     break;
                 }
-                // table.forEach(refinfo => {
-                //     // replace varible name with its reference class's name
-                //     // make search process as normal search process
-                //     if (refinfo.name === perfix) {
-                //         perfixs[perfixs.length-1] = refClassName;
-                //     }
-                // });
             }
         }
-        else if (perfix === 'this') {
+        else if (lexem === 'this') {
             let classNode = this.searchNodeAtPosition(position, this.getTree(), SymbolKind.Class);
-            if (classNode && classNode.subnode) {
+            if (classNode) {
+                resultNode = classNode;
+                // set next search tree to class node we found
                 nodeList = classNode.subnode;
-                perfixs.pop();
-                isFound = true;
+                lexems.pop()
             } 
             else {
                 return undefined;
@@ -397,36 +449,40 @@ export class TreeManager
         // different document
         if (incTreeMap) {
             for (const [uri, tree] of incTreeMap.entries()) {
-                let find = arrayFilter(tree, item => item.name === perfix);
+                let find = arrayFilter(tree, item => item.name === lexem);
                 if (find) {
                     currTreeUri = uri;
-                    if (find.subnode) nodeList = find.subnode;
-                    else nodeList = tree;
-                    perfixs.pop();
-                    isFound = true;
+                    // set next search tree to found node's subnode tree
+                    nodeList = find.subnode;
+                    resultNode = find;
+                    lexems.pop();
                     break;
                 }
             }
         }
 
-        while (perfix = perfixs.pop()) {
-            let find = arrayFilter(nodeList, (item) => item.name === perfix);
-            isFound = find !== undefined;       
+        while (lexem = lexems.pop()) {
+            resultNode = undefined;
+            let find: SymbolNode|undefined;
+            if (nodeList)
+                find = arrayFilter(nodeList, (item) => item.name === lexem);
+            resultNode = find !== undefined ? find : undefined;       
             // TODO: Check reference here
             if (find && find.subnode) {
                 nodeList = find.subnode;
             }
-            else if (!isFound) return undefined;
+            else if (!resultNode) return undefined;
         }
 
-        if (isFound) {
+        if (resultNode) {
             return {
-                nodes: nodeList,
+                nodes: [resultNode],
                 uri: currTreeUri
             };
         }
         return undefined;
     }
+
 
     /**
      * search at given tree to 
@@ -466,7 +522,7 @@ export class TreeManager
         if (isFuncNode(info)) {
             ci['kind'] = CompletionItemKind.Function;
             ci.data = this.getFuncPrototype(info);
-        }  else if (info.kind === SymbolKind.Variable) {
+        } else if (info.kind === SymbolKind.Variable) {
             ci.kind = CompletionItemKind.Variable;
         } else if (info.kind === SymbolKind.Class) {
             ci['kind'] = CompletionItemKind.Class;
@@ -474,7 +530,7 @@ export class TreeManager
             ci['kind'] = CompletionItemKind.Event;
         } else if (info.kind === SymbolKind.Null) {
             ci['kind'] = CompletionItemKind.Text;
-			} 
+		} 
         return ci;
     }
 
@@ -493,7 +549,7 @@ export class TreeManager
         if (!stmt) {
             return undefined;
         }
-        let perfixs: string[]|undefined;
+        let perfixs: string[] = [];
         
         let node: INodeResult<IASTNode> = stmt;
         if (isExpr(stmt.value)) {
@@ -520,58 +576,16 @@ export class TreeManager
             }
 
             const funcName = lastnode.name;
-            let currTreeUri = this.currentDocUri;
-            let tree: SymbolNode[]|undefined;
-            if (perfixs) {
-                const suffixNodeInfo = this.searchSuffix(perfixs.reverse(), position)
-                if (suffixNodeInfo) {
-                    tree = suffixNodeInfo.nodes;
-                    currTreeUri = suffixNodeInfo.uri;
-                }
-            }
-            else tree = this.getTree();
-            // const tree = perfixs ? this.searchSuffix(perfixs.reverse(), position) : this.getTree();
-            let func:FuncNode;
-            // first, search in the document syntax tree
-            if (tree) {
-                for (let i=0,len=tree.length; i<len; i++) {
-                    if (tree[i].name === funcName) {
-                        if (tree[i].kind === SymbolKind.Function) {
-                            func = <FuncNode>tree[i];
-                        }
-                        else {
-                            return undefined;
-                        }
-                        if (func.range.start.line === position.line) {
-                            return undefined;
-                        }
-                        let index = lastnode.actualParams.length===0 ?
-                                    lastnode.actualParams.length:
-                                    lastnode.actualParams.length-1;
-                        return {
-                            func: func,
-                            index: index
-                        };
-                    }
-                }
-                // then find if symbol is in built-in function tree
-                for (const node of this.builtinFunction) {
-                    if (node.name === funcName) {
-                        let index = lastnode.actualParams.length===0 ?
-                                    lastnode.actualParams.length:
-                                    lastnode.actualParams.length-1;
-                        return {
-                            func: node,
-                            index: index
-                        }
-                    }
-                }
-                return undefined;
-            }
-            // finally search if is built-in method
-            // TODO: finish signature about built-in method
+            const find = this.searchNode([funcName].concat(...perfixs.reverse()), position);
+            if (!find) return undefined;
+            let index = lastnode.actualParams.length===0 ?
+                        lastnode.actualParams.length:
+                        lastnode.actualParams.length-1;
+            return {
+                func: <FuncNode>find.nodes[0],
+                index: index
+            };
         }
-        return undefined;
     }
 
     private getUnfinishedFunc(node: IFunctionCall): IFunctionCall|undefined {
@@ -593,41 +607,44 @@ export class TreeManager
     }
 
     public getDefinitionAtPosition(position: Position): Location[] {
-        let word = this.getWordAtPosition(position);
-        let tree = this.getSuffixNodes(position);
-        let incTree = this.allIncludeTreeinfomation();
-        if (!tree) {
-            // FIXME: need search include AST
-            tree = {
-                nodes: this.getTree(),
-                uri: this.currentDocUri
-            }
-        }
+        let lexems = this.getLexemsAtPosition(position);
+        if (!lexems) return [];
+        let find = this.searchNode(lexems, position);
+        if (!find) return [];
         let locations: Location[] = [];
-        // FIXME: temporary soluation, invaild -1 line marked builtin property
-        let find = arrayFilter(tree.nodes, node => node.name === word.name && node.range.start.line !== -1);
-        if (find) locations.push(Location.create(tree.uri, find.range));
-        if (incTree) {
-            for (const [uri, nodes] of incTree) {
-                find = arrayFilter(nodes, node => node.name === word.name && node.range.start.line !== -1);
-                if (find){
-                    locations.push(Location.create(uri, find.range));
-                    break;
-                } 
-
-            }
+        for (const node of find.nodes) {
+            locations.push(Location.create(find.uri, node.range));
         }
-        // for (const node of tree.nodes) {
-        //     if (node.name === word.name &&
-        //         node.range.start.line !== -1) {
-        //         locations.push(Location.create(tree.uri, node.range));
+        return locations;
+        // let word = this.getWordAtPosition(position);
+        // let tree = this.getSuffixNodes(position);
+        // let incTree = this.allIncludeTreeinfomation();
+        // if (!tree) {
+        //     // FIXME: need search include AST
+        //     tree = {
+        //         nodes: this.getTree(),
+        //         uri: this.currentDocUri
         //     }
         // }
-        return locations;
+        // let locations: Location[] = [];
+        // // FIXME: temporary soluation, invaild -1 line marked builtin property
+        // let find = arrayFilter(tree.nodes, node => node.name === word.name && node.range.start.line !== -1);
+        // if (find) locations.push(Location.create(tree.uri, find.range));
+        // if (incTree) {
+        //     for (const [uri, nodes] of incTree) {
+        //         find = arrayFilter(nodes, node => node.name === word.name && node.range.start.line !== -1);
+        //         if (find){
+        //             locations.push(Location.create(uri, find.range));
+        //             break;
+        //         } 
+
+        //     }
+        // }
+
     }
 
     private getWordAtPosition(position: Position): Word {
-        let reg = /[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+/;
+        let reg = /[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?]+/;
 		const context = this.getLine(position.line);
 		if (!context)
 			return Word.create('', Range.create(position, position));
@@ -683,7 +700,11 @@ export class TreeManager
 	}
 }
 
-
+/**
+ * Get eligible items in the array(找到数组中符合callback条件的项)
+ * @param list array to be filted
+ * @param callback condition of filter
+ */
 function arrayFilter<T>(list: Array<T>, callback: (item: T) => boolean): T|undefined {
     for (const item of list) {
         if (callback(item)) 

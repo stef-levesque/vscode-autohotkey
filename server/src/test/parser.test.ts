@@ -1,4 +1,4 @@
-import {Lexer} from '../ahkparser'
+import {Lexer} from '../parser/ahkparser'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import * as path from 'path';
 import { open } from 'fs';
