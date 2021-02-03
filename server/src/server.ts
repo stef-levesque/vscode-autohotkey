@@ -247,7 +247,7 @@ connection.onDefinition(
 documents.onDidOpen(async e => {
 	let lexer = new Lexer(e.document);
 	const docInfo = lexer.Parse();
-	DOCManager.updateDocumentAST(e.document.uri, docInfo, e.document);
+	DOCManager.initDocument(e.document.uri, docInfo, e.document);
 });
 
 // Only keep settings for open documents

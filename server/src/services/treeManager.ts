@@ -79,6 +79,12 @@ export class TreeManager
 	 */
     private docsAST: Map<string, IFakeDocumentInfomation>;
 
+    /**
+     * Server cached include informations for each documents
+     * Map<DocmemtsUri, Set<IncludeAbsolutePath>>
+     */
+    private incInfos: Map<string, Set<string>>;
+
     private ioService: IoService;
     
     /**
@@ -101,6 +107,7 @@ export class TreeManager
 	constructor() {
 		this.serverDocs = new Map();
         this.docsAST = new Map();
+        this.incInfos = new Map();
         this.ioService = new IoService();
 		this.builtinFunction = buildBuiltinFunctionNode();
 		this.serverConfigDoc = undefined;
@@ -108,7 +115,18 @@ export class TreeManager
         // TODO: non hardcoded Standard Library
         this.SLibDir = 'C:\\Program Files\\AutoHotkey\\Lib'
         this.ULibDir = homedir() + '\\Documents\\AutoHotkey\\Lib'
-	}
+    }
+    
+    /**
+     * Initialize information of a just open document
+     * @param uri Uri of initialized document
+     * @param docinfo AST of initialized document
+     * @param doc TextDocument of initialized documnet
+     */
+    public initDocument(uri: string, docinfo: IFakeDocumentInfomation, doc: TextDocument) {
+        this.currentDocUri = uri;
+        this.updateDocumentAST(uri, docinfo, doc);
+    }
 
     /**
      * Select a document for next steps. For provide node infomation of client requests
@@ -152,12 +170,33 @@ export class TreeManager
             //     default:
             //         break;
             // }
+            // if is lib include, use lib dir
+            // 我有必要一遍遍读IO来确认库文件存不存在吗？
+            if (path[0] === '<') {
+                const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
+                let searchDir: string[] = []
+                const np = normalize(path.slice(1, path.length-1)+'.ahk');
+                const dir = normalize(docDir + '\\Lib\\' + np);
+                const ULibDir = normalize(this.ULibDir + '\\' + np);
+                const SLibDir = normalize(this.SLibDir + '\\' + np);
+                searchDir.push(dir, ULibDir, SLibDir);
+                for(const d of searchDir) {
+                    if (this.ioService.fileExistsSync(d)) {
+                        path = d;
+                        break;
+                    }
+                }
+            }
             const doc = await this.loadDocumnet(path);
             if (doc) {
                 let lexer = new Lexer(doc);
                 this.serverDocs.set(doc.uri, doc);
                 let incDocInfo = lexer.Parse();
                 this.docsAST.set(doc.uri, incDocInfo);
+                if (this.incInfos.has(uri))
+                    this.incInfos.get(uri)?.add(path);
+                else
+                    this.incInfos.set(uri, new Set([path]));
                 // load include document's include documents
                 this.updateDocumentAST(doc.uri, incDocInfo, doc);
             }
@@ -238,8 +277,8 @@ export class TreeManager
      * @param doc Doucment Infomation to find
      */
     private documentAllInclude(doc: IFakeDocumentInfomation): Set<string> {
-        let incInfo = union(doc.include, new Set());
-        for (const inc of incInfo) {
+        let incInfo = new Set(doc.include);
+        for (let inc of incInfo) {
             const incUri = URI.file(inc).toString();
             let incDoc = this.docsAST.get(incUri);
             if (incDoc) {
@@ -257,7 +296,7 @@ export class TreeManager
     private allIncludeTreeinfomation(): Map<string, SymbolNode[]>|undefined {
         const docinfo = this.docsAST.get(this.currentDocUri);
         if (!docinfo) return undefined;
-        const incInfo = this.documentAllInclude(docinfo);
+        const incInfo = this.incInfos.get(this.currentDocUri) || [];
         let r: Map<string, SymbolNode[]> = new Map();
         for (const path of incInfo) {
             const uri = URI.file(path).toString();
@@ -314,13 +353,14 @@ export class TreeManager
         if (this.currentDocUri)
             docinfo = this.docsAST.get(this.currentDocUri);
         if (!docinfo) return [];
-        const incInfo = this.documentAllInclude(docinfo);
-        incInfo.forEach(inc => {
-            const incUri = URI.file(inc);
-            const tree = this.docsAST.get(incUri.toString())?.tree;
+        // TODO: 应该统一只用this.allIncludeTreeinfomation
+        const incInfo = this.incInfos.get(this.currentDocUri) || []
+        for (let inc of incInfo) {
+            const incUri = URI.file(inc).toString();
+            const tree = this.docsAST.get(incUri)?.tree;
             if (tree)
                 incTree.push(...tree);
-        });
+        }
         
         return this.getTree().map(node => this.convertNodeCompletion(node))
         .concat(this.builtinFunction.map(node => {

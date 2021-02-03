@@ -62,6 +62,10 @@ export class IoService {
       return readFileAsync(path, 'utf-8');
     }
 
+    public fileExistsSync(path: string): boolean {
+        return existsSync(path) && lstatSync(path).isFile();
+    }
+
     /**
      * What entities are in the relevant directory
      * @param path The full path of the request

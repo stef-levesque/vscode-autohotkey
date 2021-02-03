@@ -5,6 +5,8 @@
 1. improve include path parse
 2. new Class TreeManager for mananging ASTs
 3. support searching node cross ASTs
+4. signature help and node searching bug fixs (0.4.1)
+5. include completion (0.4.1)
 
 ## 0.3.0
 

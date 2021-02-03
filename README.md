@@ -10,10 +10,11 @@ AutoHotKey language support for VS Code
 1. Enumerate include
    * Documents must be explicitly included by `#include`
    * **Notice** `#include DirName` and `#include <LibName>` are not implemented now
+   * Include completion
 2. Folding region comment (comments marked region able to be folded, see in preview and feature)
 3. Document formation, supports both v1 and v2 
 4. Build-in Variable and Function(partly) hint.
-   - Need documentions which is easy to be parsed by js/ts. If you find any, help please.
+   - Need documentions which is easy to be parsed by js/ts. If you find any, help please([Example](others/Contribute.md)).
 
 ## Notice
 

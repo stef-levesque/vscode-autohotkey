@@ -192,11 +192,15 @@ export class Lexer {
         const normalized = normalize(rawPath);
         switch (extname(normalized)) {
             case '.ahk':
-            case '':
                 if (dirname(normalized)[0] === '.') // if dir start as ../ or .
                     this.includeFile.add(normalize(scriptDir + '\\' + normalized))
-                else
+                else    // absolute path
                     this.includeFile.add(normalized);
+                    break;
+            case '':
+                if (rawPath[0] === '<' && rawPath[rawPath.length-1] === '>')
+                    this.includeFile.add(rawPath)
+                // TODO: handle include path change
                 break;
             default:
                 break;
