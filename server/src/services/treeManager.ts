@@ -197,6 +197,7 @@ export class TreeManager
                     this.incInfos.get(uri)?.add(path);
                 else
                     this.incInfos.set(uri, new Set([path]));
+                // TODO: link include's include to document
                 // load include document's include documents
                 this.updateDocumentAST(doc.uri, incDocInfo, doc);
             }

@@ -1225,7 +1225,7 @@ export const builtin_function = [
         "name": "Object",
         "params": [
             {
-                "name": "ey*",
+                "name": "Key*",
                 "isOptional": true
             },
             {
@@ -1238,7 +1238,7 @@ export const builtin_function = [
         "name": "Array",
         "params": [
             {
-                "name": "alue*",
+                "name": "Value*",
                 "isOptional": true
             }
         ]
@@ -1436,6 +1436,46 @@ export const builtin_function = [
             {
                 "name": "Funcname",
                 "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "OnClipboardChange",
+        "params": [
+            {
+                "name": "Func",
+                "isOptional": false
+            },
+            {
+                "name": "AddRemove",
+                "isOptional": true,
+                "defaultVal": 1
+            }
+        ]
+    },
+    {
+        "name": "Ord",
+        "params": [
+            {
+                "name": "String",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "OnMessage",
+        "params": [
+            {
+                "name": "MsgNumber",
+                "isOptional": false
+            },
+            {
+                "name": "Function",
+                "isOptional": true
+            },
+            {
+                "name": "MaxThreads",
+                "isOptional": true
             }
         ]
     }
