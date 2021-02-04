@@ -7,6 +7,7 @@
 3. support searching node cross ASTs
 4. signature help and node searching bug fixs (0.4.1)
 5. include completion (0.4.1)
+6. experimental support for lib include (0.4.2)
 
 ## 0.3.0
 
