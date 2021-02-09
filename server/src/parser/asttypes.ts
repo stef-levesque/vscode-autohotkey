@@ -72,6 +72,8 @@ export interface IAssign extends IASTNode {
 	right: Expr
 }
 
+export type ICommandCall = IFunctionCall;
+
 export interface IFunctionCall extends IASTNode {
 	name: string
 	actualParams: Expr[]
@@ -106,6 +108,12 @@ export class FunctionCall implements IFunctionCall {
 		this.actualParams = actualParams;
 		this.token = token;
 		this.offrange = offrange;
+	}
+}
+
+export class CommandCall extends FunctionCall implements ICommandCall {
+	constructor(name: string, actualParams: Expr[], token: Token, offrange: IOffRange) {
+		super(name, actualParams, token, offrange);
 	}
 }
 

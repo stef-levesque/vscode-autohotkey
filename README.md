@@ -7,12 +7,12 @@ AutoHotKey language support for VS Code
 
 ## What's New
 
-1. Enumerate include
+1. Command signture help, delete command snippets
+2. Enumerate include
    * Documents must be explicitly included by `#include`
    * **Notice** `#include DirName` are not implemented now
    * Include completion
    * Experimental support for `#include <LibName>`
-2. Folding region comment (comments marked region able to be folded, see in preview and feature)
 3. Document formation, supports both v1 and v2 
 4. Build-in Variable and Function(partly) hint.
    - Need documentions which is easy to be parsed by js/ts. If you find any, help please([Example](others/Contribute.md)).
@@ -84,6 +84,7 @@ AutoHotKey language support for VS Code
 2. stef-levesque
 3. denolfe
 4. Microsoft lsp-simple
-5. bitwiseman(js-beautify)
-6. 天黑请闭眼(modify js-beautify for ahk)
+5. jonnyboyC el. (kos-langeuage-sever)
+6. bitwiseman(js-beautify)
+7. 天黑请闭眼(modify js-beautify for ahk)
 

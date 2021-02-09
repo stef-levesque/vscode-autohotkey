@@ -368,7 +368,7 @@ export class Lexer {
         }
     }
 
-    public PComment():boolean {
+    private PComment():boolean {
         let text = <string>this.currentText;
         if (this.lineCommentFlag === true) {
             // end of block commentss

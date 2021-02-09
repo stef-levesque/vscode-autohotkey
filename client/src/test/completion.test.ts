@@ -42,7 +42,7 @@ async function testCompletion(
 				actualItem = item;
 			}
 		});
-		assert.equal(actualItem.label, expectedItem.label);
-		assert.equal(actualItem.kind, expectedItem.kind);
+		assert.strictEqual(actualItem.label, expectedItem.label);
+		assert.strictEqual(actualItem.kind, expectedItem.kind);
 	});
 }

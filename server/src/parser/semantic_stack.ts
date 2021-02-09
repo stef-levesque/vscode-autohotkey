@@ -28,7 +28,9 @@ import {
     NoOption,
     IAssociativeArray,
     IAPair,
-    IArray
+    IArray,
+    ICommandCall,
+    CommandCall
  } from "./asttypes";
 import { strict } from 'assert';
 
@@ -48,12 +50,21 @@ export class SemanticStack {
         this.currentToken = this.tokenizer.GetNextToken();
     }
 
-    reset(document: string) {
+    public reset(document: string) {
         this.tokenizer.Reset(document);
         return this;
     }
 
-    eat(type: TokenType) {
+    private inType(actualt: TokenType, expectts: TokenType[]) {
+        for (const t of expectts) {
+            if (actualt === t) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private eat(type: TokenType) {
         if (type === this.currentToken.type) {
             this.currentToken = this.tokenizer.GetNextToken();
         } 
@@ -62,7 +73,7 @@ export class SemanticStack {
         }
     }
 
-    variable(): INodeResult<IVariable> {
+    private variable(): INodeResult<IVariable> {
         let token = this.currentToken;
         this.eat(TokenType.id);
         return {
@@ -75,7 +86,7 @@ export class SemanticStack {
         };
     }
 
-    literal(): INodeResult<ILiteral> {
+    private literal(): INodeResult<ILiteral> {
         let token = this.currentToken;
         if (this.currentToken.type === TokenType.string) {
             this.eat(TokenType.string);
@@ -164,7 +175,7 @@ export class SemanticStack {
         };
     }
 
-    private clsNew(): INodeResult<IMethodCall> {
+    private classNew(): INodeResult<IMethodCall> {
         this.eat(TokenType.new);
         const token = this.currentToken;
         // new a class like a function call
@@ -244,7 +255,7 @@ export class SemanticStack {
     }
 
     // For this is simple parser, we don't care about operator level
-    factor(): Expr{
+    private factor(): Expr{
         let token = this.currentToken
         let node: Expr;
         switch (this.currentToken.type) {
@@ -264,7 +275,7 @@ export class SemanticStack {
                     }
                 };
             case TokenType.new:
-                return this.clsNew();
+                return this.classNew();
             case TokenType.openParen:
                 this.eat(TokenType.openParen);
                 node = this.expr();
@@ -290,7 +301,7 @@ export class SemanticStack {
         }
     }
 
-    expr(): Expr {
+    private expr(): Expr {
         // while (this.currentToken.type !== TokenType.id && this.currentToken.type !== TokenType.comma) {
         //     this.eat(this.currentToken.type);
         // }
@@ -356,7 +367,7 @@ export class SemanticStack {
         }
     }
 
-    assignment(): INodeResult<IAssign> {
+    private assignment(): INodeResult<IAssign> {
         let left: INodeResult<IVariable|IPropertCall>;
         if (this.tokenizer.currChar === '.') {
             left = this.classCall();
@@ -388,7 +399,29 @@ export class SemanticStack {
 
     }
 
-    funcCall(): INodeResult<IFunctionCall> {
+    private commandCall(): INodeResult<ICommandCall> {
+        let token = this.currentToken;
+        let cmdName = token.content;
+        let iserror = false;
+
+        this.eat(TokenType.command);
+        let actualParams: INodeResult<IBinOp | INoOpt>[] = [];
+        while (this.currentToken.type === TokenType.comma) {
+            // '% ' deref maybe not a regular syntax
+            // set flag by syntax parser maybe the only way
+            // to parse without wrong, said T_T 
+            this.tokenizer.setLiteralDeref(false);
+            this.eat(TokenType.comma);
+            actualParams.push(this.expr());
+        }
+        const end: number = this.currentToken.end;
+        return {
+            errors: iserror,
+            value: new CommandCall(cmdName, actualParams, token, new Offrange(token.start, end))
+        };
+    }
+
+    private funcCall(): INodeResult<IFunctionCall> {
         let token = this.currentToken;
         let funcName = token.content;
         let iserror = false;
@@ -419,7 +452,7 @@ export class SemanticStack {
         };
     }
 
-    classCall(): INodeResult<IMethodCall|IPropertCall> {
+    private classCall(): INodeResult<IMethodCall|IPropertCall> {
         let classref: Token[] = [this.currentToken];
 
         this.eat(TokenType.id);
@@ -447,8 +480,8 @@ export class SemanticStack {
             this.eat(TokenType.id);
             return {
                 errors: false,
-                value: new PropertCall(this.currentToken.content, 
-                                       this.currentToken, 
+                value: new PropertCall(token.content, 
+                                       token, 
                                        classref, 
                                        new Offrange(classref[0].start, token.end))
             };
@@ -463,10 +496,11 @@ export class SemanticStack {
 
     }
 
-    statement() {
+    public statement() {
         // let node: any;
         // Start at first id
-        while (this.currentToken.type !== TokenType.id) {
+        while (this.currentToken.type !== TokenType.id
+               && this.currentToken.type !== TokenType.command) {
             if (this.currentToken.type === TokenType.EOF) {
                 return undefined;
             }
@@ -478,13 +512,34 @@ export class SemanticStack {
                     return this.funcCall();
                 } 
                 else if (this.tokenizer.currChar === '.') {
-                    return this.classCall();
+                    let left = this.classCall();
+                    if (left.value instanceof PropertCall && 
+                        this.inType(this.currentToken.type, 
+                        [
+                            TokenType.equal,
+                            TokenType.aassign
+                        ])) {
+
+                        let token = this.currentToken;
+                        this.eat(this.currentToken.type);
+                        let exprNode = this.expr();
+                        return {
+                            errors: false,
+                            value: {
+                                left: left,
+                                operator: token,
+                                right: exprNode,
+                                offrange: new Offrange(left.value.offrange.start, exprNode.value.offrange.end)
+                            }
+                        };
+                    }
+                    return left;
                 }
                 else {
                     return this.assignment();
                 }
-                break;
-        
+            case TokenType.command:
+                return this.commandCall();
             // default:
             //     return []
             //     break;

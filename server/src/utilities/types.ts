@@ -61,6 +61,8 @@ export enum TokenType{
     gosub, goto, return, global, 
     local, throw, include, class, 
     extends, new,
+
+    command,
     
     // file
     EOL, EOF,

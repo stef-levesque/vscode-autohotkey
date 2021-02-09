@@ -96,7 +96,7 @@ connection.onInitialize((params: InitializeParams) => {
 				triggerCharacters: ['.', '/', '<']
 			},
 			signatureHelpProvider: {
-				triggerCharacters: ['(', ',', ', ']
+				triggerCharacters: ['(', ',']
 			},
 			documentSymbolProvider: true,
 			definitionProvider: true
@@ -216,7 +216,7 @@ connection.onSignatureHelp(
 	if (info) {
 		return {
 			signatures: [
-				SignatureInformation.create(DOCManager.getFuncPrototype(info.func), undefined, 
+				SignatureInformation.create(DOCManager.getFuncPrototype(info.func, info.isCmd), undefined, 
 					...info.func.params.map((param): ParameterInformation => {
 						return ParameterInformation.create(param.name);
 					}))

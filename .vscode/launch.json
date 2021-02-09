@@ -3,6 +3,24 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"args": [
+				"-u",
+				"tdd",
+				"--timeout",
+				"999999",
+				"--colors",
+				"${workspaceRoot}/server/out/test/semantic_stack.test.js"
+			],
+			"internalConsoleOptions": "openOnSessionStart",
+			"name": "Test debug",
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"request": "launch",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"type": "pwa-node"
+		},
+		{
 			"type": "extensionHost",
 			"request": "launch",
 			"name": "Launch Client",

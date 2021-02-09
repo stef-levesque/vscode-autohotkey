@@ -26,12 +26,15 @@ import {
 	IAssign, 
 	IASTNode, 
 	FunctionCall,
-	MethodCall
+	MethodCall,
+    ICommandCall,
+    CommandCall
 } from '../parser/asttypes';
 import { SemanticStack, isExpr } from '../parser/semantic_stack';
 import { 
     BuiltinFuncNode,
-    buildBuiltinFunctionNode
+    buildBuiltinFunctionNode,
+    buildBuiltinCommandNode
 } from '../utilities/constants';
 import {
     dirname,
@@ -91,6 +94,11 @@ export class TreeManager
      * built-in standard function AST
      */
 	private readonly builtinFunction: BuiltinFuncNode[];
+    
+    /**
+     * builtin standard command AST
+     */
+    private readonly builtinCommand: BuiltinFuncNode[];
 
     private currentDocUri: string;
     
@@ -110,6 +118,7 @@ export class TreeManager
         this.incInfos = new Map();
         this.ioService = new IoService();
 		this.builtinFunction = buildBuiltinFunctionNode();
+        this.builtinCommand = buildBuiltinCommandNode();
 		this.serverConfigDoc = undefined;
         this.currentDocUri = '';
         // TODO: non hardcoded Standard Library
@@ -193,6 +202,7 @@ export class TreeManager
                 this.serverDocs.set(doc.uri, doc);
                 let incDocInfo = lexer.Parse();
                 this.docsAST.set(doc.uri, incDocInfo);
+                // TODO: Correct document include tree
                 if (this.incInfos.has(uri))
                     this.incInfos.get(uri)?.add(path);
                 else
@@ -324,15 +334,17 @@ export class TreeManager
      * Returns a string in the form of the function node's definition
      * @param symbol Function node to be converted
      */
-    public getFuncPrototype(symbol: FuncNode|BuiltinFuncNode): string {
-        let result = symbol.name + '(';
+    public getFuncPrototype(symbol: FuncNode|BuiltinFuncNode, cmdFormat: boolean = false): string {
+        const paramStartSym = cmdFormat ? ', ' : '(';
+        const paramEndSym = cmdFormat ? '' : ')'
+        let result = symbol.name + paramStartSym;
         symbol.params.map((param, index, array) => {
             result += param.name;
             if (param.isOptional) result += '[Optional]';
             if (param.defaultVal) result += ' := ' + param.defaultVal;
             if (array.length-1 !== index) result += ', ';
         })
-        return result+')';
+        return result+paramEndSym;
     }
 
     public convertParamsCompletion(node: SymbolNode): CompletionItem[] {
@@ -367,6 +379,12 @@ export class TreeManager
         .concat(this.builtinFunction.map(node => {
             let ci = CompletionItem.create(node.name);
             ci.data = this.getFuncPrototype(node);
+            ci.kind = CompletionItemKind.Function;
+            return ci;
+        }))
+        .concat(this.builtinCommand.map(node => {
+            let ci = CompletionItem.create(node.name);
+            ci.data = this.getFuncPrototype(node, true);
             ci.kind = CompletionItemKind.Function;
             return ci;
         }))
@@ -607,12 +625,12 @@ export class TreeManager
         return ci;
     }
 
-    public getFuncAtPosition(position: Position): {func: FuncNode|BuiltinFuncNode, index: number}|undefined {
+    public getFuncAtPosition(position: Position): {func: FuncNode|BuiltinFuncNode, index: number, isCmd: boolean}|undefined {
 		const context = this.LineTextToPosition(position);
 		if (!context) return undefined;
         
         let stmtStack = new SemanticStack(context);
-        let stmt: INodeResult<IFunctionCall| IMethodCall | IPropertCall | IAssign>|undefined;
+        let stmt: INodeResult<IFunctionCall| IMethodCall | IPropertCall | IAssign | ICommandCall>|undefined;
         try {
             stmt = stmtStack.statement();
         }
@@ -632,10 +650,11 @@ export class TreeManager
             }
         }
         
-        stmt = node as INodeResult<IFunctionCall | IMethodCall | IPropertCall | IAssign>;
+        stmt = node as INodeResult<IFunctionCall | IMethodCall | IPropertCall | IAssign | ICommandCall>;
         
-        if (stmt.value instanceof FunctionCall) {
-            if (!stmt.errors) {
+        if (stmt.value instanceof FunctionCall ) {
+            // CommandCall always no errors
+            if (!stmt.errors && !(stmt.value instanceof CommandCall)) {
                 return undefined;
             }
             let lastnode = this.getUnfinishedFunc(stmt.value);
@@ -652,23 +671,39 @@ export class TreeManager
             let index = lastnode.actualParams.length===0 ?
                         lastnode.actualParams.length:
                         lastnode.actualParams.length-1;
-            const find = this.searchNode([funcName].concat(...perfixs.reverse()), position);
+            if (lastnode instanceof CommandCall) {
+                // All Commands are built-in, just search built-in Commands
+                const bfind = arrayFilter(this.builtinCommand, item => item.name === funcName);
+                if (!bfind) return undefined;
+                return {
+                    func: bfind,
+                    index: index,
+                    isCmd: true
+                }
+            }
+            let find = this.searchNode([funcName].concat(...perfixs.reverse()), position);
             // if no find, search build-in
             if (!find) {
                 const bfind = arrayFilter(this.builtinFunction, item => item.name === funcName);
                 if (!bfind) return undefined;
                 return {
                     func: bfind,
-                    index: index
+                    index: index,
+                    isCmd: false
                 }
             }
             return {
                 func: <FuncNode>find.nodes[0],
-                index: index
+                index: index,
+                isCmd: false
             };
         }
     }
 
+    /**
+     * Find the deepest unfinished Function of a AST node
+     * @param node Node to be found
+     */
     private getUnfinishedFunc(node: IFunctionCall): IFunctionCall|undefined {
         let perfixs: string[]|undefined;
         // let lastParam: any
@@ -683,6 +718,7 @@ export class TreeManager
                     return lastnode
                 }
             }
+            return lastParam.value;
         }
         return node;
     }

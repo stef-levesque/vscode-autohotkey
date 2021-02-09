@@ -1,3 +1,5 @@
+import { BuiltinFuncNode } from './constants'
+
 // builtin_variable and its docs
 export const builtin_variable = [
     ["A_Space", "此变量包含单个空格字符. 请参阅AutoTrim了解详情."],
@@ -159,7 +161,7 @@ export const builtin_variable = [
     ["A_LoopField", "请参阅解析循环Loop, Parse. 它包含了 InputVar 中当前子字符串(片段) 的内容. 如果一个内层解析循环包含在一个外层解析循环中, 则最内层循环的片段将具有优先权."]
 ]
 
-export const builtin_function = [
+export const builtin_function: BuiltinFuncNode[] = [
     {
         "name": "Abs",
         "params": [
@@ -1449,7 +1451,7 @@ export const builtin_function = [
             {
                 "name": "AddRemove",
                 "isOptional": true,
-                "defaultVal": 1
+                "defaultVal": "1"
             }
         ]
     },
@@ -1475,6 +1477,3357 @@ export const builtin_function = [
             },
             {
                 "name": "MaxThreads",
+                "isOptional": true
+            }
+        ]
+    }
+]
+
+export const builtin_command: BuiltinFuncNode[] = [
+    {
+        "name": "AutoTrim",
+        "params": [
+            {
+                "name": "On|Off",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "BlockInput",
+        "params": [
+            {
+                "name": "On|Off|Send|Mouse|SendAndMouse|Default|MouseMove|MouseMoveOff",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "Click",
+        "params": [
+            {
+                "name": "Value1",
+                "isOptional": true
+            },
+            {
+                "name": "Value2",
+                "isOptional": true
+            },
+            {
+                "name": "Value3",
+                "isOptional": true
+            },
+            {
+                "name": "Value4",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ClipWait",
+        "params": [
+            {
+                "name": "SecondsToWait",
+                "isOptional": true
+            },
+            {
+                "name": "1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Control",
+        "params": [
+            {
+                "name": "Cmd",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            },
+            {
+                "name": "Control",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlClick",
+        "params": [
+            {
+                "name": "Control-or-Pos",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "WhichButton",
+                "isOptional": true
+            },
+            {
+                "name": "ClickCount",
+                "isOptional": true
+            },
+            {
+                "name": "NA|D|U|Pos|Xn|Yn",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlFocus",
+        "params": [
+            {
+                "name": "Control",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlGet",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Cmd",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            },
+            {
+                "name": "Control",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlGetFocus",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlGetPos",
+        "params": [
+            {
+                "name": "X",
+                "isOptional": true
+            },
+            {
+                "name": "Y",
+                "isOptional": true
+            },
+            {
+                "name": "Width",
+                "isOptional": true
+            },
+            {
+                "name": "Height",
+                "isOptional": true
+            },
+            {
+                "name": "Control",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlGetText",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Control",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlMove",
+        "params": [
+            {
+                "name": "Control",
+                "isOptional": false
+            },
+            {
+                "name": "X",
+                "isOptional": false
+            },
+            {
+                "name": "Y",
+                "isOptional": false
+            },
+            {
+                "name": "Width",
+                "isOptional": false
+            },
+            {
+                "name": "Height",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlSend",
+        "params": [
+            {
+                "name": "Control",
+                "isOptional": true
+            },
+            {
+                "name": "Keys",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlSendRaw",
+        "params": [
+            {
+                "name": "Control",
+                "isOptional": true
+            },
+            {
+                "name": "Keys",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ControlSetText",
+        "params": [
+            {
+                "name": "Control",
+                "isOptional": true
+            },
+            {
+                "name": "NewText",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "CoordMode",
+        "params": [
+            {
+                "name": "ToolTip|Pixel|Mouse|Caret|Menu",
+                "isOptional": false
+            },
+            {
+                "name": "Screen|Relative|Window|Client",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "DetectHiddenText",
+        "params": [
+            {
+                "name": "On|Off",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "DetectHiddenWindows",
+        "params": [
+            {
+                "name": "On|Off",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "Drive",
+        "params": [
+            {
+                "name": "Label|Lock|Unlock|Eject",
+                "isOptional": false
+            },
+            {
+                "name": "Drive",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "DriveGet",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Cmd",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "DriveSpaceFree",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Path",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "Edit",
+        "params": []
+    },
+    {
+        "name": "EnvAdd",
+        "params": [
+            {
+                "name": "Var",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            },
+            {
+                "name": "TimeUnits",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "EnvDiv",
+        "params": [
+            {
+                "name": "Var",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "EnvGet",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "EnvVarName",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "EnvMult",
+        "params": [
+            {
+                "name": "Var",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "EnvSet",
+        "params": [
+            {
+                "name": "EnvVarName",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "EnvSub",
+        "params": [
+            {
+                "name": "Var",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            },
+            {
+                "name": "TimeUnits",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "EnvUpdate",
+        "params": []
+    },
+    {
+        "name": "FileAppend",
+        "params": [
+            {
+                "name": "Text",
+                "isOptional": true
+            },
+            {
+                "name": "*Filename",
+                "isOptional": true
+            },
+            {
+                "name": "Encoding",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileCopy",
+        "params": [
+            {
+                "name": "Source",
+                "isOptional": false
+            },
+            {
+                "name": "Dest",
+                "isOptional": false
+            },
+            {
+                "name": "0|1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileCopyDir",
+        "params": [
+            {
+                "name": "Source",
+                "isOptional": false
+            },
+            {
+                "name": "Dest",
+                "isOptional": false
+            },
+            {
+                "name": "0|1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileCreateDir",
+        "params": [
+            {
+                "name": "DirName",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "FileCreateShortcut",
+        "params": [
+            {
+                "name": "Target",
+                "isOptional": false
+            },
+            {
+                "name": "LinkFile",
+                "isOptional": false
+            },
+            {
+                "name": "WorkingDir",
+                "isOptional": false
+            },
+            {
+                "name": "Args",
+                "isOptional": false
+            },
+            {
+                "name": "Description",
+                "isOptional": false
+            },
+            {
+                "name": "IconFile",
+                "isOptional": false
+            },
+            {
+                "name": "ShortcutKey",
+                "isOptional": false
+            },
+            {
+                "name": "IconNumber",
+                "isOptional": false
+            },
+            {
+                "name": "RunState",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileDelete",
+        "params": [
+            {
+                "name": "FilePattern",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "FileEncoding",
+        "params": [
+            {
+                "name": "UTF-8|UTF-16|UTF-8-RAW|UTF-16-RAW|CPnnn",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileGetAttrib",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileGetShortcut",
+        "params": [
+            {
+                "name": "LinkFile",
+                "isOptional": false
+            },
+            {
+                "name": "OutTarget",
+                "isOptional": false
+            },
+            {
+                "name": "OutDir",
+                "isOptional": false
+            },
+            {
+                "name": "OutArgs",
+                "isOptional": false
+            },
+            {
+                "name": "OutDescription",
+                "isOptional": false
+            },
+            {
+                "name": "OutIcon",
+                "isOptional": false
+            },
+            {
+                "name": "OutIconNum",
+                "isOptional": false
+            },
+            {
+                "name": "OutRunState",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileGetSize",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": false
+            },
+            {
+                "name": "K|M",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileGetTime",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": false
+            },
+            {
+                "name": "M|C|A",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileGetVersion",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileInstall",
+        "params": [
+            {
+                "name": "Source",
+                "isOptional": false
+            },
+            {
+                "name": "Dest",
+                "isOptional": false
+            },
+            {
+                "name": "0|1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileMove",
+        "params": [
+            {
+                "name": "Source",
+                "isOptional": false
+            },
+            {
+                "name": "Dest",
+                "isOptional": false
+            },
+            {
+                "name": "0|1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileMoveDir",
+        "params": [
+            {
+                "name": "Source",
+                "isOptional": false
+            },
+            {
+                "name": "Dest",
+                "isOptional": false
+            },
+            {
+                "name": "0|1|2|R",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileRead",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "*Filename",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "FileReadLine",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": false
+            },
+            {
+                "name": "LineNum",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "FileRecycle",
+        "params": [
+            {
+                "name": "FilePattern",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "FileRecycleEmpty",
+        "params": [
+            {
+                "name": "DriveLetter",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileRemoveDir",
+        "params": [
+            {
+                "name": "DirName",
+                "isOptional": false
+            },
+            {
+                "name": "0|1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileSelectFile",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Options",
+                "isOptional": false
+            },
+            {
+                "name": "RootDir\\\\Filename",
+                "isOptional": false
+            },
+            {
+                "name": "Prompt",
+                "isOptional": false
+            },
+            {
+                "name": "Filter",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileSelectFolder",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "StartingFolder",
+                "isOptional": false
+            },
+            {
+                "name": "Options",
+                "isOptional": false
+            },
+            {
+                "name": "Prompt",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileSetAttrib",
+        "params": [
+            {
+                "name": "Attributes",
+                "isOptional": false
+            },
+            {
+                "name": "FilePattern",
+                "isOptional": false
+            },
+            {
+                "name": "0|1|2",
+                "isOptional": false
+            },
+            {
+                "name": "0|1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FileSetTime",
+        "params": [
+            {
+                "name": "YYYYMMDDHH24MISS",
+                "isOptional": true
+            },
+            {
+                "name": "FilePattern",
+                "isOptional": true
+            },
+            {
+                "name": "M|C|A",
+                "isOptional": true
+            },
+            {
+                "name": "0|1|2",
+                "isOptional": true
+            },
+            {
+                "name": "0|1",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "FormatTime",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "YYYYMMDDHH24MISS",
+                "isOptional": false
+            },
+            {
+                "name": "Format",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "GetKeyState",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "KeyName",
+                "isOptional": false
+            },
+            {
+                "name": "P|T",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "GroupActivate",
+        "params": [
+            {
+                "name": "GroupName",
+                "isOptional": false
+            },
+            {
+                "name": "R",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "GroupAdd",
+        "params": [
+            {
+                "name": "GroupName",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "Label",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "GroupClose",
+        "params": [
+            {
+                "name": "GroupName",
+                "isOptional": false
+            },
+            {
+                "name": "A|R",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "GroupDeactivate",
+        "params": [
+            {
+                "name": "GroupName",
+                "isOptional": false
+            },
+            {
+                "name": "R",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Gui",
+        "params": [
+            {
+                "name": "Sub-command",
+                "isOptional": false
+            },
+            {
+                "name": "Param2",
+                "isOptional": false
+            },
+            {
+                "name": "Param3",
+                "isOptional": false
+            },
+            {
+                "name": "Param4",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "GuiControl",
+        "params": [
+            {
+                "name": "Sub-command",
+                "isOptional": false
+            },
+            {
+                "name": "ControlID",
+                "isOptional": false
+            },
+            {
+                "name": "Param",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "GuiControlGet",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Sub-command",
+                "isOptional": false
+            },
+            {
+                "name": "ControlID",
+                "isOptional": false
+            },
+            {
+                "name": "Param",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Hotkey",
+        "params": [
+            {
+                "name": "If",
+                "isOptional": false
+            },
+            {
+                "name": "Expression",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Hotkey",
+        "params": [
+            {
+                "name": "IfWinActive|IfExist",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Hotkey",
+        "params": [
+            {
+                "name": "KeyName",
+                "isOptional": false
+            },
+            {
+                "name": "Label",
+                "isOptional": false
+            },
+            {
+                "name": "Options",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ImageSearch",
+        "params": [
+            {
+                "name": "OutputVarX",
+                "isOptional": false
+            },
+            {
+                "name": "OutputVarY",
+                "isOptional": false
+            },
+            {
+                "name": "X1",
+                "isOptional": false
+            },
+            {
+                "name": "Y1",
+                "isOptional": false
+            },
+            {
+                "name": "X2",
+                "isOptional": false
+            },
+            {
+                "name": "Y2",
+                "isOptional": false
+            },
+            {
+                "name": "*ImageFile",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "IniDelete",
+        "params": [
+            {
+                "name": "Filename",
+                "isOptional": false
+            },
+            {
+                "name": "Section",
+                "isOptional": false
+            },
+            {
+                "name": "Key",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "IniRead",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": false
+            },
+            {
+                "name": "Section",
+                "isOptional": false
+            },
+            {
+                "name": "Key",
+                "isOptional": false
+            },
+            {
+                "name": "Default",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "IniWrite",
+        "params": [
+            {
+                "name": "Value",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": false
+            },
+            {
+                "name": "Section",
+                "isOptional": false
+            },
+            {
+                "name": "Key",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Input",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": true
+            },
+            {
+                "name": "Options",
+                "isOptional": true
+            },
+            {
+                "name": "EndKeys",
+                "isOptional": true
+            },
+            {
+                "name": "MatchList",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "InputBox",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Title",
+                "isOptional": false
+            },
+            {
+                "name": "Prompt",
+                "isOptional": false
+            },
+            {
+                "name": "HIDE",
+                "isOptional": false
+            },
+            {
+                "name": "Width",
+                "isOptional": false
+            },
+            {
+                "name": "Height",
+                "isOptional": false
+            },
+            {
+                "name": "X",
+                "isOptional": false
+            },
+            {
+                "name": "Y",
+                "isOptional": false
+            },
+            {
+                "name": "Locale",
+                "isOptional": false
+            },
+            {
+                "name": "Timeout",
+                "isOptional": false
+            },
+            {
+                "name": "Default",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "KeyHistory",
+        "params": []
+    },
+    {
+        "name": "KeyWait",
+        "params": [
+            {
+                "name": "KeyName",
+                "isOptional": false
+            },
+            {
+                "name": "D|L|Tn",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ListHotkeys",
+        "params": []
+    },
+    {
+        "name": "ListLines",
+        "params": [
+            {
+                "name": "On|Off",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ListVars",
+        "params": []
+    },
+    {
+        "name": "Menu",
+        "params": [
+            {
+                "name": "MenuName",
+                "isOptional": false
+            },
+            {
+                "name": "Cmd",
+                "isOptional": false
+            },
+            {
+                "name": "P3",
+                "isOptional": false
+            },
+            {
+                "name": "P4",
+                "isOptional": false
+            },
+            {
+                "name": "P5",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "MouseClick",
+        "params": [
+            {
+                "name": "WhichButton",
+                "isOptional": true
+            },
+            {
+                "name": "X",
+                "isOptional": true
+            },
+            {
+                "name": "Y",
+                "isOptional": true
+            },
+            {
+                "name": "ClickCount",
+                "isOptional": true
+            },
+            {
+                "name": "Speed",
+                "isOptional": true
+            },
+            {
+                "name": "D|U",
+                "isOptional": true
+            },
+            {
+                "name": "R",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "MouseClickDrag",
+        "params": [
+            {
+                "name": "WhichButton",
+                "isOptional": false
+            },
+            {
+                "name": "X1",
+                "isOptional": false
+            },
+            {
+                "name": "Y1",
+                "isOptional": false
+            },
+            {
+                "name": "X2",
+                "isOptional": false
+            },
+            {
+                "name": "Y2",
+                "isOptional": false
+            },
+            {
+                "name": "Speed",
+                "isOptional": false
+            },
+            {
+                "name": "R",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "MouseGetPos",
+        "params": [
+            {
+                "name": "OutputVarX",
+                "isOptional": true
+            },
+            {
+                "name": "OutputVarY",
+                "isOptional": true
+            },
+            {
+                "name": "OutputVarWin",
+                "isOptional": true
+            },
+            {
+                "name": "OutputVarControl",
+                "isOptional": true
+            },
+            {
+                "name": "1|2|3",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "MouseMove",
+        "params": [
+            {
+                "name": "X",
+                "isOptional": false
+            },
+            {
+                "name": "Y",
+                "isOptional": false
+            },
+            {
+                "name": "Speed",
+                "isOptional": false
+            },
+            {
+                "name": "R",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "MsgBox",
+        "params": [
+            {
+                "name": "Text",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "MsgBox",
+        "params": [
+            {
+                "name": "Options",
+                "isOptional": true
+            },
+            {
+                "name": "Title",
+                "isOptional": true
+            },
+            {
+                "name": "Text",
+                "isOptional": true
+            },
+            {
+                "name": "Timeout",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "OutputDebug",
+        "params": [
+            {
+                "name": "Text",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "PixelGetColor",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "X",
+                "isOptional": false
+            },
+            {
+                "name": "Y",
+                "isOptional": false
+            },
+            {
+                "name": "Alt|Slow|RGB",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "PixelSearch",
+        "params": [
+            {
+                "name": "OutputVarX",
+                "isOptional": false
+            },
+            {
+                "name": "OutputVarY",
+                "isOptional": false
+            },
+            {
+                "name": "X1",
+                "isOptional": false
+            },
+            {
+                "name": "Y1",
+                "isOptional": false
+            },
+            {
+                "name": "X2",
+                "isOptional": false
+            },
+            {
+                "name": "Y2",
+                "isOptional": false
+            },
+            {
+                "name": "ColorID",
+                "isOptional": false
+            },
+            {
+                "name": "Variation",
+                "isOptional": false
+            },
+            {
+                "name": "Fast|RGB",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "PostMessage",
+        "params": [
+            {
+                "name": "Msg",
+                "isOptional": false
+            },
+            {
+                "name": "wParam",
+                "isOptional": false
+            },
+            {
+                "name": "lParam",
+                "isOptional": false
+            },
+            {
+                "name": "Control",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Process",
+        "params": [
+            {
+                "name": "Exist|Close|List|Priority|Wait|WaitClose",
+                "isOptional": false
+            },
+            {
+                "name": "PID-or-Name",
+                "isOptional": false
+            },
+            {
+                "name": "Param",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Progress",
+        "params": [
+            {
+                "name": "Off|Param",
+                "isOptional": false
+            },
+            {
+                "name": "SubText",
+                "isOptional": false
+            },
+            {
+                "name": "MainText",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "FontName",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Random",
+        "params": [
+            {
+                "name": "",
+                "isOptional": false
+            },
+            {
+                "name": "NewSeed",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "Random",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Min",
+                "isOptional": false
+            },
+            {
+                "name": "Max",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "RegDelete",
+        "params": [
+            {
+                "name": "HKLM|HKU|HKCU|HKCR|HKCC\\\\SubKey",
+                "isOptional": false
+            },
+            {
+                "name": "ValueName",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "RegRead",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "HKLM|HKU|HKCU|HKCR|HKCC\\\\SubKey",
+                "isOptional": false
+            },
+            {
+                "name": "ValueName",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "RegWrite",
+        "params": [
+            {
+                "name": "REG_SZ|REG_EXPAND_SZ|REG_MULTI_SZ|REG_DWORD|REG_BINARY",
+                "isOptional": false
+            },
+            {
+                "name": "HKLM|HKU|HKCU|HKCR|HKCC\\\\SubKey",
+                "isOptional": false
+            },
+            {
+                "name": "ValueName",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Run",
+        "params": [
+            {
+                "name": "Target",
+                "isOptional": false
+            },
+            {
+                "name": "WorkingDir",
+                "isOptional": false
+            },
+            {
+                "name": "Max|Min|Hide|UseErrorLevel",
+                "isOptional": false
+            },
+            {
+                "name": "OutputVarPID",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "RunAs",
+        "params": [
+            {
+                "name": "User",
+                "isOptional": true
+            },
+            {
+                "name": "Password",
+                "isOptional": true
+            },
+            {
+                "name": "Domain",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "RunWait",
+        "params": [
+            {
+                "name": "Target",
+                "isOptional": false
+            },
+            {
+                "name": "WorkingDir",
+                "isOptional": false
+            },
+            {
+                "name": "Max|Min|Hide|UseErrorLevel",
+                "isOptional": false
+            },
+            {
+                "name": "OutputVarPID",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Send",
+        "params": [
+            {
+                "name": "Keys",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SendEvent",
+        "params": [
+            {
+                "name": "Keys",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SendInput",
+        "params": [
+            {
+                "name": "Keys",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SendLevel",
+        "params": [
+            {
+                "name": "Level",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SendMessage",
+        "params": [
+            {
+                "name": "Msg",
+                "isOptional": false
+            },
+            {
+                "name": "wParam",
+                "isOptional": false
+            },
+            {
+                "name": "lParam",
+                "isOptional": false
+            },
+            {
+                "name": "Control",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SendMode",
+        "params": [
+            {
+                "name": "Input|Play|Event|InputThenPlay",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SendPlay",
+        "params": [
+            {
+                "name": "Keys",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SendRaw",
+        "params": [
+            {
+                "name": "Keys",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetBatchLines",
+        "params": [
+            {
+                "name": "-1|20ms|LineCount",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetCapsLockState",
+        "params": [
+            {
+                "name": "On|Off|AlwaysOn|AlwaysOff",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SetControlDelay",
+        "params": [
+            {
+                "name": "Milliseconds",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetDefaultMouseSpeed",
+        "params": [
+            {
+                "name": "Speed",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetEnv",
+        "params": [
+            {
+                "name": "Var",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetFormat",
+        "params": [
+            {
+                "name": "IntegerFast|FloatFast",
+                "isOptional": false
+            },
+            {
+                "name": "TotalWidth.DecimalPlaces|H|D",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetKeyDelay",
+        "params": [
+            {
+                "name": "Milliseconds",
+                "isOptional": true
+            },
+            {
+                "name": "PressDuration",
+                "isOptional": true
+            },
+            {
+                "name": "Play",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SetMouseDelay",
+        "params": [
+            {
+                "name": "Milliseconds",
+                "isOptional": false
+            },
+            {
+                "name": "Play",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SetNumLockState",
+        "params": [
+            {
+                "name": "On|Off|AlwaysOn|AlwaysOff",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SetRegView",
+        "params": [
+            {
+                "name": "32|64|Default",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetScrollLockState",
+        "params": [
+            {
+                "name": "On|Off|AlwaysOn|AlwaysOff",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SetStoreCapslockMode",
+        "params": [
+            {
+                "name": "On|Off",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetTitleMatchMode",
+        "params": [
+            {
+                "name": "Fast|Slow|RegEx|1|2|3",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetWinDelay",
+        "params": [
+            {
+                "name": "Milliseconds",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "SetWorkingDir",
+        "params": [
+            {
+                "name": "DirName",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "Shutdown",
+        "params": [
+            {
+                "name": "Code",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "Sort",
+        "params": [
+            {
+                "name": "VarName",
+                "isOptional": false
+            },
+            {
+                "name": "Options",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SoundBeep",
+        "params": [
+            {
+                "name": "37-to-32767",
+                "isOptional": true
+            },
+            {
+                "name": "Milliseconds",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SoundGet",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "ComponentType",
+                "isOptional": false
+            },
+            {
+                "name": "ControlType",
+                "isOptional": false
+            },
+            {
+                "name": "DeviceNumber",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SoundGetWaveVolume",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "DeviceNumber",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SoundPlay",
+        "params": [
+            {
+                "name": "Filename",
+                "isOptional": false
+            },
+            {
+                "name": "Wait",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SoundSet",
+        "params": [
+            {
+                "name": "NewSetting",
+                "isOptional": false
+            },
+            {
+                "name": "ComponentType",
+                "isOptional": false
+            },
+            {
+                "name": "ControlType",
+                "isOptional": false
+            },
+            {
+                "name": "DeviceNumber",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SoundSetWaveVolume",
+        "params": [
+            {
+                "name": "Percent",
+                "isOptional": false
+            },
+            {
+                "name": "DeviceNumber",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SplashImage",
+        "params": [
+            {
+                "name": "Off|ImageFile",
+                "isOptional": true
+            },
+            {
+                "name": "Options",
+                "isOptional": true
+            },
+            {
+                "name": "SubText",
+                "isOptional": true
+            },
+            {
+                "name": "MainText",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "FontName",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SplashTextOff",
+        "params": []
+    },
+    {
+        "name": "SplashTextOn",
+        "params": [
+            {
+                "name": "Width",
+                "isOptional": true
+            },
+            {
+                "name": "Height",
+                "isOptional": true
+            },
+            {
+                "name": "Title",
+                "isOptional": true
+            },
+            {
+                "name": "Text",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SplitPath",
+        "params": [
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "OutFileName",
+                "isOptional": false
+            },
+            {
+                "name": "OutDir",
+                "isOptional": false
+            },
+            {
+                "name": "OutExtension",
+                "isOptional": false
+            },
+            {
+                "name": "OutNameNoExt",
+                "isOptional": false
+            },
+            {
+                "name": "OutDrive",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StatusBarGetText",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Part",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StatusBarWait",
+        "params": [
+            {
+                "name": "BarText",
+                "isOptional": true
+            },
+            {
+                "name": "Seconds",
+                "isOptional": true
+            },
+            {
+                "name": "Part",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "Interval",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StringCaseSense",
+        "params": [
+            {
+                "name": "On|Off|Locale",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "StringGetPos",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "SearchText",
+                "isOptional": false
+            },
+            {
+                "name": "L|R|Ln|Rn",
+                "isOptional": false
+            },
+            {
+                "name": "Offset",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StringLeft",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Count",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "StringLen",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "StringLower",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "T",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StringMid",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "StartChar",
+                "isOptional": false
+            },
+            {
+                "name": "Count",
+                "isOptional": false
+            },
+            {
+                "name": "L",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StringReplace",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "SearchText",
+                "isOptional": false
+            },
+            {
+                "name": "ReplaceText",
+                "isOptional": false
+            },
+            {
+                "name": "All",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StringRight",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Count",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "StringSplit",
+        "params": [
+            {
+                "name": "OutputArray",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Delimiters",
+                "isOptional": false
+            },
+            {
+                "name": "OmitChars",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "StringTrimLeft",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Count",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "StringTrimRight",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Count",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "StringUpper",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "InputVar",
+                "isOptional": false
+            },
+            {
+                "name": "T",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Suspend",
+        "params": [
+            {
+                "name": "On|Off|Toggle|Permit",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "SysGet",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Sub-command",
+                "isOptional": false
+            },
+            {
+                "name": "Param",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "ToolTip",
+        "params": [
+            {
+                "name": "Text",
+                "isOptional": true
+            },
+            {
+                "name": "X",
+                "isOptional": true
+            },
+            {
+                "name": "Y",
+                "isOptional": true
+            },
+            {
+                "name": "WhichToolTip",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "Transform",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Cmd",
+                "isOptional": false
+            },
+            {
+                "name": "Value1",
+                "isOptional": false
+            },
+            {
+                "name": "Value2",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "TrayTip",
+        "params": [
+            {
+                "name": "Title",
+                "isOptional": true
+            },
+            {
+                "name": "Text",
+                "isOptional": true
+            },
+            {
+                "name": "Seconds",
+                "isOptional": true
+            },
+            {
+                "name": "Options",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "URLDownloadToFile",
+        "params": [
+            {
+                "name": "URL",
+                "isOptional": false
+            },
+            {
+                "name": "Filename",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "WinActivate",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinActivateBottom",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinClose",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "SecondsToWait",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinGet",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "Cmd",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinGetActiveStats",
+        "params": [
+            {
+                "name": "Title",
+                "isOptional": false
+            },
+            {
+                "name": "Width",
+                "isOptional": false
+            },
+            {
+                "name": "Height",
+                "isOptional": false
+            },
+            {
+                "name": "X",
+                "isOptional": false
+            },
+            {
+                "name": "Y",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "WinGetActiveTitle",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "WinGetClass",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinGetPos",
+        "params": [
+            {
+                "name": "X",
+                "isOptional": true
+            },
+            {
+                "name": "Y",
+                "isOptional": true
+            },
+            {
+                "name": "Width",
+                "isOptional": true
+            },
+            {
+                "name": "Height",
+                "isOptional": true
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinGetText",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinGetTitle",
+        "params": [
+            {
+                "name": "OutputVar",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinHide",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinKill",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "SecondsToWait",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinMaximize",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinMenuSelectItem",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "Menu",
+                "isOptional": false
+            },
+            {
+                "name": "SubMenu1",
+                "isOptional": false
+            },
+            {
+                "name": "SubMenu2",
+                "isOptional": false
+            },
+            {
+                "name": "SubMenu3",
+                "isOptional": false
+            },
+            {
+                "name": "SubMenu4",
+                "isOptional": false
+            },
+            {
+                "name": "SubMenu5",
+                "isOptional": false
+            },
+            {
+                "name": "SubMenu6",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinMinimize",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinMinimizeAll",
+        "params": []
+    },
+    {
+        "name": "WinMinimizeAllUndo",
+        "params": []
+    },
+    {
+        "name": "WinMove",
+        "params": [
+            {
+                "name": "X",
+                "isOptional": false
+            },
+            {
+                "name": "Y",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "WinMove",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "X",
+                "isOptional": false
+            },
+            {
+                "name": "Y",
+                "isOptional": false
+            },
+            {
+                "name": "Width",
+                "isOptional": false
+            },
+            {
+                "name": "Height",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinRestore",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinSet",
+        "params": [
+            {
+                "name": "Attribute",
+                "isOptional": false
+            },
+            {
+                "name": "Value",
+                "isOptional": false
+            },
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinSetTitle",
+        "params": [
+            {
+                "name": "NewTitle",
+                "isOptional": false
+            }
+        ]
+    },
+    {
+        "name": "WinSetTitle",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": false
+            },
+            {
+                "name": "WinText",
+                "isOptional": false
+            },
+            {
+                "name": "NewTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": false
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinShow",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinWait",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "Seconds",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinWaitActive",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "Seconds",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinWaitClose",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "Seconds",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
+                "isOptional": true
+            }
+        ]
+    },
+    {
+        "name": "WinWaitNotActive",
+        "params": [
+            {
+                "name": "WinTitle",
+                "isOptional": true
+            },
+            {
+                "name": "WinText",
+                "isOptional": true
+            },
+            {
+                "name": "Seconds",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeTitle",
+                "isOptional": true
+            },
+            {
+                "name": "ExcludeText",
                 "isOptional": true
             }
         ]

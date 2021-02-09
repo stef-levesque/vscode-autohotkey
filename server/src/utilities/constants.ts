@@ -2,8 +2,10 @@ import { CompletionItemKind, CompletionItem } from 'vscode-languageserver';
 import { Parameter } from "./types";
 import { 
     builtin_variable,
-    builtin_function
+    builtin_function,
+	builtin_command
 } from "./builtins";
+import {  } from '../services/ioService';
 
 export const serverName = 'mock-ahk-vscode';
 export const languageServer = 'ahk-language-server';
@@ -46,10 +48,9 @@ export function buildbuiltin_variable(): CompletionItem[] {
 }
 
 export function buildBuiltinFunctionNode(): BuiltinFuncNode[] {
-    return builtin_function.map((bti_func) => {
-            return {
-                name: bti_func.name,
-                params: bti_func.params
-            };
-        });
+    return builtin_function
+}
+
+export function buildBuiltinCommandNode(): BuiltinFuncNode[] {
+	return builtin_command;
 }

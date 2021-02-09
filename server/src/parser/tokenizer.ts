@@ -8,11 +8,17 @@ import {
 export class Tokenizer {
     private pos: number = 0;
     private document: string;
+    private isLiteralToken: boolean = false;
+    private isLiteralDeref: boolean = false;
     currChar: string;
 
     constructor(document: string) {
         this.document = document;
         this.currChar = document[this.pos];
+    }
+
+    public setLiteralDeref(bool: boolean) {
+        this.isLiteralDeref = bool;
     }
 
     private Advance() {
@@ -25,11 +31,34 @@ export class Tokenizer {
         return this;
     }
 
-    private Peek(): string {
+    private Peek(skipWhite: boolean = false): string {
         if(this.pos >= this.document.length) {
             return "EOF";
         }
+        if (skipWhite) {
+            let nwp = 0;
+            while (this.document[this.pos+nwp] === " "){
+                ++nwp;
+            }
+            return this.document[this.pos+nwp];
+        }
         return this.document[this.pos+1];
+    }
+
+    private BackPeek(backstartlen:number, skipWhite: boolean = false): string {
+        let pos = this.pos - backstartlen;
+        if (pos === 0) return "\n";
+        if (skipWhite) {
+            let nwp = 1;
+            while (this.document[pos-nwp] === " "){
+                --nwp;
+            }
+            if (pos-nwp === 0) {
+                return "\n"
+            }
+            return this.document[pos-nwp];
+        }
+        return this.document[pos-1];
     }
 
     private NumberAdvance(): string {
@@ -60,7 +89,7 @@ export class Tokenizer {
      * If is a Escaped "
      */
     private IsEscapeChar(): boolean {
-        if (this.Peek() === "\"") {
+        if (this.Peek() === '"') {
             this.Advance();
             return true;
         }
@@ -71,8 +100,8 @@ export class Tokenizer {
         let str:string = "";
         let offset = this.pos;
         this.Advance();
-        while(this.currChar !== "\"" || this.IsEscapeChar()) {
-            if (this.currChar === "EOF" || this.currChar === '\n' || this.currChar === '\r') {
+        while(this.currChar !== '"' || this.IsEscapeChar()) {
+            if (this.currChar === 'EOF' || this.currChar === '\n' || this.currChar === '\r') {
                 // FIXME: Error here
                 break;
             }
@@ -84,18 +113,24 @@ export class Tokenizer {
     }
 
     private GetId(): Token {
-        let str:string = this.currChar;
+        let value:string = this.currChar;
         let offset = this.pos;
         this.Advance();
-        while(this.isAlphaNumeric(this.currChar) && this.currChar.length === 1) {
-            str += this.currChar;
+        while(this.isAlphaNumeric(this.currChar) && this.currChar !== "EOF") {
+            value += this.currChar;
             this.Advance()
         }
-        let keyword = RESERVED_KEYWORDS.get(str.toLowerCase());
+        let keyword = RESERVED_KEYWORDS.get(value.toLowerCase());
         if (keyword) {
-            return createToken(keyword, str, offset, this.pos);
+            return createToken(keyword, value, offset, this.pos);
         }
-        return createToken(TokenType.id, str, offset, this.pos);
+        // A id token confirmed, check if it is a command start
+        if (this.BackPeek(value.length, true) === '\n' && this.Peek(true) === ',') {
+            // set command scan start flag
+            this.isLiteralToken = true;
+            return createToken(TokenType.command, value, offset, this.pos);
+        } 
+        return createToken(TokenType.id, value, offset, this.pos);
     }
 
     private GetMark(): Token {
@@ -120,8 +155,52 @@ export class Tokenizer {
         }
     }
 
+    private LiteralToken() {
+        let start = this.pos;
+        while (this.Peek() !== ',' && this.Peek() !== '%' && this.currChar !== "EOF") {
+            this.Advance();
+        }
+        this.Advance();
+        let end = this.pos;
+        const value = this.document.substr(start, end-start).trim();
+        return createToken(TokenType.string, value, start, end);
+    }
+
     GetNextToken(): Token {
         while(this.currChar !== "EOF") {
+            if (this.isLiteralToken) {
+                switch (this.currChar) {
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                        // skip
+                        this.Advance();
+                        continue;
+                    case '%':
+                        // If next character is a space, 
+                        if (this.Peek() === ' ') {
+                            this.isLiteralDeref = true;
+                            this.Advance();
+                            break;
+                        }
+                        this.Advance();
+                        // TODO: AHK allows number as identifier to be derefered
+                        // This is for get cli parameter
+                        let token = this.GetId();
+                        // FIXME: check close % of %% dereference
+                        this.Advance();
+                        return token;
+                    case ',':
+                        // this.isLiteralDeref = false;
+                        this.Advance();
+                        return createToken(TokenType.comma, ',', this.pos-1, this.pos);
+                    default:
+                        // is deref 
+                        if (this.isLiteralDeref) break;
+                        return this.LiteralToken();
+
+                }
+            }
             switch (this.currChar) {
                 case ' ':
                 case '\t':
