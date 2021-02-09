@@ -51,9 +51,9 @@ export class Tokenizer {
         if (skipWhite) {
             let nwp = 1;
             while (this.document[pos-nwp] === " "){
-                --nwp;
+                ++nwp;
             }
-            if (pos-nwp === 0) {
+            if (pos-nwp <= 0) {
                 return "\n"
             }
             return this.document[pos-nwp];

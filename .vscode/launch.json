@@ -9,7 +9,7 @@
 				"--timeout",
 				"999999",
 				"--colors",
-				"${workspaceRoot}/server/out/test/semantic_stack.test.js"
+				"${workspaceRoot}/server/out/test/tokenizer.test.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
 			"name": "Test debug",

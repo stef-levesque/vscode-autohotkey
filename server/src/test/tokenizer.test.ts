@@ -3,13 +3,13 @@ import { createToken, Token, TokenType } from '../utilities/types'
 import { Tokenizer } from '../parser/tokenizer';
 
 suite('Command token basic test', () => {
-	const cmdTokenStr = 'SoundGet, master_mute, , mute';
+	const cmdTokenStr = '    SoundGet, master_mute, , mute';
 	const expectTokens = [
 		createToken(TokenType.command, 'SoundGet', 0, 7),
 		createToken(TokenType.comma, ',', 7, 8),
 		createToken(TokenType.string, 'master_mute', 8, 20),
 		createToken(TokenType.comma, ',', 20, 21),
-		createToken(TokenType.string, '', 21, 22),
+		// createToken(TokenType.string, '', 21, 22),
 		createToken(TokenType.comma, ',', 22, 23),
 		createToken(TokenType.string, 'mute', 23, 28),
 		createToken(TokenType.EOF, 'EOF', 29, 29)
@@ -40,7 +40,7 @@ suite('Command token basic test', () => {
 });
 
 suite('Function token test', () => {
-	const cmdTokenStr = 'SoundGet(master_mute, , mute)';
+	const cmdTokenStr = '   SoundGet(master_mute, , mute)';
 	const expectTokens = [
 		createToken(TokenType.id, 'SoundGet', 0, 7),
 		createToken(TokenType.openParen, '(', 7, 8),

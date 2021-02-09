@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.0
+
+1. Command parse
+2. Unit test
+3. fix command parse bug (0.5.1)
+
 ## 0.4.0
 
 1. improve include path parse
