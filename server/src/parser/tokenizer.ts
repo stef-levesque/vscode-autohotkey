@@ -37,7 +37,7 @@ export class Tokenizer {
         }
         if (skipWhite) {
             let nwp = 0;
-            while (this.document[this.pos+nwp] === " "){
+            while (this.document[this.pos-nwp] && this.document[this.pos-nwp].trim().length === 0){
                 ++nwp;
             }
             return this.document[this.pos+nwp];
@@ -50,7 +50,7 @@ export class Tokenizer {
         if (pos === 0) return "\n";
         if (skipWhite) {
             let nwp = 1;
-            while (this.document[pos-nwp] === " "){
+            while (this.document[pos-nwp] && this.document[pos-nwp].trim().length === 0) {
                 ++nwp;
             }
             if (pos-nwp <= 0) {

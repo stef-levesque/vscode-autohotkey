@@ -3,7 +3,7 @@ import { createToken, Token, TokenType } from '../utilities/types'
 import { Tokenizer } from '../parser/tokenizer';
 
 suite('Command token basic test', () => {
-	const cmdTokenStr = '    SoundGet, master_mute, , mute';
+	const cmdTokenStr = '    	SoundGet	, master_mute, , mute';
 	const expectTokens = [
 		createToken(TokenType.command, 'SoundGet', 0, 7),
 		createToken(TokenType.comma, ',', 7, 8),
