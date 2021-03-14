@@ -7,7 +7,7 @@ AutoHotKey language support for VS Code
 
 ## What's New
 
-1. Command signture help, delete command snippets
+1. Experimental hint for where symbol is included on completion. ONLY work on global symbol.
 2. Enumerate include
    * Documents must be explicitly included by `#include`
    * **Notice** `#include DirName` are not implemented now

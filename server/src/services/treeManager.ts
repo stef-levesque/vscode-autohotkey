@@ -84,9 +84,9 @@ export class TreeManager
 
     /**
      * Server cached include informations for each documents
-     * Map<DocmemtsUri, Set<IncludeAbsolutePath>>
+     * Map<DocmemtsUri, Map<RawIncludePath, IncludeAbsolutePath>>
      */
-    private incInfos: Map<string, Set<string>>;
+    private incInfos: Map<string, Map<string, string>>;
 
     private ioService: IoService;
     
@@ -150,7 +150,7 @@ export class TreeManager
      * Update infomation of a given document, will automatic load its includes
      * @param uri Uri of updated document
      * @param docinfo AST of updated document
-     * @param doc TextDocument of  update documnet
+     * @param doc TextDocument of update documnet
      */
 	public async updateDocumentAST(uri: string, docinfo: IFakeDocumentInfomation, doc: TextDocument) {
         // updata documnet
@@ -171,32 +171,12 @@ export class TreeManager
         // this code works why?
         // no return async always fails?
         for (let path of useneed) {
-            // switch (extname(path)) {
-            //     case '':
-                    
-            //         break;
-            
-            //     default:
-            //         break;
-            // }
+            const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
+            let p = this.include2Path(path, docDir);
+            if (!p) continue;
             // if is lib include, use lib dir
             // 我有必要一遍遍读IO来确认库文件存不存在吗？
-            if (path[0] === '<') {
-                const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
-                let searchDir: string[] = []
-                const np = normalize(path.slice(1, path.length-1)+'.ahk');
-                const dir = normalize(docDir + '\\Lib\\' + np);
-                const ULibDir = normalize(this.ULibDir + '\\' + np);
-                const SLibDir = normalize(this.SLibDir + '\\' + np);
-                searchDir.push(dir, ULibDir, SLibDir);
-                for(const d of searchDir) {
-                    if (this.ioService.fileExistsSync(d)) {
-                        path = d;
-                        break;
-                    }
-                }
-            }
-            const doc = await this.loadDocumnet(path);
+            const doc = await this.loadDocumnet(p);
             if (doc) {
                 let lexer = new Lexer(doc);
                 this.serverDocs.set(doc.uri, doc);
@@ -204,9 +184,9 @@ export class TreeManager
                 this.docsAST.set(doc.uri, incDocInfo);
                 // TODO: Correct document include tree
                 if (this.incInfos.has(uri))
-                    this.incInfos.get(uri)?.add(path);
+                    this.incInfos.get(uri)?.set(path, p);
                 else
-                    this.incInfos.set(uri, new Set([path]));
+                    this.incInfos.set(uri, new Map([[path, p]]));
                 // TODO: link include's include to document
                 // load include document's include documents
                 this.updateDocumentAST(doc.uri, incDocInfo, doc);
@@ -300,6 +280,35 @@ export class TreeManager
         return incInfo;
     }
 
+    private include2Path(rawPath: string, scriptPath: string): string|undefined {
+        const scriptDir = scriptPath;
+        const normalized = normalize(rawPath);
+        switch (extname(normalized)) {
+            case '.ahk':
+                if (dirname(normalized)[0] === '.') // if dir start as ../ or .
+                    return normalize(scriptDir + '\\' + normalized);
+                else    // absolute path
+                    return normalized;
+            case '':
+                if (rawPath[0] === '<' && rawPath[rawPath.length-1] === '>') {
+                    let searchDir: string[] = []
+                    const np = normalize(rawPath.slice(1, rawPath.length-1)+'.ahk');
+                    const dir = normalize(scriptDir + '\\Lib\\' + np);
+                    const ULibDir = normalize(this.ULibDir + '\\' + np);
+                    const SLibDir = normalize(this.SLibDir + '\\' + np);
+                    searchDir.push(dir, ULibDir, SLibDir);
+                    for(const d of searchDir) {
+                        if (this.ioService.fileExistsSync(d))
+                            return d;
+                    }
+                }
+                // TODO: handle include path change
+                break;
+            default:
+                break;
+        }
+    }
+
     /**
      * A simple(vegetable) way to get all include AST of a document
      * @returns SymbolNode[]-ASTs, document uri
@@ -309,7 +318,7 @@ export class TreeManager
         if (!docinfo) return undefined;
         const incInfo = this.incInfos.get(this.currentDocUri) || [];
         let r: Map<string, SymbolNode[]> = new Map();
-        for (const path of incInfo) {
+        for (const [raw, path] of incInfo) {
             const uri = URI.file(path).toString();
             const incDocInfo = this.docsAST.get(uri);
             if (incDocInfo) {
@@ -361,18 +370,24 @@ export class TreeManager
     }
 
     public getGlobalCompletion(): CompletionItem[] {
-        let incTree: SymbolNode[] = [];
+        let incCompletion: CompletionItem[] = [];
         let docinfo: IFakeDocumentInfomation|undefined;
         if (this.currentDocUri)
             docinfo = this.docsAST.get(this.currentDocUri);
         if (!docinfo) return [];
         // TODO: 应该统一只用this.allIncludeTreeinfomation
         const incInfo = this.incInfos.get(this.currentDocUri) || []
-        for (let inc of incInfo) {
-            const incUri = URI.file(inc).toString();
+        // 为方便的各种重复存储，还要各种加上累赘代码，真是有点沙雕
+        for (let [raw, path] of incInfo) {
+            const incUri = URI.file(path).toString();
             const tree = this.docsAST.get(incUri)?.tree;
-            if (tree)
-                incTree.push(...tree);
+            if (tree) {
+                incCompletion.push(...tree.map(node => {
+                    let c = this.convertNodeCompletion(node);
+                    c.data += '\nInclude from ' + raw;
+                    return c;
+                }))
+            }
         }
         
         return this.getTree().map(node => this.convertNodeCompletion(node))
@@ -388,7 +403,7 @@ export class TreeManager
             ci.kind = CompletionItemKind.Function;
             return ci;
         }))
-        .concat(incTree.map(node => this.convertNodeCompletion(node)));
+        .concat(incCompletion);
     }
 
     public getScopedCompletion(pos: Position): CompletionItem[] {
@@ -617,6 +632,7 @@ export class TreeManager
             ci.kind = CompletionItemKind.Variable;
         } else if (info.kind === SymbolKind.Class) {
             ci['kind'] = CompletionItemKind.Class;
+            ci.data = ''
         } else if (info.kind === SymbolKind.Event) {
             ci['kind'] = CompletionItemKind.Event;
         } else if (info.kind === SymbolKind.Null) {

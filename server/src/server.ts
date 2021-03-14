@@ -309,6 +309,7 @@ connection.onCompletionResolve(
 		switch (item.kind) {
 			case CompletionItemKind.Function:
 			case CompletionItemKind.Method:
+			case CompletionItemKind.Class:
 				item.detail = item.data;
 				break;
 			case CompletionItemKind.Variable:

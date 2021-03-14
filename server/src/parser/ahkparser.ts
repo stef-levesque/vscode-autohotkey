@@ -2,17 +2,12 @@ import {
 	Position,
 	Range,
     SymbolKind,
-    CompletionItem,
-    CompletionItemKind
 } from 'vscode-languageserver';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { 
-    normalize, 
-    dirname, 
     extname 
 } from 'path';
-import { URI } from 'vscode-uri';
 
 import { 
     FuncNode, 
@@ -82,7 +77,7 @@ export class Lexer {
             this.JumpMeanless();
             let startLine = this.line;
             try {
-                if ((match = this.currentText.match(FuncReg)) && this.isVaildBlockStart()) {
+                if ((match = this.currentText.match(FuncReg)) && this.isVaildBlockStart(match[0].length)) {
                     switch (match[1].toLowerCase()) {
                         // skip if() and while()
                         case 'if':
@@ -95,7 +90,7 @@ export class Lexer {
                             break;
                     }
                 }
-                else if ((match = this.currentText.match(ClassReg)) && this.isVaildBlockStart()) {
+                else if ((match = this.currentText.match(ClassReg)) && this.isVaildBlockStart(match[0].length)) {
                     result.push(this.GetClassInfo(match, startLine));
                 }
                 else if (Symbol = this.GetLabelInfo()) {
@@ -141,11 +136,11 @@ export class Lexer {
      * verify is a vaild block start
      * if not is add reference of this symbol
      */
-    private isVaildBlockStart(): boolean {
+    private isVaildBlockStart(startIndex: number): boolean {
         // search if there is a "{" in the rest of the line
         // if not we go next line 
         let line = this.line;
-        let text = this.currentText as string;
+        const text = (<string>this.currentText).slice(startIndex);
         if (text.search(/{/) >= 0) {
             this.advanceLine();
             return true;
@@ -187,16 +182,10 @@ export class Lexer {
      * @param rawPath Raw include path of a ahk file
      */
     private checkInclude(rawPath: string): void {
-        const scriptPath = URI.parse(this.document.uri).fsPath
-        const scriptDir = dirname(scriptPath);
-        const normalized = normalize(rawPath);
-        switch (extname(normalized)) {
+        switch (extname(rawPath)) {
             case '.ahk':
-                if (dirname(normalized)[0] === '.') // if dir start as ../ or .
-                    this.includeFile.add(normalize(scriptDir + '\\' + normalized))
-                else    // absolute path
-                    this.includeFile.add(normalized);
-                    break;
+                this.includeFile.add(rawPath);
+                break;
             case '':
                 if (rawPath[0] === '<' && rawPath[rawPath.length-1] === '>')
                     this.includeFile.add(rawPath)
@@ -238,7 +227,7 @@ export class Lexer {
     */
     private GetClassInfo(match: RegExpMatchArray, startLine: number):SymbolNode {
         let name:string = (<{[key: string]: string}>match['groups'])['classname']
-        let sub = this.Analyze(true, 1000);
+        let sub = this.Analyze(true, 2000);
         let endMatch: RegExpMatchArray|null;
         // FIXME: temporary soluation, invaild -1 line marked builtin property
         const invaildRange: Range = Range.create(
@@ -275,7 +264,8 @@ export class Lexer {
         }
         return SymbolNode.create(name, 
                         SymbolKind.Class,
-                        Range.create(Position.create(startLine, 0), Position.create(startLine, 0)));
+                        Range.create(Position.create(startLine, 0), Position.create(startLine, 0)),
+                        sub);
     }
 
     private GetLabelInfo():SymbolNode|undefined {
