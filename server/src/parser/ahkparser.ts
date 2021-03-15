@@ -17,7 +17,8 @@ import {
     SymbolNode, 
     Token, 
     TokenType,
-    IFakeDocumentInfomation
+    IFakeDocumentInfomation,
+    ILoggerBase
 } from '../utilities/types';
 import { Tokenizer } from './tokenizer'
 export class Lexer {
@@ -28,13 +29,15 @@ export class Lexer {
     private symboltree: Array<SymbolNode|FuncNode>|null;
     private referenceTable: ReferenceMap;
     private includeFile: Set<string> = new Set();
-    // private logger: RemoteConsole['log'];
     private document: TextDocument;
 
-    constructor (document: TextDocument){
+    private logger: ILoggerBase;
+
+    constructor (document: TextDocument, logger: ILoggerBase){
         this.document = document;
         this.symboltree = null;
         this.referenceTable = new Map();
+        this.logger = logger;
     }
 
     private advanceLine(): void {
@@ -215,6 +218,7 @@ export class Lexer {
                                    this.PParams(match[2]),
                                    sub);
         }
+        this.logger.error(`Method parse fail: ${name} at ${startLine+1}-${this.line+1}`)
         return FuncNode.create(name, 
                         SymbolKind.Function,
                         Range.create(Position.create(startLine, 0), Position.create(startLine, 0)),
@@ -262,6 +266,7 @@ export class Lexer {
                                    Range.create(Position.create(startLine, 0), Position.create(endLine, endIndex)),
                                    sub);
         }
+        this.logger.error(`Class parse fail: ${name} at ${startLine+1}-${this.line+1}`)
         return SymbolNode.create(name, 
                         SymbolKind.Class,
                         Range.create(Position.create(startLine, 0), Position.create(startLine, 0)),

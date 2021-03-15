@@ -44,6 +44,7 @@ import { builtin_variable } from "./utilities/builtins";
 import { Lexer } from './parser/ahkparser'
 import { TreeManager } from './services/treeManager';
 import { SymbolNode } from './utilities/types';
+import { Logger } from './utilities/logger';
 
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -56,10 +57,10 @@ let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
+const logger = new Logger(connection.console);
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let builtinVariableCompletions: CompletionItem[] = buildbuiltin_variable();
-let DOCManager: TreeManager = new TreeManager();
-let logger = connection.console.log;
+let DOCManager: TreeManager = new TreeManager(logger);
 
 type Maybe<T> = T | undefined;
 
@@ -245,7 +246,7 @@ connection.onDefinition(
 })
 
 documents.onDidOpen(async e => {
-	let lexer = new Lexer(e.document);
+	let lexer = new Lexer(e.document, logger);
 	const docInfo = lexer.Parse();
 	DOCManager.initDocument(e.document.uri, docInfo, e.document);
 });
@@ -260,7 +261,7 @@ documents.onDidClose(e => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
-	let lexer = new Lexer(change.document);
+	let lexer = new Lexer(change.document, logger);
 	let docAST = lexer.Parse();
 	DOCManager.updateDocumentAST(change.document.uri, docAST, change.document);
 	validateTextDocument(change.document);

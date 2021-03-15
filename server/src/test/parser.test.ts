@@ -4,6 +4,7 @@ import * as Path from 'path';
 import { IoService } from '../services/ioService';
 import * as assert from 'assert';
 import { SymbolKind } from 'vscode-languageserver';
+import { Logger } from '../utilities/logger';
 
 suite('AHK regex parser test', () => {
 	const ioService = new IoService();
@@ -18,7 +19,7 @@ suite('AHK regex parser test', () => {
 			console.log('File load fail')
 		
 		const doc = TextDocument.create(path, 'ahk', 0, file);
-		parser = new Lexer(doc);
+		parser = new Lexer(doc, new Logger(console));
 		done();
 	})
 

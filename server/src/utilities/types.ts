@@ -224,3 +224,15 @@ export interface IFakeDocumentInfomation {
      */
 	include: Set<string>
 }
+
+/**
+ * Base logger interface, mirror vscodes logger
+ * ref: vscode-kos-language-server
+ */
+ export interface ILoggerBase {
+    error(message: string): void;
+    warn(message: string): void;
+    info(message: string): void;
+    log(message: string): void;
+  }
+  

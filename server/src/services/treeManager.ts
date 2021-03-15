@@ -16,7 +16,8 @@ import {
 	Word,
     ReferenceMap,
     IFakeDocumentInfomation,
-    NodeInfomation
+    NodeInfomation,
+    ILoggerBase
 } from '../utilities/types';
 import {
 	INodeResult, 
@@ -88,6 +89,8 @@ export class TreeManager
      */
     private incInfos: Map<string, Map<string, string>>;
 
+    private logger: ILoggerBase;
+
     private ioService: IoService;
     
     /**
@@ -112,7 +115,7 @@ export class TreeManager
      */
     private readonly ULibDir: string;
 
-	constructor() {
+	constructor(logger: ILoggerBase) {
 		this.serverDocs = new Map();
         this.docsAST = new Map();
         this.incInfos = new Map();
@@ -124,6 +127,7 @@ export class TreeManager
         // TODO: non hardcoded Standard Library
         this.SLibDir = 'C:\\Program Files\\AutoHotkey\\Lib'
         this.ULibDir = homedir() + '\\Documents\\AutoHotkey\\Lib'
+        this.logger = logger;
     }
     
     /**
@@ -178,7 +182,7 @@ export class TreeManager
             // 我有必要一遍遍读IO来确认库文件存不存在吗？
             const doc = await this.loadDocumnet(p);
             if (doc) {
-                let lexer = new Lexer(doc);
+                let lexer = new Lexer(doc, this.logger);
                 this.serverDocs.set(doc.uri, doc);
                 let incDocInfo = lexer.Parse();
                 this.docsAST.set(doc.uri, incDocInfo);
