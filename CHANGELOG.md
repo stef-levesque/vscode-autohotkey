@@ -7,6 +7,8 @@
 3. fix command parse bug (0.5.1)
 4. improve regex parser. Handle `{}` better. (0.5.3)
 5. Experimental hint for where symbol is included on completion (0.5.3)
+6. Correct enumerate Includes (0.5.4)
+7. Fix that `/` and `<` fire completion incorrectly (0.5.4)
 
 ## 0.4.0
 
