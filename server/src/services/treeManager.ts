@@ -172,9 +172,13 @@ export class TreeManager
             useneed = docinfo.include;
             useless = [];
         }
+
+        // EnumIncludes
+        let incQueue: string[] = [...useneed];
         // this code works why?
         // no return async always fails?
-        for (let path of useneed) {
+        let path = incQueue.shift();
+        while (path) {
             const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
             let p = this.include2Path(path, docDir);
             if (!p) continue;
@@ -191,10 +195,9 @@ export class TreeManager
                     this.incInfos.get(uri)?.set(path, p);
                 else
                     this.incInfos.set(uri, new Map([[path, p]]));
-                // TODO: link include's include to document
-                // load include document's include documents
-                this.updateDocumentAST(doc.uri, incDocInfo, doc);
+                incQueue.push(...Array.from(incDocInfo.include));
             }
+            path = incQueue.shift();
         }
             
     }

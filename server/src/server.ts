@@ -288,9 +288,11 @@ connection.onCompletion(
 		if (_compeltionParams.context && 
 			(_compeltionParams.context.triggerCharacter === '/' || _compeltionParams.context.triggerCharacter === '<')) {
 			let result = DOCManager.selectDocument(textDocument.uri).includeDirCompletion(position);
-			if (result) return result;
+			if (result) 
+				return result;
+			else
+				return undefined;
 		}
-
 
 		let result = DOCManager.selectDocument(textDocument.uri).getSuffixNodes(position);
 		if (result) {

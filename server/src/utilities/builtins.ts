@@ -158,7 +158,9 @@ export const builtin_variable = [
     ["A_LoopRegSubKey", "此变量仅在注册表循环Loop, Reg中有效. 当前子键名. 如果没有使用 Recurse 参数以递归查询其他子键时, 此变量的值与 Key 参数相同. 在递归查询时, 此变量的值将为当前获取项的完整路径, 其中不包含根键. 例如: Software\\SomeApplication\\My SubKey"],
     ["A_LoopRegTimeModified", "此变量仅在注册表循环Loop, Reg中有效. 当前子键或其中任何一个值的上次修改时间. 格式为 YYYYMMDDHH24MISS. 当前获取项不是子键(即 A_LoopRegType 不是单词 KEY) 时,此变量将为空."],
     ["A_LoopReadLine", "请参阅文件读取循环loop, files. 当前获取的文件或文件夹的名称(不含路径)."],
-    ["A_LoopField", "请参阅解析循环Loop, Parse. 它包含了 InputVar 中当前子字符串(片段) 的内容. 如果一个内层解析循环包含在一个外层解析循环中, 则最内层循环的片段将具有优先权."]
+    ["A_LoopField", "请参阅解析循环Loop, Parse. 它包含了 InputVar 中当前子字符串(片段) 的内容. 如果一个内层解析循环包含在一个外层解析循环中, 则最内层循环的片段将具有优先权."],
+    ["true", "布尔值 true, 内置变量值为 1"],
+    ["false", "布尔值 false, 内置变量值为 0"]
 ]
 
 export const builtin_function: BuiltinFuncNode[] = [
