@@ -1,4 +1,4 @@
-import { Token } from "../utilities/types";
+import { Token } from "./types";
 
 export type Expr = INodeResult<IBinOp|IUnaryOperator|ILiteral|IVariable|IFunctionCall|IMethodCall|IPropertCall|INoOpt>; 
 

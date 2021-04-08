@@ -3,7 +3,7 @@ import {
     TokenType,
     createToken,
     ITokenMap,
-} from "../utilities/types";
+} from "./types";
 
 export class Tokenizer {
     private pos: number = 0;

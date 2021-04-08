@@ -14,26 +14,30 @@ import {
     Parameter, 
     ReferenceInfomation, 
     ReferenceMap, 
-    SymbolNode, 
+    SymbolNode,
+    ClassNode, 
     Token, 
     TokenType,
-    IFakeDocumentInfomation,
-    ILoggerBase
-} from '../utilities/types';
+    IDocumentInfomation,
+    ISymbolNode,
+    IFuncNode,
+    VariableNode
+} from './types';
 import { Tokenizer } from './tokenizer'
+import { mockLogger } from '../utilities/logger';
 export class Lexer {
     private line = -1;
     private currentText: string|undefined;
     private currentrawText: string = '';
     private lineCommentFlag: boolean = false;
-    private symboltree: Array<SymbolNode|FuncNode>|null;
+    private symboltree: Array<ISymbolNode|IFuncNode>|null;
     private referenceTable: ReferenceMap;
     private includeFile: Set<string> = new Set();
     private document: TextDocument;
 
     private logger: ILoggerBase;
 
-    constructor (document: TextDocument, logger: ILoggerBase){
+    constructor (document: TextDocument, logger: ILoggerBase = mockLogger){
         this.document = document;
         this.symboltree = null;
         this.referenceTable = new Map();
@@ -50,7 +54,7 @@ export class Lexer {
         }
     }
 
-    public Parse(): IFakeDocumentInfomation {
+    public Parse(): IDocumentInfomation {
         this.line = -1;
         this.advanceLine();
         this.referenceTable = new Map();
@@ -60,14 +64,13 @@ export class Lexer {
             refTable: this.referenceTable,
             include: this.includeFile
         }
-
     }
 
-    public Analyze(isEndByBrace: boolean = false, maxLine: number = 10000): Array<SymbolNode|FuncNode> {
+    public Analyze(isEndByBrace: boolean = false, maxLine: number = 10000): Array<ISymbolNode|IFuncNode> {
         const lineCount = Math.min(this.document.lineCount, this.line + maxLine);
 
-        let Symbol: SymbolNode|undefined;
-        const result: Array<SymbolNode | FuncNode> = [];
+        let Symbol: Maybe<ISymbolNode>;
+        const result: Array<ISymbolNode> = [];
         const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
         const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
         const VarReg = /\s*\b((?<!\.)[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*)(\.[a-zA-Z0-9\u4e00-\u9fa5#_@$]+)*?\s*(?=[+\-*/.:]=|\+\+|\-\-)/g;
@@ -203,7 +206,7 @@ export class Lexer {
     * @param match fullmatch array of a method
     * @param startLine start line of a method
     */
-    private GetMethodInfo(match: RegExpMatchArray, startLine: number): FuncNode {
+    private GetMethodInfo(match: RegExpMatchArray, startLine: number): IFuncNode {
         // if we match the funcName(param*), 
         // then we check if it is a function definition
         let name:string = (<{[key: string]: string}>match['groups'])['funcname']
@@ -212,14 +215,14 @@ export class Lexer {
         if (this.currentText && (endMatch = this.currentText.match(/^[ \t]*(})/))) {
             let endLine = this.line;
             let endIndex = endMatch[0].length;
-            return FuncNode.create(name, 
-                                   SymbolKind.Function,
-                                   Range.create(Position.create(startLine, 0), Position.create(endLine, endIndex)),
-                                   this.PParams(match[2]),
-                                   sub);
+            return new FuncNode(name, 
+                                SymbolKind.Function,
+                                Range.create(Position.create(startLine, 0), Position.create(endLine, endIndex)),
+                                this.PParams(match[2]),
+                                sub);
         }
         this.logger.error(`Method parse fail: ${name} at ${startLine+1}-${this.line+1}`)
-        return FuncNode.create(name, 
+        return new FuncNode(name, 
                         SymbolKind.Function,
                         Range.create(Position.create(startLine, 0), Position.create(startLine, 0)),
                         this.PParams(match[2]));
@@ -229,7 +232,7 @@ export class Lexer {
     * @param match match result
     * @param startLine startline of this symbol
     */
-    private GetClassInfo(match: RegExpMatchArray, startLine: number):SymbolNode {
+    private GetClassInfo(match: RegExpMatchArray, startLine: number):ISymbolNode {
         let name:string = (<{[key: string]: string}>match['groups'])['classname']
         let sub = this.Analyze(true, 2000);
         let endMatch: RegExpMatchArray|null;
@@ -240,9 +243,9 @@ export class Lexer {
         );
         // class property belongs to method's subnode which is wrong
         // fix it here
-        let propertyList: SymbolNode[] = [
-            SymbolNode.create('base', SymbolKind.Property, invaildRange),
-            SymbolNode.create('__class', SymbolKind.Property, invaildRange)
+        let propertyList: ISymbolNode[] = [
+            new SymbolNode('base', SymbolKind.Property, invaildRange),
+            new SymbolNode('__class', SymbolKind.Property, invaildRange)
         ];
         for (const fNode of sub) {
             if (fNode.subnode) {
@@ -261,28 +264,28 @@ export class Lexer {
         if (this.currentText && (endMatch = this.currentText.match(/^[ \t]*(})/))) {
             let endLine = this.line;
             let endIndex = endMatch[0].length;
-            return SymbolNode.create(name, 
-                                   SymbolKind.Class,
-                                   Range.create(Position.create(startLine, 0), Position.create(endLine, endIndex)),
-                                   sub);
+            return new ClassNode(name, 
+                            SymbolKind.Class,
+                            Range.create(Position.create(startLine, 0), Position.create(endLine, endIndex)),
+                            sub);
         }
         this.logger.error(`Class parse fail: ${name} at ${startLine+1}-${this.line+1}`)
-        return SymbolNode.create(name, 
+        return new ClassNode(name, 
                         SymbolKind.Class,
                         Range.create(Position.create(startLine, 0), Position.create(startLine, 0)),
                         sub);
     }
 
-    private GetLabelInfo():SymbolNode|undefined {
+    private GetLabelInfo():ISymbolNode|undefined {
         let text = <string>this.currentText;
         let match = text.match(/^\s*(?<labelname>[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*):\s*(\s;.*)?$/);
         let range = Range.create(Position.create(this.line, 0), Position.create(this.line, 0));
         if (match) {
             let labelname = (<{ [key: string]: string }>match['groups'])['labelname'];
-            return SymbolNode.create(labelname, SymbolKind.Null, range);
+            return new SymbolNode(labelname, SymbolKind.Null, range);
         } else if (match = text.match(/^\s*(?<labelname>[\x09\x20-\x7E]+)::/)) {
             let labelname = (<{ [key: string]: string }>match['groups'])['labelname'];
-            return SymbolNode.create(labelname, SymbolKind.Event, range);
+            return new SymbolNode(labelname, SymbolKind.Event, range);
         }
     }
 
@@ -290,11 +293,12 @@ export class Lexer {
      * Return variable symbol node
      * @param match matched variable name string
      */
-    private GetVarInfo(match: string): SymbolNode {
+    private GetVarInfo(match: string): ISymbolNode {
         // get position of current variable in current line
         const index = (<string>this.currentText).search(match);
         // cut string to assignment token for parsing of tokenizer
         const s = (<string>this.currentText).slice(index+match.length);
+        let ref: Maybe<string>;
         const tokenizer = new Tokenizer(s);
         let tokenStack: Token[] = [];
         tokenStack.push(tokenizer.GetNextToken());
@@ -311,6 +315,7 @@ export class Lexer {
                         perfix.push(token.content);
                     }
                 }
+                ref = perfix.join('.');
                 this.addReference(match, perfix.join('.'), this.line);
             }
         }
@@ -320,14 +325,16 @@ export class Lexer {
             if (propertyList[0] === 'this') {
                 // property is return as subnode of method
                 // will be fixed in GetClassInfo
-                return SymbolNode.create(propertyList[1], 
+                return new VariableNode(propertyList[1], 
                             SymbolKind.Property,
-                            Range.create(Position.create(this.line, index), Position.create(this.line, index)));
+                            Range.create(Position.create(this.line, index), Position.create(this.line, index)),
+                            ref);
             }
         }
-        return SymbolNode.create(match, 
-                                SymbolKind.Variable,
-                                Range.create(Position.create(this.line, index), Position.create(this.line, index)));
+        return new VariableNode(match, 
+                        SymbolKind.Variable,
+                        Range.create(Position.create(this.line, index), Position.create(this.line, index)),
+                        ref);
     }
 
     private PParams(s_params: string): Parameter[] {
@@ -353,7 +360,12 @@ export class Lexer {
         let text = this.document.getText(line)
         return text;
     }
-
+    /**
+     * Add reference infomation to referenceTable
+     * @param variable var
+     * @param symbol Class or function that a variable is refered
+     * @param line Line of the variable
+     */
     private addReference(variable: string, symbol: string, line: number): void {
         if (this.referenceTable.has(symbol)) {
             this.referenceTable.get(symbol)?.push(ReferenceInfomation.create(variable, line));

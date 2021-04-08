@@ -43,7 +43,7 @@ import {
 import { builtin_variable } from "./utilities/builtins";
 import { Lexer } from './parser/ahkparser'
 import { TreeManager } from './services/treeManager';
-import { SymbolNode } from './utilities/types';
+import { ISymbolNode } from './parser/types';
 import { Logger } from './utilities/logger';
 
 
@@ -61,8 +61,6 @@ const logger = new Logger(connection.console);
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let builtinVariableCompletions: CompletionItem[] = buildbuiltin_variable();
 let DOCManager: TreeManager = new TreeManager(logger);
-
-type Maybe<T> = T | undefined;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -92,6 +90,7 @@ connection.onInitialize((params: InitializeParams) => {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
 			// Tell the client that this server supports code completion.
+			// `/` and `<` is only used for include compeltion
 			completionProvider: {
 				resolveProvider: true,
 				triggerCharacters: ['.', '/', '<']
@@ -125,12 +124,15 @@ connection.onInitialized(() => {
 	}
 });
 
-// The AHK Language Server settings
+/**
+ * Name of AHK document language 
+ */
 enum docLangName {
 	CN = 'CN',
 	NO = 'no'		// No Doc
 };
 
+// The AHK Language Server settings
 interface AHKLSSettings {
 	maxNumberOfProblems: number;
 	documentLanguage: docLangName;			// which language doc to be used
@@ -177,8 +179,8 @@ function getDocumentSettings(resource: string): Thenable<AHKLSSettings> {
 	return result;
 }
 
-function flatTree(tree: SymbolNode[]): SymbolNode[] {
-	let result: SymbolNode[] = [];
+function flatTree(tree: ISymbolNode[]): ISymbolNode[] {
+	let result: ISymbolNode[] = [];
 	tree.map(info => {
 		 // FIXME: temporary soluation, invaild -1 line marked builtin property
 		if (info.range.start.line !== -1) 
@@ -238,6 +240,8 @@ connection.onDefinition(
 	}
 
 	let { position } = params;
+
+	// search definiton at request position
 	let locations = DOCManager.selectDocument(params.textDocument.uri).getDefinitionAtPosition(position);
 	if (locations.length) {
 		return locations
@@ -245,6 +249,7 @@ connection.onDefinition(
 	return undefined;
 })
 
+// load opened document
 documents.onDidOpen(async e => {
 	let lexer = new Lexer(e.document, logger);
 	const docInfo = lexer.Parse();
@@ -253,6 +258,7 @@ documents.onDidOpen(async e => {
 
 // Only keep settings for open documents
 documents.onDidClose(e => {
+	// delete document infomation that is closed
 	documentSettings.delete(e.document.uri);
 	//TODO: better sulotion about close document
 	DOCManager.deleteUnusedDocument(e.document.uri);
@@ -285,20 +291,25 @@ connection.onCompletion(
 			return undefined;
 		}
 		const {position, textDocument} = _compeltionParams;
+
+		// findout if we are in an include compeltion
 		if (_compeltionParams.context && 
 			(_compeltionParams.context.triggerCharacter === '/' || _compeltionParams.context.triggerCharacter === '<')) {
 			let result = DOCManager.selectDocument(textDocument.uri).includeDirCompletion(position);
+			// if request is fired by `/` and `<`,but not start with "include", we exit
 			if (result) 
 				return result;
 			else
 				return undefined;
 		}
 
+		// search and find out if we are in a suffix compeltion
 		let result = DOCManager.selectDocument(textDocument.uri).getSuffixNodes(position);
 		if (result) {
 			return result.nodes.map(DOCManager.convertNodeCompletion.bind(DOCManager));
 		}
 
+		// if not go to symbol compeltion
 		return DOCManager.getGlobalCompletion()
 			.concat(DOCManager.getScopedCompletion(_compeltionParams.position))
 			.concat(keyWordCompletions).concat(builtinVariableCompletions);
@@ -313,9 +324,12 @@ connection.onCompletionResolve(
 			case CompletionItemKind.Function:
 			case CompletionItemKind.Method:
 			case CompletionItemKind.Class:
+				// provide addition infomation of class and function
 				item.detail = item.data;
 				break;
 			case CompletionItemKind.Variable:
+				// if this is a `built-in` variable
+				// provide the document of it
 				if (item.detail === 'Built-in Variable') {
 					// TODO: configuration for each document.
 					let uri = documents.all()[0].uri;

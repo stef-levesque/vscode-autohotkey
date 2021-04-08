@@ -9,7 +9,7 @@
 				"--timeout",
 				"999999",
 				"--colors",
-				"${workspaceRoot}/server/out/test/tokenizer.test.js"
+				"${workspaceRoot}/server/out/test/*.test.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
 			"name": "Test debug",
@@ -18,7 +18,8 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
-			"type": "pwa-node"
+			"type": "pwa-node",
+			"outFiles": ["${workspaceRoot}/server/out/test/*.test.js"]
 		},
 		{
 			"type": "extensionHost",

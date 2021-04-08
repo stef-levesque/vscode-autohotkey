@@ -5,7 +5,7 @@
  * Only parse a line.
  */
 
-import { createToken, Token, TokenType } from '../utilities/types';
+import { createToken, Token, TokenType } from './types';
 import { Tokenizer } from './tokenizer'
 import { 
     IAssign,

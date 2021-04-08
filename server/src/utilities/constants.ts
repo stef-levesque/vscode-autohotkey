@@ -1,5 +1,5 @@
 import { CompletionItemKind, CompletionItem } from 'vscode-languageserver';
-import { Parameter } from "./types";
+import { Parameter } from "../parser/types";
 import { 
     builtin_variable,
     builtin_function,

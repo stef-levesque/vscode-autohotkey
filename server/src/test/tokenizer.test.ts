@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { createToken, Token, TokenType } from '../utilities/types'
+import { createToken, Token, TokenType } from '../parser/types'
 import { Tokenizer } from '../parser/tokenizer';
 
 suite('Command token basic test', () => {

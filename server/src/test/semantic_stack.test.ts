@@ -15,7 +15,8 @@ suite('Semantic Parse test', () => {
 	test('Command Call Test', () => {
 		let ssparser = new SemanticStack(cmdTestStr);
 		const actualAST = ssparser.statement();
-		assert.ok(actualAST?.value instanceof CommandCall)
+		assert.ok(actualAST);
+		// assert.strictEqual(actualAST.value, new CommandCall('SoundGet', ))
 		console.log(actualAST);
 	})
 })

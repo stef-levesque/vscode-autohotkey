@@ -1,5 +1,3 @@
-import { ILoggerBase } from "./types";
-
 /**
  * Simple Logger, reference: kos-language-server
  */
@@ -27,3 +25,15 @@ export class Logger implements ILoggerBase {
 
 	}
 }
+
+/**
+ * A mock logger for testings or performance
+ * reference: kos-language-server
+ */
+ export const mockLogger: ILoggerBase = {
+	error: (_: string) => {},
+	warn: (_: string) => {},
+	info: (_: string) => {},
+	log: (_: string) => {}
+};
+  
