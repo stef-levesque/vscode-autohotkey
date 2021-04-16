@@ -22,7 +22,29 @@ AutoHotKey language support for VS Code
 * This is a parser based on regular expression. The results are not guaranteed.
 * If you need a debugger, just install any debug extension in market. As recommended options, [AutoHotKey Debug](https://marketplace.visualstudio.com/items?itemName=helsmy.autohotkey-debug) by me or [vscode-autohotkey-debug](https://marketplace.visualstudio.com/items?itemName=zero-plusplus.vscode-autohotkey-debug) by zero-plusplus
 
+## Run This in Vim
+
+For vim user, how to use this extension in vim.
+1. Install coc.nvim.
+2. Go to [vscode markertplace](https://marketplace.visualstudio.com/items?itemName=helsmy.ahk-simple-ls) to download the vsix file of this extension.
+3. Use 7-zip or other unzip software to unzip the vsix.
+4. Open `coc-settings.json` by `:CocConfig`. Add this configuration to your coc configuration file:
+```json
+"languageserver": {
+  "Autohotkey": {
+    "module": "your-unzip-dir/extension/server/out/server.js",
+    "args": ["--node-ipc"],
+    "filetypes": ["autohotkey"],
+    "trace.server": "off",
+    "documentLanguage": "no"
+  }
+}
+```
+5. restart vim, and open an ahk file.
+6. Besides, coc.nvim may need a little configuration. Those can be find in the homepage of coc.nvim.
+
 ## Feature
+
 * Color Syntax(1.1.32 version)
 * Comment blocks
 * Snippets

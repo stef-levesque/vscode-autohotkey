@@ -248,14 +248,20 @@ export class Lexer {
             new SymbolNode('__class', SymbolKind.Property, invaildRange)
         ];
         for (const fNode of sub) {
-            if (fNode.subnode) {
-                fNode.subnode.forEach((node, i) => {
+            if (fNode instanceof FuncNode && fNode.subnode) {
+                // temp array containing non-property node
+                let temp: ISymbolNode[] = [];
+                for (const node of fNode.subnode) {
                     if (node.kind === SymbolKind.Property) {
                         propertyList.push(node);
-                        fNode.subnode?.splice(i, 1);
                     }
-                });
+                    else
+                        temp.push(node);
+                }
+                fNode.subnode = temp;
             }
+            // varible belongs to class is a property
+            // fix it here
             else if (fNode.kind === SymbolKind.Variable)
                 fNode.kind = SymbolKind.Property
         }

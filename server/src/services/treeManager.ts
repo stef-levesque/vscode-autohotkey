@@ -79,13 +79,19 @@ export class TreeManager
 	 */
 	private serverConfigDoc?: TextDocument;
 	/**
-	 * server cached AST for documents, respectively
+	 * server cached AST for documents, respectively 
+     * Map<uri, IDocmentInfomation>
 	 */
     private docsAST: Map<string, IDocumentInfomation>;
 
     /**
+     * local storaged AST of ahk documents, cached included documents
+     */
+    private localAST: Map<string, IDocumentInfomation>;
+
+    /**
      * Server cached include informations for each documents
-     * Map<DocmemtsUri, Map<RawIncludePath, IncludeAbsolutePath>>
+     * Map<DocmemtsUri, Map<IncludeAbsolutePath, RawIncludePath>>
      */
     private incInfos: Map<string, Map<string, string>>;
 
@@ -118,6 +124,7 @@ export class TreeManager
 	constructor(logger: ILoggerBase) {
 		this.serverDocs = new Map();
         this.docsAST = new Map();
+        this.localAST = new Map();
         this.incInfos = new Map();
         this.ioService = new IoService();
 		this.builtinFunction = buildBuiltinFunctionNode();
@@ -157,7 +164,7 @@ export class TreeManager
      * @param doc TextDocument of update documnet
      */
 	public async updateDocumentAST(uri: string, docinfo: IDocumentInfomation, doc: TextDocument) {
-        // updata documnet
+        // update documnet
         this.serverDocs.set(uri, doc);
         const oldInclude = this.docsAST.get(uri)?.include
         let useneed, useless: string[];
@@ -189,12 +196,13 @@ export class TreeManager
                 let lexer = new Lexer(doc, this.logger);
                 this.serverDocs.set(doc.uri, doc);
                 let incDocInfo = lexer.Parse();
-                this.docsAST.set(doc.uri, incDocInfo);
+                // cache to local storage file AST
+                this.localAST.set(doc.uri, incDocInfo);
                 // TODO: Correct document include tree
                 if (this.incInfos.has(uri))
-                    this.incInfos.get(uri)?.set(path, p);
+                    this.incInfos.get(uri)?.set(p, path);
                 else
-                    this.incInfos.set(uri, new Map([[path, p]]));
+                    this.incInfos.set(uri, new Map([[p, path]]));
                 incQueue.push(...Array.from(incDocInfo.include));
             }
             path = incQueue.shift();
@@ -220,15 +228,21 @@ export class TreeManager
     }
 
 	public deleteUnusedDocument(uri: string) {
-        let isUseless: boolean = true;
-        const path = URI.parse(uri).fsPath
-		this.docsAST.forEach(
-			(docinfo) => {
-				// no document include, unused
-				if (docinfo.include.has(path)) isUseless = false;
-			}
-		)
-		if (isUseless) this.docsAST.delete(uri);
+        let incinfo = this.incInfos.get(uri);
+        this.docsAST.delete(uri);
+        this.incInfos.delete(uri);
+        if (incinfo) {
+            for (const [path, raw] of incinfo) {
+                let isUseless: boolean = true;
+                for (const [docuri, docinc] of this.incInfos) {
+                    if (docinc.has(path)) {
+                        isUseless = false;
+                        break;
+                    }
+                }
+                if (isUseless) this.localAST.delete(URI.file(path).toString());
+            }
+        }
 	}
 
     /**
@@ -308,9 +322,9 @@ export class TreeManager
         if (!docinfo) return undefined;
         const incInfo = this.incInfos.get(this.currentDocUri) || [];
         let r: NodeInfomation[] = [];
-        for (const [raw, path] of incInfo) {
+        for (const [path, raw] of incInfo) {
             const uri = URI.file(path).toString();
-            const incDocInfo = this.docsAST.get(uri);
+            const incDocInfo = this.localAST.get(uri);
             if (incDocInfo) {
                 r.push({
                     nodes: incDocInfo.tree,
@@ -372,13 +386,13 @@ export class TreeManager
         // TODO: 应该统一只用this.allIncludeTreeinfomation
         const incInfo = this.incInfos.get(this.currentDocUri) || []
         // 为方便的各种重复存储，还要各种加上累赘代码，真是有点沙雕
-        for (let [raw, path] of incInfo) {
+        for (let [path, raw] of incInfo) {
             const incUri = URI.file(path).toString();
             const tree = this.docsAST.get(incUri)?.tree;
             if (tree) {
                 incCompletion.push(...tree.map(node => {
                     let c = this.convertNodeCompletion(node);
-                    c.data += '\nInclude from ' + raw;
+                    c.data += '  \nInclude from ' + raw;
                     return c;
                 }))
             }
@@ -492,6 +506,7 @@ export class TreeManager
      * @param perfixs perfix list for search(top scope at last)
      */
     private searchSuffix(perfixs: string[], position: Position): Maybe<NodeInfomation> {
+        if (!perfixs.length) return undefined;
         const find = this.searchNode(perfixs, position, true);
         if (!find) return undefined;
         const node = find.nodes[0];

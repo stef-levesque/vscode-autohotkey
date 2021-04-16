@@ -124,7 +124,9 @@ export class ScriptFinder {
 					this.uri = temp.uri;
 					return temp.node;
 				}
-				return undefined;
+				// 这里请求一个有后缀的节点，检查是否有子节点代表后缀，
+				// 这个是在之后的函数检查，如果返回undefined就会将搜索链条打断
+				return this.issuffix ? node : undefined;
 			}
 			return node;
 		}

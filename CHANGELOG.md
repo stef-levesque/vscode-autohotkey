@@ -9,6 +9,8 @@
 5. Experimental hint for where symbol is included on completion (0.5.3)
 6. Correct enumerate Includes (0.5.4)
 7. Fix that `/` and `<` fire completion incorrectly (0.5.4)
+8. Better AST finder, support compeltion suffix for Multiple references (0.5.5)
+9. Fix class parse bug (0.5.5)
 
 ## 0.4.0
 
