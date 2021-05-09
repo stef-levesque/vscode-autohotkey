@@ -28,7 +28,6 @@ import { mockLogger } from '../utilities/logger';
 export class Lexer {
     private line = -1;
     private currentText: string|undefined;
-    private currentrawText: string = '';
     private lineCommentFlag: boolean = false;
     private symboltree: Array<ISymbolNode|IFuncNode>|null;
     private referenceTable: ReferenceMap;
@@ -47,8 +46,9 @@ export class Lexer {
     private advanceLine(): void {
         if (this.line < this.document.lineCount-1) {
             this.line++;
-            this.currentrawText = this.GetText();
-            this.currentText = this.currentrawText.replace(/"(""|.)*?"/g, '""');
+            // this.currentrawText = this.GetText();
+            // this.currentText = this.currentrawText.replace(/"(""|.)*?"/g, '""');
+            this.currentText = this.GetText();
         } else {
             this.currentText = undefined;
         }

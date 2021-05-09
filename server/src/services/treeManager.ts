@@ -703,9 +703,9 @@ export class TreeManager
      */
     private getUnfinishedFunc(node: IFunctionCall): Maybe<IFunctionCall> {
         let perfixs: string[]|undefined;
-        // let lastParam: any
-        let lastParam = node.actualParams[node.actualParams.length-1] as INodeResult<IASTNode>;
-        if (!lastParam.errors) {
+        let lastParam = node.actualParams[node.actualParams.length-1];
+        // no-actual-parameter check 
+        if (!lastParam || !lastParam.errors) {
             return undefined;
         }
         if (lastParam.value instanceof FunctionCall) {

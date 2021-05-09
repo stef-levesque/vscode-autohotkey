@@ -4,8 +4,6 @@ import * as Path from 'path';
 import { IoService } from '../services/ioService';
 import * as assert from 'assert';
 import { SymbolKind } from 'vscode-languageserver';
-import { Logger } from '../utilities/logger';
-import { ISymbolNode, SymbolNode } from '../parser/types';
 
 suite('AHK regex parser test', () => {
 	const ioService = new IoService();
