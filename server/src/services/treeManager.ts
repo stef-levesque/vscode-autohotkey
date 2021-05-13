@@ -188,7 +188,11 @@ export class TreeManager
         while (path) {
             const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
             let p = this.include2Path(path, docDir);
-            if (!p) continue;
+            if (!p) 
+            {
+                path = incQueue.shift();
+                continue;
+            }
             // if is lib include, use lib dir
             // 我有必要一遍遍读IO来确认库文件存不存在吗？
             const doc = await this.loadDocumnet(p);
