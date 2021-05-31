@@ -32,7 +32,6 @@ import {
     ICommandCall,
     CommandCall
  } from "./asttypes";
-import { strict } from 'assert';
 
 export function isExpr(node: IASTNode): node is IBinOp {
     if ((node as IBinOp)['right'] === undefined) {

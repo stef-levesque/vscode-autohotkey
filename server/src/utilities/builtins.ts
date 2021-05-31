@@ -835,6 +835,33 @@ export const builtin_function: BuiltinFuncNode[] = [
         ]
     },
     {
+        "name": "StrReplace",
+        "params": [
+            {
+                "name": "Haystack",
+                "isOptional": false
+            },
+            {
+                "name": "Needle",
+                "isOptional": false
+            },
+            {
+                "name": "ReplaceText",
+                "isOptional": true
+            },
+            {
+                "name": "OutputVarCount",
+                "isOptional": true,
+                "defaultVal": "0"
+            },
+            {
+                "name": "Limit",
+                "isOptional": true,
+                "defaultVal": "-1"
+            }
+        ]
+    },
+    {
         "name": "SubStr",
         "params": [
             {

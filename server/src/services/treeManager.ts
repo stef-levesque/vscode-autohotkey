@@ -480,8 +480,9 @@ export class TreeManager
         if (!context) return undefined;
         let suffix = this.getWordAtPosition(position);
         let perfixs: string[] = [];
-        let temppos = (suffix.name === '') ? suffix.range.start.character : suffix.range.start.character-1;
-        // let w = this.document.getText(suffix.range);
+        let temppos = (suffix.name === '') ? 
+                    position.character-1 : // we need pre-character of empty suffix
+                    suffix.range.start.character-1;
 
         // Push perfixs into perfixs stack
         while (this.getChar(context, temppos) === '.') {
@@ -734,31 +735,6 @@ export class TreeManager
             locations.push(Location.create(find.uri, node.range));
         }
         return locations;
-        // let word = this.getWordAtPosition(position);
-        // let tree = this.getSuffixNodes(position);
-        // let incTree = this.allIncludeTreeinfomation();
-        // if (!tree) {
-        //     // FIXME: need search include AST
-        //     tree = {
-        //         nodes: this.getTree(),
-        //         uri: this.currentDocUri
-        //     }
-        // }
-        // let locations: Location[] = [];
-        // // FIXME: temporary soluation, invaild -1 line marked builtin property
-        // let find = arrayFilter(tree.nodes, node => node.name === word.name && node.range.start.line !== -1);
-        // if (find) locations.push(Location.create(tree.uri, find.range));
-        // if (incTree) {
-        //     for (const [uri, nodes] of incTree) {
-        //         find = arrayFilter(nodes, node => node.name === word.name && node.range.start.line !== -1);
-        //         if (find){
-        //             locations.push(Location.create(uri, find.range));
-        //             break;
-        //         } 
-
-        //     }
-        // }
-
     }
 
     private getWordAtPosition(position: Position): Word {
@@ -766,37 +742,35 @@ export class TreeManager
 		const context = this.getLine(position.line);
 		if (!context)
 			return Word.create('', Range.create(position, position));
-        let wordName = '';
+        let wordName: string;
         let start: Position;
         let end: Position;
         let pos: number;
 
-        // if given position is beyond line length, start at last character
-        pos = (position.character >= context.length) ? context.length-1 : position.character
+        pos = position.character;
         // Scan start
-        for (let c = this.getChar(context, pos); c !== ''; --pos) {
-            if(c.search(reg) >= 0) {
-                wordName = c + wordName;
-                c = this.getChar(context, pos-1);
-            } else {
+        // Start at previous character
+        // 从前一个字符开始
+        while (pos >= 0) {
+            if(reg.test(this.getChar(context, pos-1)))
+                pos -= 1;
+            else
                 break;
-            }
         }
-        pos = (pos+1 >= context.length) ? context.length-1 : pos+1
-        start = Position.create(position.line, pos); // why start need +1?
+
+        start = Position.create(position.line, pos);
+
+        pos = position.character
         // Scan end
-        pos = position.character+1 
-        for (let c = this.getChar(context, pos); c !== ''; pos++) {
-            if(c.search(reg) >= 0) {
-                wordName += c;
-                c = this.getChar(context, pos+1);
-            } else {
+        while (pos <= context.length) {
+            if(reg.test(this.getChar(context, pos)))
+                pos += 1;
+            else
                 break;
-            }
         }
-        // if end is beyond line length, end at last character
-        pos = (pos >= context.length) ? context.length-1 : pos
+        
         end = Position.create(position.line, pos);
+        wordName = context.slice(start.character, end.character);
         return Word.create(wordName, Range.create(start, end));
     }
 

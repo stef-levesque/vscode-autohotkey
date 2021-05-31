@@ -16,6 +16,8 @@ export enum TokenType{
      * mark: ?
      */
     question,
+    // string connect
+    sconnect,
     // binary
     plus,
     minus,
