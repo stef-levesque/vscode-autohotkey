@@ -188,8 +188,7 @@ export class TreeManager
         while (path) {
             const docDir = dirname(URI.parse(this.currentDocUri).fsPath);
             let p = this.include2Path(path, docDir);
-            if (!p) 
-            {
+            if (!p) {
                 path = incQueue.shift();
                 continue;
             }
@@ -392,7 +391,8 @@ export class TreeManager
         // 为方便的各种重复存储，还要各种加上累赘代码，真是有点沙雕
         for (let [path, raw] of incInfo) {
             const incUri = URI.file(path).toString();
-            const tree = this.docsAST.get(incUri)?.tree;
+            // read include file tree from disk file tree caches
+            const tree = this.localAST.get(incUri)?.tree;
             if (tree) {
                 incCompletion.push(...tree.map(node => {
                     let c = this.convertNodeCompletion(node);
