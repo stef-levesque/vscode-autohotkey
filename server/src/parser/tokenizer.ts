@@ -45,7 +45,7 @@ export class Tokenizer {
         return this.document[this.pos+1];
     }
 
-    private BackPeek(backstartlen:number, skipWhite: boolean = false): string {
+    private BackPeek(backstartlen: number = 1, skipWhite: boolean = false): string {
         let pos = this.pos - backstartlen;
         if (pos === 0) return "\n";
         if (skipWhite) {
@@ -76,6 +76,7 @@ export class Tokenizer {
         let sNum:string = this.NumberAdvance();
         if (this.currChar === '.') {
             sNum += '.';
+            this.Advance();
             sNum += this.NumberAdvance();
         } 
         if (this.currChar === 'e' || this.currChar === 'E') {
@@ -213,9 +214,13 @@ export class Tokenizer {
                     return createToken(TokenType.EOL, "\n", this.pos-1, this.pos);
                 case '.':
                     if (this.isDigit(this.Peek())) {
-                        this.GetNumber();
+                        return this.GetNumber();
                     }
                     else {
+                        if (this.isWhiteSpace(this.Peek()) && this.isWhiteSpace(this.BackPeek())) {
+                            this.Advance();
+                            return createToken(TokenType.sconnect, " . ", this.pos-1, this.pos);
+                        }
                         this.Advance();
                         return createToken(TokenType.dot, ".", this.pos-1, this.pos);
                     }
@@ -252,6 +257,10 @@ export class Tokenizer {
 
     private isAscii(s: string): boolean {
         return (s >= 'A' && s <= 'Z') || (s >= 'a' && s <= 'z');
+    }
+
+    private isWhiteSpace(s: string): boolean {
+        return s === ' ' || s === '\t'
     }
     /**
      * reset tokenizer for new loop
@@ -372,7 +381,6 @@ const identifierTest = new RegExp(
     ["global", TokenType.global], 
     ["local", TokenType.local], 
     ["throw", TokenType.throw],
-    ["include", TokenType.include], 
     ["continue", TokenType.continue]
 ]);
 const OTHER_MARK: ITokenMap = new Map([

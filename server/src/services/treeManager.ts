@@ -46,6 +46,8 @@ import { Lexer } from '../parser/ahkparser';
 import { IoEntity, IoKind, IoService } from './ioService';
 import { union } from '../utilities/setOperation';
 import { NodeMatcher, ScriptFinder } from '../parser/scriptFinder';
+import { threadId } from 'worker_threads';
+import { info } from 'console';
 
 // if belongs to FuncNode
 function isFuncNode(node: ISymbolNode): node is IFuncNode{
@@ -179,7 +181,18 @@ export class TreeManager
             useneed = docinfo.include;
             useless = [];
         }
-
+        // delete unused incinfo
+        let incInfo = this.incInfos.get(doc.uri);
+        if (incInfo) {
+            for (const uri of useless) {
+                let tempInfo: Map<string, string> = new Map();
+                for (const [path, raw] of incInfo) {
+                    if (raw !== uri)
+                        tempInfo.set(path, raw);
+                }
+                this.incInfos.set(doc.uri, tempInfo);
+            }
+        } 
         // EnumIncludes
         let incQueue: string[] = [...useneed];
         // this code works why?
@@ -675,7 +688,7 @@ export class TreeManager
                         lastnode.actualParams.length-1;
             if (lastnode instanceof CommandCall) {
                 // All Commands are built-in, just search built-in Commands
-                const bfind = arrayFilter(this.builtinCommand, item => item.name === funcName);
+                const bfind = arrayFilter(this.builtinCommand, item => item.name.toLowerCase() === funcName.toLowerCase());
                 if (!bfind) return undefined;
                 return {
                     func: bfind,
@@ -686,7 +699,7 @@ export class TreeManager
             let find = this.searchNode([funcName].concat(...perfixs.reverse()), position);
             // if no find, search build-in
             if (!find) {
-                const bfind = arrayFilter(this.builtinFunction, item => item.name === funcName);
+                const bfind = arrayFilter(this.builtinFunction, item => item.name.toLowerCase() === funcName.toLowerCase());
                 if (!bfind) return undefined;
                 return {
                     func: bfind,

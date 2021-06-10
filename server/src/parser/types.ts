@@ -11,22 +11,37 @@ export enum TokenType{
     // equals
     aassign,     // :=
     equal,       // =
+    pluseq,      // +=
+    minuseq,     // -=
+    multieq,     // *=
+    diveq,       // /=
+    idiveq,      // //=
+    sconneq,     // .=
+    oreq,        // |=
+    andeq,       // &=
+    xoreq,       // ^=
+    rshifteq,    // >>=
+    lshifteq,    // <<=
+    regeq,       // ~=
     // triple
     /**
      * mark: ?
      */
     question,
-    // string connect
-    sconnect,
     // binary
+    sconnect,    // string connect
     plus,
     minus,
     multi,
-    div,
+    div,         // /
+    idiv,        // //
     power,
+    and,         // &
+    or,          // |
+    xor,         // ^
     not,
-    and,
-    or,
+    logicand,    // &&
+    logicor,     // ||
     notEqual,
     greaterEqual,
     greater,
@@ -57,13 +72,15 @@ export enum TokenType{
      * mark: :
      */
     colon,       // :
+    hotkey,      // ::
 
     // keyword
     if, else, switch, case, do, loop, 
     while, until, break, continue, 
     gosub, goto, return, global, 
-    local, throw, include, class, 
+    local, throw, class, 
     extends, new,
+    keyand, keyor, keynot,
 
     command,
     
