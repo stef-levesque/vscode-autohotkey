@@ -184,14 +184,16 @@ export class TreeManager
         // delete unused incinfo
         let incInfo = this.incInfos.get(doc.uri);
         if (incInfo) {
+            let tempInfo: string[] = [];
+            // acquire absulte uri to detele 
             for (const uri of useless) {
-                let tempInfo: Map<string, string> = new Map();
-                for (const [path, raw] of incInfo) {
-                    if (raw !== uri)
-                        tempInfo.set(path, raw);
+                for (const [abs, raw] of incInfo) {
+                    if (raw === uri)
+                        tempInfo.push(abs);
                 }
-                this.incInfos.set(doc.uri, tempInfo);
             }
+            for (const abs of tempInfo)
+                incInfo.delete(abs);
         } 
         // EnumIncludes
         let incQueue: string[] = [...useneed];

@@ -11,6 +11,7 @@
 7. Fix that `/` and `<` fire completion incorrectly (0.5.4)
 8. Better AST finder, support compeltion suffix for Multiple references (0.5.5)
 9. Fix class parse bug (0.5.5)
+10. Bug fixs #15 #16 #17 (0.5.9)
 
 ## 0.4.0
 
