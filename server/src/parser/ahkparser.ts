@@ -71,10 +71,6 @@ export class Lexer {
 
         let Symbol: Maybe<ISymbolNode>;
         const result: Array<ISymbolNode> = [];
-        const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
-        const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
-        const VarReg = /\s*\b((?<!\.)[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*)(\.[a-zA-Z0-9\u4e00-\u9fa5#_@$]+)*?\s*(?=[+\-*/.:]=|\+\+|\-\-)/g;
-        const includeReg = /^\s*#include[,]?/i;
         let match:RegExpMatchArray|null;
         let unclosedBrace = 1;
         let varnames: Set<string> = new Set();
@@ -413,3 +409,9 @@ export class Lexer {
         this.lineCommentFlag = false;
     }
 }
+
+// Test regexes
+const FuncReg = /^[ \t]*(?<funcname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)(\(.*?\))/;
+const ClassReg = /^[ \t]*class[ \t]+(?<classname>[a-zA-Z0-9\u4e00-\u9fa5#_@\$\?\[\]]+)/i;
+const VarReg = /\s*\b((?<!\.)[a-zA-Z\u4e00-\u9fa5#_@$][a-zA-Z0-9\u4e00-\u9fa5#_@$]*)(\.[a-zA-Z0-9\u4e00-\u9fa5#_@$]+)*?\s*(?=[+\-*/.:]=|\+\+|\-\-)/g;
+const includeReg = /^\s*#include[,]?/i;

@@ -258,7 +258,7 @@
     },
     "Pause": {
       "prefix": "Pause",
-      "body": "Pause, ${1:[ On|Off|Toggle}, ${2:OperateOnUnderlyingThread?]}"
+      "body": "Pause"
     },
     "Abs()": {
       "prefix": "Abs()",
@@ -358,7 +358,7 @@
     },
     "Exception()": {
       "prefix": "Exception()",
-      "body":　"Exception(${1:Message} ${2:[, What}, ${3:Extra]})"
+      "body": "Exception(${1:Message} ${2:[, What}, ${3:Extra]})"
     },
     "FileExist()": {
       "prefix": "FileExist()",
@@ -630,179 +630,179 @@
     },
     ".Read()": {
       "prefix": ".Read()",
-      "body": "Read(${1:[Characters]})"
+      "body": ".Read(${1:[Characters]})"
     },
     ".Write()": {
       "prefix": ".Write()",
-      "body": "Write(${1:String})"
+      "body": ".Write(${1:String})"
     },
     ".ReadLine()": {
       "prefix": ".ReadLine()",
-      "body": "ReadLine()"
+      "body": ".ReadLine()"
     },
     ".WriteLine()": {
       "prefix": ".WriteLine()",
-      "body": "WriteLine(${1:[String]})"
+      "body": ".WriteLine(${1:[String]})"
     },
     ".ReadUInt()": {
       "prefix": ".ReadUInt()",
-      "body": "ReadUInt()"
+      "body": ".ReadUInt()"
     },
     ".ReadInt()": {
       "prefix": ".ReadInt()",
-      "body": "ReadInt()"
+      "body": ".ReadInt()"
     },
     ".ReadInt64()": {
       "prefix": ".ReadInt64()",
-      "body": "ReadInt64()"
+      "body": ".ReadInt64()"
     },
     ".ReadShort()": {
       "prefix": ".ReadShort()",
-      "body": "ReadShort()"
+      "body": ".ReadShort()"
     },
     ".ReadUShort()": {
       "prefix": ".ReadUShort()",
-      "body": "ReadUShort()"
+      "body": ".ReadUShort()"
     },
     ".ReadChar()": {
       "prefix": ".ReadChar()",
-      "body": "ReadChar()"
+      "body": ".ReadChar()"
     },
     ".ReadUChar()": {
       "prefix": ".ReadUChar()",
-      "body": "ReadUChar()"
+      "body": ".ReadUChar()"
     },
     ".ReadDouble()": {
       "prefix": ".ReadDouble()",
-      "body": "ReadDouble()"
+      "body": ".ReadDouble()"
     },
     ".ReadFloat()": {
       "prefix": ".ReadFloat()",
-      "body": "ReadFloat()"
+      "body": ".ReadFloat()"
     },
     ".WriteUInt()": {
       "prefix": ".WriteUInt()",
-      "body": "WriteUInt(${1:Num})"
+      "body": ".WriteUInt(${1:Num})"
     },
     ".WriteInt()": {
       "prefix": ".WriteInt()",
-      "body": "WriteInt(${1:Num})"
+      "body": ".WriteInt(${1:Num})"
     },
     ".WriteInt64()": {
       "prefix": ".WriteInt64()",
-      "body": "WriteInt64(${1:Num})"
+      "body": ".WriteInt64(${1:Num})"
     },
     ".WriteShort()": {
       "prefix": ".WriteShort()",
-      "body": "WriteShort(${1:Num})"
+      "body": ".WriteShort(${1:Num})"
     },
     ".WriteUShort()": {
       "prefix": ".WriteUShort()",
-      "body": "WriteUShort(${1:Num})"
+      "body": ".WriteUShort(${1:Num})"
     },
     ".WriteChar()": {
       "prefix": ".WriteChar()",
-      "body": "WriteChar(${1:Num})"
+      "body": ".WriteChar(${1:Num})"
     },
     ".WriteUChar()": {
       "prefix": ".WriteUChar()",
-      "body": "WriteUChar(${1:Num})"
+      "body": ".WriteUChar(${1:Num})"
     },
     ".WriteDouble()": {
       "prefix": ".WriteDouble()",
-      "body": "WriteDouble(${1:Num})"
+      "body": ".WriteDouble(${1:Num})"
     },
     ".WriteFloat()": {
       "prefix": ".WriteFloat()",
-      "body": "WriteFloat(${1:Num})"
+      "body": ".WriteFloat(${1:Num})"
     },
     ".RawRead()": {
       "prefix": ".RawRead()",
-      "body": "RawRead(${1:VarOrAddress}, ${2:Bytes})"
+      "body": ".RawRead(${1:VarOrAddress}, ${2:Bytes})"
     },
     ".RawWrite()": {
       "prefix": ".RawWrite()",
-      "body": "RawWrite(${1:VarOrAddress}, ${2:Bytes})"
+      "body": ".RawWrite(${1:VarOrAddress}, ${2:Bytes})"
     },
     ".Seek()": {
       "prefix": ".Seek()",
-      "body": "Seek(${1:Distance}, ${2:[Origin = 0]})"
+      "body": ".Seek(${1:Distance}, ${2:[Origin = 0]})"
     },
     ".Tell()": {
       "prefix": ".Tell()",
-      "body": "Tell()"
+      "body": ".Tell()"
     },
     ".Close()": {
       "prefix": ".Close()",
-      "body": "Close()"
+      "body": ".Close()"
     },
     ".Insert()": {
       "prefix": ".Insert()",
-      "body": "Insert(${1:Key}, ${2:Value})"
+      "body": ".Insert(${1:Key}, ${2:Value})"
     },
     ".Remove()": {
       "prefix": ".Remove()",
-      "body": "Remove(${1:Key})"
+      "body": ".Remove(${1:Key})"
     },
     ".MinIndex()": {
       "prefix": ".MinIndex()",
-      "body": "MinIndex()"
+      "body": ".MinIndex()"
     },
     ".MaxIndex()": {
       "prefix": ".MaxIndex()",
-      "body": "MaxIndex()"
+      "body": ".MaxIndex()"
     },
     ".SetCapacity()": {
       "prefix": ".SetCapacity()",
-      "body": "SetCapacity(${1:MaxItems})"
+      "body": ".SetCapacity(${1:MaxItems})"
     },
     ".GetCapacity()": {
       "prefix": ".GetCapacity()",
-      "body": "GetCapacity()"
+      "body": ".GetCapacity()"
     },
     ".GetAddress()": {
       "prefix": ".GetAddress()",
-      "body": "GetAddress(${1:Key})"
+      "body": ".GetAddress(${1:Key})"
     },
     ".NewEnum()": {
       "prefix": ".NewEnum()",
-      "body": "_NewEnum()"
+      "body": "._NewEnum()"
     },
     ".HasKey()": {
       "prefix": ".HasKey()",
-      "body": "HasKey(${1:Key})"
+      "body": ".HasKey(${1:Key})"
     },
     ".Clone()": {
       "prefix": ".Clone()",
-      "body": "Clone()"
+      "body": ".Clone()"
     },
     ".IsByRef()": {
       "prefix": ".IsByRef()",
-      "body": "IsByRef(${1:ParamIndex})"
+      "body": ".IsByRef(${1:ParamIndex})"
     },
     ".IsOptional()": {
       "prefix": ".IsOptional()",
-      "body": "IsOptional(${1:ParamIndex})"
+      "body": ".IsOptional(${1:ParamIndex})"
     },
     ".__Get()": {
       "prefix": ".__Get()",
-      "body": "__Get(${1:[Key}, ${2:Key2}, ${3:...]})"
+      "body": ".__Get(${1:[Key}, ${2:Key2}, ${3:...]})"
     },
     ".__Set()": {
       "prefix": ".__Set()",
-      "body": "__Set(${1:[Key}, ${2:Key2}, ${3:...]}, ${4:Value})"
+      "body": ".__Set(${1:[Key}, ${2:Key2}, ${3:...]}, ${4:Value})"
     },
     ".__Call()": {
       "prefix": ".__Call()",
-      "body": "__Call(${1:Name}, ${2:[Params...]})"
+      "body": ".__Call(${1:Name}, ${2:[Params...]})"
     },
     ".__New()": {
       "prefix": ".__New()",
-      "body": "__New(${1:})"
+      "body": ".__New(${1:})"
     },
     ".__Delete()": {
       "prefix": ".__Delete()",
-      "body": "__Delete(${1:})"
+      "body": ".__Delete(${1:})"
     },
     ".Length": {
       "prefix": ".Length",
@@ -1239,10 +1239,6 @@
     "CtrlBreak": {
       "prefix": "CtrlBreak",
       "body": "CtrlBreak"
-    },
-    "Pause": {
-      "prefix": "Pause",
-      "body": "Pause"
     },
     "ScrollLock": {
       "prefix": "ScrollLock",
@@ -1776,10 +1772,6 @@
       "prefix": "FileSystem",
       "body": "FileSystem"
     },
-    "Label": {
-      "prefix": "Label",
-      "body": "Label"
-    },
     "SetLabel": {
       "prefix": "SetLabel",
       "body": "SetLabel"
@@ -1908,10 +1900,6 @@
       "prefix": "Color",
       "body": "Color"
     },
-    "Delete": {
-      "prefix": "Delete",
-      "body": "Delete"
-    },
     "DeleteAll": {
       "prefix": "DeleteAll",
       "body": "DeleteAll"
@@ -2011,10 +1999,6 @@
     "StatusBar": {
       "prefix": "StatusBar",
       "body": "StatusBar"
-    },
-    "Tab": {
-      "prefix": "Tab",
-      "body": "Tab"
     },
     "Tab2": {
       "prefix": "Tab2",
@@ -2208,14 +2192,6 @@
       "prefix": "Border",
       "body": "Border"
     },
-    "Top": {
-      "prefix": "Top",
-      "body": "Top"
-    },
-    "Bottom": {
-      "prefix": "Bottom",
-      "body": "Bottom"
-    },
     "Buttons": {
       "prefix": "Buttons",
       "body": "Buttons"
@@ -2251,10 +2227,6 @@
     "VisFirst": {
       "prefix": "VisFirst",
       "body": "VisFirst"
-    },
-    "Number": {
-      "prefix": "Number",
-      "body": "Number"
     },
     "Uppercase": {
       "prefix": "Uppercase",
@@ -2368,33 +2340,13 @@
       "prefix": "ReadOnly",
       "body": "ReadOnly"
     },
-    "Password": {
-      "prefix": "Password",
-      "body": "Password"
-    },
     "Hidden": {
       "prefix": "Hidden",
       "body": "Hidden"
     },
-    "Left": {
-      "prefix": "Left",
-      "body": "Left"
-    },
-    "Right": {
-      "prefix": "Right",
-      "body": "Right"
-    },
-    "Center": {
-      "prefix": "Center",
-      "body": "Center"
-    },
     "NoTab": {
       "prefix": "NoTab",
       "body": "NoTab"
-    },
-    "Section": {
-      "prefix": "Section",
-      "body": "Section"
     },
     "Move": {
       "prefix": "Move",
@@ -2415,10 +2367,6 @@
     "ChooseString": {
       "prefix": "ChooseString",
       "body": "ChooseString"
-    },
-    "Text": {
-      "prefix": "Text",
-      "body": "Text"
     },
     "Pos": {
       "prefix": "Pos",
@@ -2487,10 +2435,6 @@
     "Exist": {
       "prefix": "Exist",
       "body": "Exist"
-    },
-    "Close": {
-      "prefix": "Close",
-      "body": "Close"
     },
     "{Blind}": {
       "prefix": "{Blind}",
@@ -2660,10 +2604,6 @@
       "prefix": "Ok",
       "body": "Ok"
     },
-    "Cancel": {
-      "prefix": "Cancel",
-      "body": "Cancel"
-    },
     "Abort": {
       "prefix": "Abort",
       "body": "Abort"
@@ -2672,118 +2612,103 @@
       "prefix": "Retry",
       "body": "Retry"
     },
-    "Ignore":
-    {
+    "StartRegion": {
+      "perfix": ";StartRegion",
+      "body": ";[region]"
+    },
+    "EndRegion": {
+      "perfix": "#EndRegion",
+      "body": ";[endregion]"
+    },
+    "Ignore": {
       "trigger": "Ignore",
       "contents": "Ignore"
     },
-    "TryAgain":
-    {
+    "TryAgain": {
       "trigger": "TryAgain",
       "contents": "TryAgain"
     },
-    "On":
-    {
+    "On": {
       "trigger": "On",
       "contents": "On"
     },
-    "Off":
-    {
+    "Off": {
       "trigger": "Off",
       "contents": "Off"
     },
-    "All":
-    {
+    "All": {
       "trigger": "All",
       "contents": "All"
     },
-    "HKEY_LOCAL_MACHINE":
-    {
+    "HKEY_LOCAL_MACHINE": {
       "trigger": "HKEY_LOCAL_MACHINE",
       "contents": "HKEY_LOCAL_MACHINE"
     },
-    "HKEY_USERS":
-    {
+    "HKEY_USERS": {
       "trigger": "HKEY_USERS",
       "contents": "HKEY_USERS"
     },
-    "HKEY_CURRENT_USER":
-    {
+    "HKEY_CURRENT_USER": {
       "trigger": "HKEY_CURRENT_USER",
       "contents": "HKEY_CURRENT_USER"
     },
-    "HKEY_CLASSES_ROOT":
-    {
+    "HKEY_CLASSES_ROOT": {
       "trigger": "HKEY_CLASSES_ROOT",
       "contents": "HKEY_CLASSES_ROOT"
     },
-    "HKEY_CURRENT_CONFIG":
-    {
+    "HKEY_CURRENT_CONFIG": {
       "trigger": "HKEY_CURRENT_CONFIG",
       "contents": "HKEY_CURRENT_CONFIG"
     },
-    "HKLM":
-    {
+    "HKLM": {
       "trigger": "HKLM",
       "contents": "HKLM"
     },
-    "HKU":
-    {
+    "HKU": {
       "trigger": "HKU",
       "contents": "HKU"
     },
-    "HKCU":
-    {
+    "HKCU": {
       "trigger": "HKCU",
       "contents": "HKCU"
     },
-    "HKCR":
-    {
+    "HKCR": {
       "trigger": "HKCR",
       "contents": "HKCR"
     },
-    "HKCC":
-    {
+    "HKCC": {
       "trigger": "HKCC",
       "contents": "HKCC"
     },
-    "REG_SZ":
-    {
+    "REG_SZ": {
       "trigger": "REG_SZ",
       "contents": "REG_SZ"
     },
-    "REG_EXPAND_SZ":
-    {
+    "REG_EXPAND_SZ": {
       "trigger": "REG_EXPAND_SZ",
       "contents": "REG_EXPAND_SZ"
     },
-    "REG_MULTI_SZ":
-    {
+    "REG_MULTI_SZ": {
       "trigger": "REG_MULTI_SZ",
       "contents": "REG_MULTI_SZ"
     },
-    "REG_DWORD":
-    {
+    "REG_DWORD": {
       "trigger": "REG_DWORD",
       "contents": "REG_DWORD"
     },
-    "REG_BINARY":
-    {
+    "REG_BINARY": {
       "trigger": "REG_BINARY",
       "contents": "REG_BINARY"
     },
-    "DPIScale":
-    {
+    "DPIScale": {
       "trigger": "DPIScale",
       "contents": "DPIScale"
     },
-    "Hwnd":
-    {
+    "Hwnd": {
       "trigger": "Hwnd",
       "contents": "Hwnd"
     },
-    "Parent":
-    {
+    "Parent": {
       "trigger": "Parent",
       "contents": "Parent"
     }

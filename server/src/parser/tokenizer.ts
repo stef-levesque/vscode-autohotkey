@@ -1,3 +1,4 @@
+import { off } from 'process';
 import {
     Token,
     TokenType,
@@ -31,7 +32,7 @@ export class Tokenizer {
         return this;
     }
 
-    private Peek(skipWhite: boolean = false): string {
+    private Peek(len:number = 1, skipWhite: boolean = false): string {
         if(this.pos >= this.document.length) {
             return "EOF";
         }
@@ -40,9 +41,9 @@ export class Tokenizer {
             while (this.document[this.pos-nwp] && this.document[this.pos-nwp].trim().length === 0){
                 ++nwp;
             }
-            return this.document[this.pos+nwp];
+            return this.document[this.pos+nwp+len-1];
         }
-        return this.document[this.pos+1];
+        return this.document[this.pos+len];
     }
 
     private BackPeek(backstartlen: number = 1, skipWhite: boolean = false): string {
@@ -72,7 +73,6 @@ export class Tokenizer {
 
     private GetNumber(): Token {
         let offset = this.pos;
-        let hasdot = false;
         let sNum:string = this.NumberAdvance();
         if (this.currChar === '.') {
             sNum += '.';
@@ -98,7 +98,7 @@ export class Tokenizer {
     }
 
     private GetString(): Token {
-        let str:string = "";
+        let str:string;
         let offset = this.pos;
         this.Advance();
         while(this.currChar !== '"' || this.IsEscapeChar()) {
@@ -106,27 +106,26 @@ export class Tokenizer {
                 // FIXME: Error here
                 break;
             }
-            str += this.currChar;
             this.Advance()
         }
+        str = this.document.slice(offset+1, this.pos);
         this.Advance()
         return createToken(TokenType.string, str, offset, this.pos);
     }
 
     private GetId(): Token {
-        let value:string = this.currChar;
+        let value:string;
         let offset = this.pos;
         this.Advance();
-        while(this.isAlphaNumeric(this.currChar) && this.currChar !== "EOF") {
-            value += this.currChar;
+        while(this.isAlphaNumeric(this.currChar) && this.currChar !== "EOF")
             this.Advance()
-        }
+        value = this.document.slice(offset, this.pos);
         let keyword = RESERVED_KEYWORDS.get(value.toLowerCase());
         if (keyword) {
             return createToken(keyword, value, offset, this.pos);
         }
         // A id token confirmed, check if it is a command start
-        if (this.BackPeek(value.length, true) === '\n' && this.Peek(true) === ',') {
+        if (this.BackPeek(value.length, true) === '\n' && this.Peek(1, true) === ',') {
             // set command scan start flag
             this.isLiteralToken = true;
             return createToken(TokenType.command, value, offset, this.pos);
@@ -134,15 +133,39 @@ export class Tokenizer {
         return createToken(TokenType.id, value, offset, this.pos);
     }
 
+    /**
+     * If # is a Drective return drective,
+     * else return # token 
+     */
+    private GetDrectivesOrSharp(): Token {
+        const start = this.pos;
+        while(this.isAscii(this.currChar) && this.currChar !== "EOF") 
+            this.Advance();
+        const d = this.document.slice(start, this.pos);
+        if (DRECTIVE_TEST.has(d.toLowerCase()))
+            return createToken(TokenType.drective, d, start-1, this.pos);
+        // if not drective, backwards
+        this.pos = start;
+        return createToken(TokenType.sharp, "#", start-1, this.pos);
+    }
+
     private GetMark(): Token {
         let currstr = this.currChar;
         let offset = this.pos;
-        let mark = OTHER_MARK.get(currstr+this.Peek());
+        const p1 = currstr + this.Peek();
+        const p2 = p1 + this.Peek(2);
+        let mark = OTHER_MARK.get(p2);
+        if (mark) {
+            // 3-char token
+            this.Advance().Advance().Advance();
+            return createToken(mark, p2, offset, this.pos);
+        }
+        mark = OTHER_MARK.get(p1);
         if (mark) {
             // 2-char token
             this.Advance().Advance();
             currstr += this.currChar;
-            return createToken(mark, currstr, offset, this.pos);
+            return createToken(mark, p1, offset, this.pos);
         } 
         mark = OTHER_MARK.get(currstr);
         if (mark) {
@@ -226,6 +249,9 @@ export class Tokenizer {
                     }
                 case '"':
                     return this.GetString();
+                case "#":
+                    this.Advance();
+                    return this.GetDrectivesOrSharp();
                 default:
                     if (this.isDigit(this.currChar)) {
                         return this.GetNumber();
@@ -381,17 +407,38 @@ const identifierTest = new RegExp(
     ["global", TokenType.global], 
     ["local", TokenType.local], 
     ["throw", TokenType.throw],
-    ["continue", TokenType.continue]
+    ["continue", TokenType.continue],
+    ["and", TokenType.keyand],
+    ["or", TokenType.keyor],
+    ["not", TokenType.keynot]
 ]);
 const OTHER_MARK: ITokenMap = new Map([
     ["{", TokenType.openBrace], ["}", TokenType.closeBrace],
     ["[",TokenType.openBracket], ["]",TokenType.closeBracket],
     ["(", TokenType.openParen], [")", TokenType.closeParen],
     ["/*", TokenType.openMultiComment], ["*/", TokenType.closeMultiComment],
-    [";", TokenType.lineComment], ["=", TokenType.equal], [":=", TokenType.aassign],
-    ["#", TokenType.sharp],[",",TokenType.comma], [".", TokenType.dot],
+    [";", TokenType.lineComment], ["=", TokenType.equal],
+    ["#", TokenType.sharp],[",",TokenType.comma], [".", TokenType.dot], ["!", TokenType.not],
+    ["&", TokenType.and], ["|", TokenType.or], ["^", TokenType.xor],
+    ["&&", TokenType.logicand], ["||", TokenType.logicor],
     ["+", TokenType.plus], ["-", TokenType.minus], ["*", TokenType.multi],
-    ["/", TokenType.div], ["**", TokenType.power], [">", TokenType.greater],
+    ["/", TokenType.div],["//", TokenType.idiv], ["**", TokenType.power], [">", TokenType.greater],
     ["<", TokenType.less], [">=", TokenType.greaterEqual], ["<=", TokenType.lessEqual],
-    ["?", TokenType.question], [":", TokenType.colon]
+    ["?", TokenType.question], [":", TokenType.colon], ["::", TokenType.hotkey],
+    // equals
+    [":=", TokenType.aassign], ["= ", TokenType.equal], ["+=", TokenType.pluseq], 
+    ["-=", TokenType.minuseq], ["*=", TokenType.multieq], ["/=", TokenType.diveq], 
+    ["//=", TokenType.idiveq], [".=", TokenType.sconneq], ["|=", TokenType.oreq], 
+    ["&=", TokenType.andeq], ["^=", TokenType.xoreq], [">>=", TokenType.rshifteq], 
+    ["<<=", TokenType.lshifteq], ["~=", TokenType.regeq]
 ]);
+
+const DRECTIVE_TEST: Set<string> = new Set([
+    "allowsamelinecomments", "clipboardtimeout", "commentflag", "errorstdout", 
+    "escapechar", "hotkeyinterval", "hotkeymodifiertimeout", "hotstring", "if", 
+    "iftimeout", "ifwinactive", "ifwinactiveclose", "ifwinexist", "ifwinexistclose", 
+    "ifwinnotactive", "ifwinnotactiveclose", "ifwinnotexist", "include", "includeagain", 
+    "inputlevel", "installkeybdhook", "installmousehook", "keyhistory", "ltrim", 
+    "maxhotkeysperinterval", "maxmem", "maxthreads", "maxthreadsbuffer", "maxthreadsperhotkey", 
+    "menumaskkey", "noenv", "notrayicon", "persistent", "singleinstance", "usehook", "warn", "winactivateforce"
+])

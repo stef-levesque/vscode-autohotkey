@@ -9,6 +9,7 @@ function getalltoken(text: string): Token[] {
 		actualTokens.push(token);
 		token = tokenizer.GetNextToken();
 	}
+	actualTokens.push(token);
 	return actualTokens;
 }
 
@@ -16,20 +17,34 @@ suite('Basic Token Test', () => {
 
 	test('float', () => {
 		let actualTokens = getalltoken('1.324 .234');
-		assert.notStrictEqual(actualTokens[0], createToken(TokenType.number, '1.324', 0, 5));
-		assert.notStrictEqual(actualTokens[1], createToken(TokenType.number, '.234', 6, 10));
+		assert.deepStrictEqual(actualTokens[0], createToken(TokenType.number, '1.324', 0, 5));
+		assert.deepStrictEqual(actualTokens[1], createToken(TokenType.number, '.234', 6, 10));
 	});
 
 	test('string', () => {
 		let actualTokens = getalltoken('"123" "AHK是世界第一的热键语言"');
-		assert.notStrictEqual(actualTokens[0], createToken(TokenType.string, '123', 0, 5));
-		assert.notStrictEqual(actualTokens[1], createToken(TokenType.string, 'AHK是世界第一的热键语言', 6, 10));
+		assert.deepStrictEqual(actualTokens[0], createToken(TokenType.string, '123', 0, 5));
+		assert.deepStrictEqual(actualTokens[1], createToken(TokenType.string, 'AHK是世界第一的热键语言', 6, 21));
 	})
 
 	test('identifer', () => {
 		let actualTokens = getalltoken('AHKisHotkey DllCall');
-		assert.notStrictEqual(actualTokens[0], createToken(TokenType.id, 'AHKisHotkey', 0, 5));
-		assert.notStrictEqual(actualTokens[1], createToken(TokenType.id, 'DllCall', 6, 10));
+		assert.deepStrictEqual(actualTokens[0], createToken(TokenType.id, 'AHKisHotkey', 0,  11));
+		assert.deepStrictEqual(actualTokens[1], createToken(TokenType.id, 'DllCall', 12, 19));
+	})
+
+	test('drective', () => {
+		let actualTokens = getalltoken('#IfWinActive WinTitle'); 
+		assert.strictEqual(actualTokens[0].content, 'IfWinActive');
+		assert.strictEqual(actualTokens[0].type, TokenType.drective);
+		assert.strictEqual(actualTokens[1].content, 'WinTitle');
+	})
+
+	test('mark', () => {
+		let actualTokens = getalltoken('^ >>= ||');
+		assert.strictEqual(actualTokens[0].type, TokenType.xor);
+		assert.strictEqual(actualTokens[1].type, TokenType.rshifteq);
+		assert.strictEqual(actualTokens[2].type, TokenType.logicor);
 	})
 });
 
@@ -45,14 +60,8 @@ suite('Command token basic test', () => {
 		createToken(TokenType.string, 'mute', 23, 28),
 		createToken(TokenType.EOF, 'EOF', 29, 29)
 	];
-	let tokenizer = new Tokenizer(cmdTokenStr);
-	let token = tokenizer.GetNextToken();
-	let actualTokens: Token[] = [];
-	while (token.type != TokenType.EOF) {
-		actualTokens.push(token);
-		token = tokenizer.GetNextToken();
-	}
-	actualTokens.push(token);
+
+	let actualTokens: Token[] = getalltoken(cmdTokenStr);
 
 	test('length test', () => {
 		assert.ok(actualTokens.length === expectTokens.length, `acl: ${actualTokens.length} expl: ${expectTokens.length}`);
@@ -83,14 +92,8 @@ suite('Function token test', () => {
 		createToken(TokenType.closeParen, ')', 36, 37),
 		createToken(TokenType.EOF, 'EOF', 37, 37)
 	];
-	let tokenizer = new Tokenizer(cmdTokenStr);
-	let token = tokenizer.GetNextToken();
-	let actualTokens: Token[] = [];
-	while (token.type != TokenType.EOF) {
-		actualTokens.push(token);
-		token = tokenizer.GetNextToken();
-	}
-	actualTokens.push(token);
+
+	let actualTokens: Token[] = getalltoken(cmdTokenStr);
 
 	test('length test', () => {
 		assert.ok(actualTokens.length === expectTokens.length, `acl: ${actualTokens.length} expl: ${expectTokens.length}`);
@@ -99,11 +102,8 @@ suite('Function token test', () => {
 	test('token content test', () => {
 		expectTokens.forEach((expectToken, i) => {
 			let actualToken = actualTokens[i];
-
 			assert.strictEqual(actualToken.type, expectToken.type, 'type false index:'+i);
 			assert.strictEqual(actualToken.content, expectToken.content, 'content false index:'+i);
-			// assert.strictEqual(actualToken.start, expectToken.start, 'start false');
-			// assert.strictEqual(actualToken.end, expectToken.end, 'end false');
 		})
 	});
 });

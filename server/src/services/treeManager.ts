@@ -643,9 +643,26 @@ export class TreeManager
     }
 
     public getFuncAtPosition(position: Position): Maybe<{func: IFuncNode|BuiltinFuncNode, index: number, isCmd: boolean}> {
-		const context = this.LineTextToPosition(position);
+		let context = this.LineTextToPosition(position);
 		if (!context) return undefined;
-        
+
+        // check if we need to attach to previous lines
+        const attachToPreviousTest = new RegExp('^[ \t]*,');
+        if (attachToPreviousTest.test(context)) {
+            let linenum = position.line-1;
+            let lines: Maybe<string> = this.getLine(linenum);
+            context = lines + context;
+            while (lines) {
+                if (attachToPreviousTest.test(lines)) {
+                    linenum -= 1;
+                    lines = this.getLine(linenum);
+                    context = lines + context;
+                } 
+                else
+                    lines = undefined;
+            }
+        }
+
         let stmtStack = new SemanticStack(context);
         let stmt: INodeResult<IFunctionCall| IMethodCall | IPropertCall | IAssign | ICommandCall>|undefined;
         try {

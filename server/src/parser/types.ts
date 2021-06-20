@@ -1,5 +1,4 @@
 import { SymbolKind, Range, Location } from 'vscode-languageserver';
-import { keywords } from '../utilities/constants';
 
 export enum TokenType{
     // literal
@@ -83,6 +82,7 @@ export enum TokenType{
     keyand, keyor, keynot,
 
     command,
+    drective,
     
     // file
     EOL, EOF,

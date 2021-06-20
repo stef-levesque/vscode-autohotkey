@@ -8,14 +8,14 @@
 **/tsconfig.base.json
 contributing.md
 .travis.yml
-client/testFixture/**
-!client/node_modules/vscode-jsonrpc/**
-!client/node_modules/vscode-languageclient/**
-!client/node_modules/vscode-languageserver-protocol/**
-!client/node_modules/vscode-languageserver-types/**
-!client/node_modules/semver/**
-# I don't know why my '!' doesn't work in here
-# client/node_modules/**
+client/testFixture
+client/node_modules/*
+!client/node_modules/vscode-jsonrpc
+!client/node_modules/vscode-languageclient
+!client/node_modules/vscode-languageserver-protocol
+!client/node_modules/vscode-languageserver-types
+!client/node_modules/semver
 *.vsix
 Abandoned
 pic
+scripts
