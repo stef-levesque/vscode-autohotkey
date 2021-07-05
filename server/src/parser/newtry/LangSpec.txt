@@ -1,0 +1,162 @@
+ 
+program -> declaration*
+
+// declarations
+declaration -> ( statement
+    | variableDeclaration
+    | functionDeclaration
+	| classDeclaration
+    | hotKeyDeclaration
+	| labelDeclaration
+)
+
+variableDeclaration -> scope? identifier assignment? (, identifier assignment? )* '\n'
+functionDeclaration -> identifier '(' parameters ')' statementBlock
+classDeclaration -> 'class' identifier ('extends' idenitifer)? statementBlock
+hotKeyDeclaration -> hotkey ('&' hotkey)? '::' (singleLineStatement '\n') | ('\n' statement 'return'?)
+labelDeclaration -> idenitifer ':' '\n' statement 'return'?
+
+// declaration components
+scope -> ('local' | 'global' | 'static')
+
+// parameters
+parameters -> ( parameter (',' parameters)? 
+    | defaultParameters
+)
+defaultParameters -> defaultParameter (',' defaultParameters)?
+parameter -> ( identifier | defaultParameter )
+defaultParameter -> identifier assignment
+
+// assignment
+assignment -> (':=' expression
+    | '=' rawString
+)
+
+// statements
+statement -> ( statementBlock
+    | commandStatement
+    | if
+    | break
+    | return
+    | switch
+    | for
+	| loopCount
+    | loopUntil
+	| while
+	| try
+	| catch
+	| finally
+	| directive
+)
+
+// directive
+directive -> '#' idenitifer parameters '\n'
+
+// block
+statementBlock -> '{' declarations* '}'
+
+// control flow
+if -> 'if' expression statement  ('else' statement)? 
+loopCount -> 'loop' commandExpression statementBlock
+loopUntil -> 'loop' statement 'until' expression statement '\n'
+while -> 'while' expression statement
+for -> 'for' idenitifer (',' idenitifer)? 'in' expression statement
+break -> 'break' idenitifer '\n'
+return -> 'return' expression? '\n'
+try -> 'try' statement
+catch -> 'catch' ','? idenitifer statement
+finally -> 'finally' statement
+
+// command statement
+commandStatement -> command '\n'
+
+// expressions
+expression -> or | statementBlock | choose
+
+// ternary expressions
+choose -> expression '?' expression ':' expression
+
+/** 
+ * we use pratt parsing, 
+ * thus need not to rewrite precedences
+ * to LL(1)
+ */
+// binary expressions
+// or -> and ('or' | '||' and)?
+// and -> equality ('and' | '&&' equality)?
+// equality -> comparison (( '=' | '<>' | '==' ) comparison)?
+// comparison -> addition (( '<' | '>' | '<=' | '>=' ) addition)?
+// addition -> multiplication (( '+' | '-' ) multiplication)?
+// multiplication -> unary (( '*' | '/' ) unary)?
+binaryExpressions -> (unary | factor) ( binaryOperator ( unary | factor ) )
+
+// unary expressions
+unary -> ( '+' | '-' | 'not' | '!' )? factor
+factor -> suffixTerm ('.' factor)*
+suffixTerm -> atom (suffixTermTrailer*)
+suffixTermTrailer -> (call 
+    | arrayIndex 
+    | arrayBracket
+)
+call -> '(' arguments ')'
+arrayIndex -> '.' integer
+arrayBracket -> '[' expression ']'
+
+// expression components
+arguments -> expression? (',' expression)*
+
+// atom
+atom -> ( integer
+    | precentDef
+    | identifier
+    | '(' expression ')'
+)
+
+// binaryOperator
+binaryOperator -> ( 'and'
+    | 'or' | 'xor'
+    | '&' | '|' | '^'
+    | '&&' | '||'
+    | '+' | '-' | '*' | '/' |
+)
+
+// literal
+literal -> ( number
+    | precentDef
+    | 'true'
+    | 'false'
+)
+
+identifier -> ([all valid letter] | '_')*
+fileIdentifier -> identifier ('.' identifier)*
+
+string -> '"' [utf-16]* '"'
+integer -> sub_number
+double -> base ('e' ('+' | '-') sub_number)?
+base -> (sub_number 
+    | '.' sub_number 
+    | sub_number '.' sub_number
+)
+
+sub_number -> [0-9] ([0-9_]* [0-9])*
+
+// command
+command -> idenitifer (',' commandExpression)*
+commandExpression -> ( rawString 
+    | precentDef
+	| '%' singleLineStatement
+)
+
+// precent dereference
+precentDef -> '%' (
+    idenitifer
+    | integer
+    | string 
+)
+'%'
+
+number -> ( integer |
+    double
+)
+
+rawString -> [utf-16]*

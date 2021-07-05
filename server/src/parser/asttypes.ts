@@ -1,3 +1,4 @@
+import { Position } from 'vscode-languageserver';
 import { Token } from "./types";
 
 export type Expr = INodeResult<IBinOp|IUnaryOperator|ILiteral|IVariable|IFunctionCall|IMethodCall|IPropertCall|INoOpt>; 
@@ -30,6 +31,7 @@ export interface IASTNode {
 }
 
 export interface INoOpt extends IASTNode {
+	none: null
 }
 
 export interface IAPair {
@@ -72,6 +74,26 @@ export interface IAssign extends IASTNode {
 	right: Expr
 }
 
+export interface IParameter extends IASTNode {
+	name: string
+	isByref: boolean
+	dfltValue: Expr
+}
+
+export interface IClassDecl extends IASTNode {
+	name: string
+	token: Token
+	exts: Token[]
+	block: IASTNode[]
+}
+
+export interface IFunctionDecl extends IASTNode {
+	name: string
+	token: Token
+	parameters: IParameter[]
+	block: IASTNode[]
+}
+
 export type ICommandCall = IFunctionCall;
 
 export interface IFunctionCall extends IASTNode {
@@ -96,6 +118,51 @@ export interface IPropertCall extends IASTNode {
 export interface INodeResult<T> {
 	errors: boolean;
 	value: T;
+}
+
+export class InvalidNode implements IASTNode {
+	public readonly offrange: IOffRange;
+	public readonly token: Token;
+	constructor(token: Token, start: Position, end: Position) {
+		this.token = token;
+		this.offrange = start;
+	}
+}
+
+export class ClassDeclaration implements IClassDecl {
+	readonly name: string;
+	readonly token: Token;
+	readonly exts: Token[];
+	readonly offrange: IOffRange;
+	block: IASTNode[];
+	constructor(name: string, exts: Token[], token: Token, block: IASTNode[]) {
+		this.name = name;
+		this.exts = exts;
+		this.token = token;
+		this.block = block;
+		this.offrange = {
+			start: token.start,
+			end: token.end
+		};
+	}
+}
+
+export class FunctionDeclaration implements IFunctionDecl {
+	public readonly name: string;
+	public readonly token: Token;
+	public readonly parameters: IParameter[];
+	public readonly block: IASTNode[];
+	public readonly offrange: IOffRange;
+	constructor(name: string, parameters: IParameter[], block: IASTNode[], token: Token) {
+		this.name = name;
+		this.parameters = parameters;
+		this.block = block;
+		this.token = token;
+		this.offrange = {
+			start: token.start,
+			end: token.end
+		};
+	}
 }
 
 export class FunctionCall implements IFunctionCall {

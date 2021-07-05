@@ -75,10 +75,11 @@ export enum TokenType{
 
     // keyword
     if, else, switch, case, do, loop, 
-    while, until, break, continue, 
+    while, until, break, continue,
+    try, catch, finally, 
     gosub, goto, return, global, 
     local, throw, class, 
-    extends, new,
+    extends, new, static,
     keyand, keyor, keynot,
 
     command,

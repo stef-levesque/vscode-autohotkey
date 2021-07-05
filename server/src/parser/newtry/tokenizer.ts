@@ -1,17 +1,25 @@
-import { off } from 'process';
 import {
     Token,
-    TokenType,
-    createToken,
     ITokenMap,
 } from "./types";
 
+import { TokenType } from "./tokenTypes"
+import { Position } from 'vscode-languageserver';
+ 
 export class Tokenizer {
+    /**
+     * character position of full document
+     */
     private pos: number = 0;
     private document: string;
     private isLiteralToken: boolean = false;
     private isLiteralDeref: boolean = false;
-    currChar: string;
+    private currChar: string;
+    private line: number = 0;
+    /**
+     * character position of line
+     */
+    private chr: number = 0;
 
     constructor(document: string) {
         this.document = document;
@@ -62,6 +70,13 @@ export class Tokenizer {
         return this.document[pos-1];
     }
 
+    /**
+     * Return current character position
+     */
+    private genPosition(): Position {
+        return Position.create(this.line, this.chr);
+    }
+
     private NumberAdvance(): string {
         let sNum: string = '';
         while(this.isDigit(this.currChar)) {
@@ -72,7 +87,7 @@ export class Tokenizer {
     }
 
     private GetNumber(): Token {
-        let offset = this.pos;
+        let p = this.genPosition();
         let sNum:string = this.NumberAdvance();
         if (this.currChar === '.') {
             sNum += '.';
@@ -83,7 +98,7 @@ export class Tokenizer {
             sNum += this.currChar;
             sNum += this.NumberAdvance();
         }
-        return createToken(TokenType.number, sNum, offset, this.pos);
+        return new Token(TokenType.number, sNum, p, this.genPosition());
     }
 
     /**
@@ -100,6 +115,7 @@ export class Tokenizer {
     private GetString(): Token {
         let str:string;
         let offset = this.pos;
+        let p = this.genPosition();
         this.Advance();
         while(this.currChar !== '"' || this.IsEscapeChar()) {
             if (this.currChar === 'EOF' || this.currChar === '\n' || this.currChar === '\r') {
@@ -110,27 +126,28 @@ export class Tokenizer {
         }
         str = this.document.slice(offset+1, this.pos);
         this.Advance()
-        return createToken(TokenType.string, str, offset, this.pos);
+        return new Token(TokenType.string, str, p, this.genPosition());
     }
 
     private GetId(): Token {
         let value:string;
         let offset = this.pos;
+        let p = this.genPosition();
         this.Advance();
         while(this.isAlphaNumeric(this.currChar) && this.currChar !== "EOF")
             this.Advance()
         value = this.document.slice(offset, this.pos);
         let keyword = RESERVED_KEYWORDS.get(value.toLowerCase());
         if (keyword) {
-            return createToken(keyword, value, offset, this.pos);
+            return new Token(keyword, value, p, this.genPosition());
         }
         // A id token confirmed, check if it is a command start
         if (this.BackPeek(value.length, true) === '\n' && this.Peek(1, true) === ',') {
             // set command scan start flag
             this.isLiteralToken = true;
-            return createToken(TokenType.command, value, offset, this.pos);
+            return new Token(TokenType.command, value, p, this.genPosition());
         } 
-        return createToken(TokenType.id, value, offset, this.pos);
+        return new Token(TokenType.id, value, p, this.genPosition());
     }
 
     /**
@@ -139,59 +156,65 @@ export class Tokenizer {
      */
     private GetDrectivesOrSharp(): Token {
         const start = this.pos;
+        let p = this.genPosition();
+        p.character -= 1;
         while(this.isAscii(this.currChar) && this.currChar !== "EOF") 
             this.Advance();
         const d = this.document.slice(start, this.pos);
         if (DRECTIVE_TEST.has(d.toLowerCase()))
-            return createToken(TokenType.drective, d, start-1, this.pos);
+            return new Token(TokenType.drective, d, p, this.genPosition());
         // if not drective, backwards
         this.pos = start;
-        return createToken(TokenType.sharp, "#", start-1, this.pos);
+        this.line = p.line;
+        this.chr = p.character+1;
+        return new Token(TokenType.sharp, "#", p, this.genPosition());
     }
 
     private GetMark(): Token {
         let currstr = this.currChar;
-        let offset = this.pos;
+        let p = this.genPosition();
         const p1 = currstr + this.Peek();
         const p2 = p1 + this.Peek(2);
         let mark = OTHER_MARK.get(p2);
         if (mark) {
             // 3-char token
             this.Advance().Advance().Advance();
-            return createToken(mark, p2, offset, this.pos);
+            return new Token(mark, p2, p, this.genPosition());
         }
         mark = OTHER_MARK.get(p1);
         if (mark) {
             // 2-char token
             this.Advance().Advance();
             currstr += this.currChar;
-            return createToken(mark, p1, offset, this.pos);
+            return new Token(mark, p1, p, this.genPosition());
         } 
         mark = OTHER_MARK.get(currstr);
         if (mark) {
             // 1-char token
             this.Advance();
-            return createToken(mark, currstr, offset, this.pos);
+            return new Token(mark, currstr, p, this.genPosition());
         }
         else {
             this.Advance();
-            return createToken(TokenType.unknown, currstr, offset, this.pos);
+            return new Token(TokenType.unknown, currstr, p, this.genPosition());
         }
     }
 
     private LiteralToken() {
         let start = this.pos;
+        let p = this.genPosition();
         while (this.Peek() !== ',' && this.Peek() !== '%' && this.currChar !== "EOF") {
             this.Advance();
         }
         this.Advance();
         let end = this.pos;
         const value = this.document.substr(start, end-start).trim();
-        return createToken(TokenType.string, value, start, end);
+        return new Token(TokenType.string, value, p, this.genPosition());
     }
 
     GetNextToken(): Token {
         while(this.currChar !== "EOF") {
+            let p = this.genPosition();
             if (this.isLiteralToken) {
                 switch (this.currChar) {
                     case ' ':
@@ -217,7 +240,7 @@ export class Tokenizer {
                     case ',':
                         // this.isLiteralDeref = false;
                         this.Advance();
-                        return createToken(TokenType.comma, ',', this.pos-1, this.pos);
+                        return new Token(TokenType.comma, ',', p, this.genPosition());
                     default:
                         // is deref 
                         if (this.isLiteralDeref) break;
@@ -234,7 +257,7 @@ export class Tokenizer {
                     continue;
                 case '\n':
                     this.Advance();
-                    return createToken(TokenType.EOL, "\n", this.pos-1, this.pos);
+                    return new Token(TokenType.EOL, "\n", p, this.genPosition());
                 case '.':
                     if (this.isDigit(this.Peek())) {
                         return this.GetNumber();
@@ -242,10 +265,10 @@ export class Tokenizer {
                     else {
                         if (this.isWhiteSpace(this.Peek()) && this.isWhiteSpace(this.BackPeek())) {
                             this.Advance();
-                            return createToken(TokenType.sconnect, " . ", this.pos-1, this.pos);
+                            return new Token(TokenType.sconnect, " . ", p, this.genPosition());
                         }
                         this.Advance();
-                        return createToken(TokenType.dot, ".", this.pos-1, this.pos);
+                        return new Token(TokenType.dot, ".", p, this.genPosition());
                     }
                 case '"':
                     return this.GetString();
@@ -266,7 +289,7 @@ export class Tokenizer {
                     }
             }
         }
-        return createToken(TokenType.EOF, "EOF", this.pos, this.pos);
+        return new Token(TokenType.EOF, "EOF", this.genPosition(), this.genPosition());
     }
 
     private isDigit(s: string): boolean {
@@ -394,8 +417,7 @@ const identifierTest = new RegExp(
     ["new", TokenType.new],
     ["if", TokenType.if],
     ["else", TokenType.else],
-    ["while", TokenType.while], 
-    ["do", TokenType.do], 
+    ["while", TokenType.while],
     ["loop", TokenType.loop], 
     ["until",TokenType.until], 
     ["switch", TokenType.switch], 
@@ -425,15 +447,18 @@ const OTHER_MARK: ITokenMap = new Map([
     ["&", TokenType.and], ["|", TokenType.or], ["^", TokenType.xor],
     ["&&", TokenType.logicand], ["||", TokenType.logicor],
     ["+", TokenType.plus], ["-", TokenType.minus], ["*", TokenType.multi],
-    ["/", TokenType.div],["//", TokenType.idiv], ["**", TokenType.power], [">", TokenType.greater],
+    ["/", TokenType.div],["//", TokenType.fdiv], ["**", TokenType.power], [">", TokenType.greater],
     ["<", TokenType.less], [">=", TokenType.greaterEqual], ["<=", TokenType.lessEqual],
     ["?", TokenType.question], [":", TokenType.colon], ["::", TokenType.hotkey],
+    ["%", TokenType.precent], [">>", TokenType.rshift], ["<<", TokenType.lshift],
+    ["++", TokenType.pplus], ["--", TokenType.mminus], ["~", TokenType.bnot],
     // equals
-    [":=", TokenType.aassign], ["= ", TokenType.equal], ["+=", TokenType.pluseq], 
+    [":=", TokenType.aassign], ["=", TokenType.equal], ["+=", TokenType.pluseq], 
     ["-=", TokenType.minuseq], ["*=", TokenType.multieq], ["/=", TokenType.diveq], 
     ["//=", TokenType.idiveq], [".=", TokenType.sconneq], ["|=", TokenType.oreq], 
     ["&=", TokenType.andeq], ["^=", TokenType.xoreq], [">>=", TokenType.rshifteq], 
-    ["<<=", TokenType.lshifteq], ["~=", TokenType.regeq]
+    ["<<=", TokenType.lshifteq], ["~=", TokenType.regeq], ["==", TokenType.dequal],
+    ["<>", TokenType.glnequal], ["!=", TokenType.notEqual]
 ]);
 
 const DRECTIVE_TEST: Set<string> = new Set([
