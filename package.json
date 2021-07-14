@@ -90,7 +90,7 @@
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-		"test": "./node_modules/.bin/mocha -u tdd ./server/out/test/*.test.js",
+		"test": "./node_modules/.bin/mocha -u tdd ./server/out/test/**/*.test.js",
 		"publish": "vsce publish",
 		"package": "vsce package"
 	},

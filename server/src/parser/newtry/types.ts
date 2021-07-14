@@ -89,6 +89,8 @@ export type Atom =
 	| SuffixTerm.Literal
 	| SuffixTerm.Grouping
 	| SuffixTerm.PercentDereference
+	| SuffixTerm.ArrayTerm
+	| SuffixTerm.AssociativeArray
 	| SuffixTerm.Identifier;
 
 export interface IStmtClass<T = Stmt.Stmt>

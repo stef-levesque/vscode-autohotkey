@@ -380,6 +380,10 @@ export class AHKParser {
                         this.currentToken,
                         'Expect "%" in precent expression'
                     );
+            case TokenType.openBracket:
+                return this.arrayTerm();
+            case TokenType.openBrace:
+                return this.associativeArray();
             default:
                 if (isTailor) {
                     const previous = this.previous();
@@ -391,6 +395,85 @@ export class AHKParser {
 
                 throw this.error(this.currentToken, 'Expected an expression');
         }
+    }
+
+    private arrayTerm(): INodeResult<SuffixTerm.ArrayTerm> {
+        const open = this.currentToken;
+        this.advance();
+        const items: IExpr[] = [];
+        const errors: ParseError[] = [];
+
+        // if there are items parse them all
+        if (this.currentToken.type !== TokenType.closeBracket && 
+            this.currentToken.type !== TokenType.EOF) {
+            let a = this.expression();
+            items.push(a.value);
+            errors.push(...a.errors);
+            while (this.eatDiscardCR(TokenType.comma)) {
+                a = this.expression();
+                items.push(a.value);
+                errors.push(...a.errors);
+            }
+        }
+
+        const close = this.eatAndThrow(
+            TokenType.closeBracket,
+            'Expect a "]" to end array'
+        );
+
+        return nodeResult(
+            new SuffixTerm.ArrayTerm(open, close, items),
+            errors
+        );
+    }
+
+    private associativeArray(): INodeResult<SuffixTerm.AssociativeArray> {
+        const open = this.currentToken;
+        this.advance();
+        const pairs: SuffixTerm.Pair[] = [];
+        const errors: ParseError[] = [];
+
+        // if there are pairs parse them all
+        if (this.currentToken.type !== TokenType.closeBracket && 
+            this.currentToken.type !== TokenType.EOF) {
+            let a = this.pair();
+            pairs.push(a.value);
+            errors.push(...a.errors);
+            while (this.eatDiscardCR(TokenType.comma)) {
+                a = this.pair();
+                pairs.push(a.value);
+                errors.push(...a.errors);
+            }
+        }
+
+        const close = this.eatAndThrow(
+            TokenType.closeBrace,
+            'Expect a "}" at the end of associative array'
+        )
+
+        return nodeResult(
+            new SuffixTerm.AssociativeArray(open, close, pairs),
+            errors
+        );
+    }
+
+    private pair(): INodeResult<SuffixTerm.Pair> {
+        const key = this.expression();
+        const errors = key.errors;
+        if (this.eatDiscardCR(TokenType.colon)) {
+            const colon = this.previous();
+            const value = this.expression();
+            errors.push(...value.errors);
+            return nodeResult(
+                new SuffixTerm.Pair(key.value, colon, value.value),
+                errors
+            );
+        }
+
+        throw this.error(
+            this.previous(),
+            'Expect a ":" on key-value pairs in associative array'
+        )
     }
 
     private arrayBracket(): INodeResult<SuffixTerm.BracketIndex> {
@@ -419,8 +502,7 @@ export class AHKParser {
             let a = this.expression();
             args.push(a.value);
             errors.push(...a.errors);
-            while (this.currentToken.type === TokenType.dot) {
-                this.advance();
+            while (this.eatDiscardCR(TokenType.comma)) {
                 a = this.expression();
                 args.push(a.value);
                 errors.push(...a.errors);
@@ -518,6 +600,25 @@ export class AHKParser {
         catch (error) {
             console.error(error);
         }
+    }
+
+    /**
+     * check if token match type,
+     * and when token is return 
+     * check next token 
+     */
+    private eatDiscardCR(t: TokenType): boolean {
+        if (this.currentToken.type === TokenType.return) {
+            if (this.check(this.peek().type)) {
+                this.advance().advance();
+                return true;
+            }
+        }
+        else if (this.check(t)) {
+            this.advance();
+            return true;
+        }
+        return false;
     }
 
     private check(t: TokenType): boolean {
