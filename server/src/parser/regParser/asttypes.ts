@@ -1,7 +1,17 @@
 import { Position } from 'vscode-languageserver';
 import { Token } from "./types";
 
-export type Expr = INodeResult<IBinOp|IUnaryOperator|ILiteral|IVariable|IFunctionCall|IMethodCall|IPropertCall|INoOpt>; 
+export type Expr = INodeResult<
+	|IBinOp
+	|IUnaryOperator
+	|ILiteral
+	|IVariable
+	|IFunctionCall
+	|IMethodCall
+	|IPropertCall
+	|IArray
+	|IAssociativeArray
+	|INoOpt>; 
 
 /**
  * Range in form of offset
@@ -31,7 +41,6 @@ export interface IASTNode {
 }
 
 export interface INoOpt extends IASTNode {
-	none: null
 }
 
 export interface IAPair {
@@ -120,14 +129,14 @@ export interface INodeResult<T> {
 	value: T;
 }
 
-export class InvalidNode implements IASTNode {
-	public readonly offrange: IOffRange;
-	public readonly token: Token;
-	constructor(token: Token, start: Position, end: Position) {
-		this.token = token;
-		this.offrange = start;
-	}
-}
+// export class InvalidNode implements IASTNode {
+// 	public readonly offrange: IOffRange;
+// 	public readonly token: Token;
+// 	constructor(token: Token, start: Position, end: Position) {
+// 		this.token = token;
+// 		this.offrange = start;
+// 	}
+// }
 
 export class ClassDeclaration implements IClassDecl {
 	readonly name: string;

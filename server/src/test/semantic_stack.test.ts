@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { SemanticStack } from '../parser/semantic_stack';
-import { CommandCall } from '../parser/asttypes';
+import { SemanticStack } from '../parser/regParser/semantic_stack';
+import { CommandCall } from '../parser/regParser/asttypes';
 
 suite('Semantic Parse test', () => {
 	const testStr = 'this.p := Func1(1, "asd", [1,3]'

@@ -1,37 +1,10 @@
 import { Tokenizer } from "./tokenizer";
-import { IExpr, IStmt, Token } from "./types";
-import { TokenType } from "./tokenTypes"
+import { Atom, IExpr, IStmt, SuffixTermTrailer, Token } from "./types";
+import { TokenType } from "./tokenTypes";
 import {
     INodeResult,
     IParseError,
-} from "./types"
-import {
-    IAssign,
-    IBinOp,
-    IFunctionCall,
-    IMethodCall,
-    IOffRange,
-    IPropertCall,
-    IVariable,
-    INoOpt,
-    Offrange,
-    FunctionCall,
-    PropertCall,
-    MethodCall,
-    IUnaryOperator,
-    ILiteral,
-    NoOption,
-    IAssociativeArray,
-    IAPair,
-    IArray,
-    ICommandCall,
-    CommandCall,
-    IClassDecl,
-    InvalidNode,
-    IFunctionDecl,
-    IParameter,
-    FunctionDeclaration
-} from "../asttypes";
+} from "./types";
 import { ParseError } from './models/parseError';
 import * as Stmt from './models/stmt';
 import * as Expr from './models/expr';
@@ -54,6 +27,15 @@ export class AHKParser {
         this.tokens.push(this.currentToken);
     }
 
+    // private nextToken(): Token {
+    //     try {
+    //         return this.tokenizer.GetNextToken();
+    //     }
+    //     catch (error) {
+
+    //     }
+    // }
+
     private advance() {
         this.pos++;
         if (this.pos >= this.tokens.length) {
@@ -61,6 +43,10 @@ export class AHKParser {
             this.tokens.push(this.currentToken)
         }
         return this
+    }
+
+    private previous() {
+        return this.tokens[this.pos-1];
     }
 
     /**
@@ -202,6 +188,7 @@ export class AHKParser {
         }
     }
 
+    // assignment statemnet
     private assign(): INodeResult<Stmt.AssignStmt> {
         let id = this.currentToken;
         this.advance();
@@ -215,12 +202,14 @@ export class AHKParser {
 
     }
 
+    // for test expresion
+    public testExpr(): INodeResult<Expr.Expr> {
+        return this.expression();
+    }
+
     private expression(p: number = 0): INodeResult<Expr.Expr> {
         let start = this.pos;
-        let expr: INodeResult<Expr.Expr>;
-        let left: INodeResult<Expr.Expr>;
-        let right: Maybe<INodeResult<Expr.Expr>>;
-        let saveToken1: Token;
+        let result: INodeResult<Expr.Expr>;
         try {
             switch (this.currentToken.type) {
                 // all Unary operator
@@ -230,27 +219,28 @@ export class AHKParser {
                 case TokenType.multi:
                 case TokenType.not:
                 case TokenType.bnot:
-                    let saveToken = this.currentToken;
+                    const saveToken = this.currentToken;
                     this.advance();
-                    expr = this.expression(UnaryPrecedence);
-                    return {
-                        errors: expr.errors,
-                        value: new Expr.Unary(saveToken, expr.value)
-                    };
+                    const expr = this.expression(UnaryPrecedence);
+                    result = nodeResult(
+                        new Expr.Unary(saveToken, expr.value),
+                            expr.errors);
                 case TokenType.openParen:
                     // TODO: Process paren expression
                     let OPar = this.currentToken;
                     this.advance();
-                    left = this.expression();
+                    result = this.expression();
                     let CPar = this.currentToken;
                     this.advance();
                     break;
                 case TokenType.number:
+                case TokenType.string:
                 case TokenType.openBrace:
                 case TokenType.openBracket:
                 case TokenType.id:
                 case TokenType.precent:
-                    left = this.factor();
+                    // TODO: process array, dict, and precent expression
+                    result = this.factor();
                     break;
                 default:
                     throw this.error(
@@ -260,41 +250,38 @@ export class AHKParser {
             }
 
             // pratt parse
-            saveToken1 = this.currentToken;
             while ((this.currentToken.type >= TokenType.pplus &&
                     this.currentToken.type <= TokenType.lshifteq) && 
                     Precedences[this.currentToken.type] >= p) {
+                const saveToken = this.currentToken;
                 this.advance();
-                let q = Precedences[saveToken1.type];
-                right = this.expression(q + 1);
+                const q = Precedences[saveToken.type];
+                const right = this.expression(q + 1);
+                result = nodeResult(
+                    new Expr.Binary(
+                        result.value,
+                        saveToken,
+                        right.value
+                    ),
+                    result.errors.concat(right.errors)
+                );
             }
-
-            if (right === undefined) 
-                return {
-                    errors: left.errors,
-                    value: left.value
-                };
-                
-            return {
-            errors: left.errors.concat(right.errors),
-            value: new Expr.Binary(
-                left.value, 
-                saveToken1, 
-                right.value)
-            };
+               
+            return result;
         }
         catch (error) {
             if (error instanceof ParseError) {
                 // this.logger.verbose(JSON.stringify(error.partial));
                 // this.synchronize(error.failed);
 
-                const tokens = this.tokens.slice(start, this.pos);
+                // TODO: Correct error token list
+                const tokens = this.tokens[start];
 
                 return {
                     errors: [error],
                     value: new Expr.Invalid(
-                        tokens[0].start,
-                        tokens
+                        tokens.start,
+                        [tokens]
                     ),
                 };
             }
@@ -312,7 +299,7 @@ export class AHKParser {
         if (this.currentToken.type === TokenType.dot) {
             // create first suffix for connecting all suffix togther
             // TODO: Why use linked list here?
-            // Is linked list is more efficient than Array?
+            // Is linked list more efficient than Array?
             let dot = this.currentToken;
             this.advance();
             let suffixTerm = this.suffixTerm(true);
@@ -340,10 +327,114 @@ export class AHKParser {
     }
 
     private suffixTerm(isTailor: boolean = false): INodeResult<SuffixTerm.SuffixTerm> {
+        const atom = this.atom(isTailor);
+        const trailers: SuffixTermTrailer[] = [];
+        const errors: ParseError[] = [];
 
+        const isValid = !(atom.value instanceof SuffixTerm.Invalid);
+
+        // parse all exist trailor  
+        while (isValid) {
+            if (this.currentToken.type === TokenType.openBracket) {
+                const bracket = this.arrayBracket();
+                errors.push(...bracket.errors);
+                trailers.push(bracket.value);
+            }
+            else if (this.currentToken.type === TokenType.openParen) {
+                const callTrailer = this.funcCallTrailer();
+                errors.push(...callTrailer.errors);
+                trailers.push(callTrailer.value);
+            }
+            else 
+                break;
+        }
+        
+        return nodeResult(
+            new SuffixTerm.SuffixTerm(atom.value, trailers),
+            errors
+        );
     }
 
-    
+    private atom(isTailor: boolean = false): INodeResult<Atom> {
+        switch (this.currentToken.type) {
+            case TokenType.number:
+            // TODO: All keywords is allowed in suffix.
+            // But not allowed at first atom
+            case TokenType.id:
+            case TokenType.string:
+                let t = this.currentToken;
+                this.advance();
+                return nodeResult(new SuffixTerm.Literal(t), []);
+            case TokenType.precent:
+                // TODO: Finish precent deference expresion
+                let open = this.currentToken;
+                this.advance();
+                let derefAtom = this.atom();
+                const errors = derefAtom.errors;
+                if (this.currentToken.type === TokenType.precent) {
+                    this.advance();
+                    return nodeResult(derefAtom.value, errors);
+                }
+                else 
+                    throw this.error(
+                        this.currentToken,
+                        'Expect "%" in precent expression'
+                    );
+            default:
+                if (isTailor) {
+                    const previous = this.previous();
+
+                    return nodeResult(new SuffixTerm.Invalid(previous.end), [
+                        this.error(previous, 'Expected suffix')
+                    ]);
+                }
+
+                throw this.error(this.currentToken, 'Expected an expression');
+        }
+    }
+
+    private arrayBracket(): INodeResult<SuffixTerm.BracketIndex> {
+        const open = this.currentToken;
+        this.advance();
+        const index = this.expression();
+        const close = this.eatAndThrow(
+            TokenType.closeBracket,
+            'Expected a "]" at end of array index '); 
+        
+        return nodeResult(
+            new SuffixTerm.BracketIndex(open, index.value, close),
+            index.errors
+        );
+    }
+
+    private funcCallTrailer(): INodeResult<SuffixTerm.Call> {
+        const open = this.currentToken;
+        this.advance();
+        const args: IExpr[] = [];
+        const errors: ParseError[] = [];
+
+        // if there are arguments parse them all
+        if (this.currentToken.type !== TokenType.closeParen && 
+            this.currentToken.type !== TokenType.EOF) {
+            let a = this.expression();
+            args.push(a.value);
+            errors.push(...a.errors);
+            while (this.currentToken.type === TokenType.dot) {
+                this.advance();
+                a = this.expression();
+                args.push(a.value);
+                errors.push(...a.errors);
+            }
+        }
+        const close = this.eatAndThrow(
+            TokenType.closeParen,
+            'Expected a "(" at end of call'
+        );
+        return nodeResult(
+            new SuffixTerm.Call(open, args, close),
+            errors
+        ); 
+    }
 
     // private func(): INodeResult<IFunctionCall|FunctionDeclaration> {
     //     let token = this.currentToken
@@ -431,6 +522,15 @@ export class AHKParser {
 
     private check(t: TokenType): boolean {
         return t === this.currentToken.type;
+    }
+
+    private eatAndThrow(t: TokenType, message: string) {
+        if (this.currentToken.type === t) {
+            this.advance();
+            return this.previous();
+        }
+        else 
+            throw this.error(this.currentToken, message);
     }
 
     // private matchToken(t: TokenType): 

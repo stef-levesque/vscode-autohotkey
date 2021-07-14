@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { createToken, Token, TokenType } from '../parser/types'
-import { Tokenizer } from '../parser/tokenizer';
+import { createToken, Token, TokenType } from '../parser/regParser/types'
+import { Tokenizer } from '../parser/regParser/tokenizer';
 function getalltoken(text: string): Token[] {
 	let tokenizer = new Tokenizer(text);
 	let token = tokenizer.GetNextToken();

@@ -17,7 +17,7 @@ import {
     ReferenceMap,
     IDocumentInfomation,
     NodeInfomation
-} from '../parser/types';
+} from '../parser/regParser/types';
 import {
 	INodeResult, 
 	IFunctionCall, 
@@ -29,8 +29,8 @@ import {
 	MethodCall,
     ICommandCall,
     CommandCall
-} from '../parser/asttypes';
-import { SemanticStack, isExpr } from '../parser/semantic_stack';
+} from '../parser/regParser/asttypes';
+import { SemanticStack, isExpr } from '../parser/regParser/semantic_stack';
 import { 
     BuiltinFuncNode,
     buildBuiltinFunctionNode,
@@ -42,10 +42,10 @@ import {
     normalize
 } from 'path';
 import { homedir } from "os";
-import { Lexer } from '../parser/ahkparser';
+import { Lexer } from '../parser/regParser/ahkparser';
 import { IoEntity, IoKind, IoService } from './ioService';
 import { union } from '../utilities/setOperation';
-import { NodeMatcher, ScriptFinder } from '../parser/scriptFinder';
+import { NodeMatcher, ScriptFinder } from '../parser/regParser/scriptFinder';
 import { threadId } from 'worker_threads';
 import { info } from 'console';
 

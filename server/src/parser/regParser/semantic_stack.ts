@@ -254,7 +254,7 @@ export class SemanticStack {
     }
 
     // For this is simple parser, we don't care about operator level
-    private factor(): Expr{
+    private factor(): Expr {
         let token = this.currentToken
         let node: Expr;
         switch (this.currentToken.type) {

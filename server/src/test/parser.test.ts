@@ -1,4 +1,4 @@
-import {Lexer} from '../parser/ahkparser'
+import {Lexer} from '../parser/regParser/ahkparser'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import * as Path from 'path';
 import { IoService } from '../services/ioService';

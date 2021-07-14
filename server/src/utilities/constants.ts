@@ -1,11 +1,10 @@
 import { CompletionItemKind, CompletionItem } from 'vscode-languageserver';
-import { Parameter } from "../parser/types";
+import { Parameter } from "../parser/regParser/types";
 import { 
     builtin_variable,
     builtin_function,
 	builtin_command
 } from "./builtins";
-import {  } from '../services/ioService';
 
 export const serverName = 'mock-ahk-vscode';
 export const languageServer = 'ahk-language-server';

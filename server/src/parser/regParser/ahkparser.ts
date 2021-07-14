@@ -24,7 +24,7 @@ import {
     VariableNode
 } from './types';
 import { Tokenizer } from './tokenizer'
-import { mockLogger } from '../utilities/logger';
+import { mockLogger } from '../../utilities/logger';
 export class Lexer {
     private line = -1;
     private currentText: string|undefined;

@@ -9,7 +9,7 @@
 				"--timeout",
 				"999999",
 				"--colors",
-				"${workspaceRoot}/server/out/test/*.test.js"
+				"${workspaceRoot}/server/out/test/**/*.test.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
 			"name": "Test debug",
@@ -19,7 +19,8 @@
 				"<node_internals>/**"
 			],
 			"type": "pwa-node",
-			"outFiles": ["${workspaceRoot}/server/out/test/*.test.js"]
+			"outFiles": ["${workspaceRoot}/server/out/test/**/*.test.js",
+						 "${workspaceRoot}/server/out/**/*.js"]
 		},
 		{
 			"type": "extensionHost",

@@ -136,7 +136,9 @@ export class Binary extends Expr {
         const leftLines = this.left.toLines();
         const rightLines = this.right.toLines();
 
-        return leftLines.concat([` ${this.operator.content} `].concat(rightLines));
+        return rightLines.length === 0 ? 
+            [`${leftLines[0]} ${this.operator.content}`] :
+            [`${leftLines[0]} ${this.operator.content} ${rightLines[0]}`];
     }
 }
 

@@ -127,6 +127,15 @@ literal -> ( number
     | 'false'
 )
 
+// array
+array -> '[' expression* ']'
+
+// associative array
+associativeArray -> '{' pair* '}'
+
+// key-value pair
+pair -> expression ':' expression
+
 identifier -> ([all valid letter] | '_')*
 fileIdentifier -> identifier ('.' identifier)*
 

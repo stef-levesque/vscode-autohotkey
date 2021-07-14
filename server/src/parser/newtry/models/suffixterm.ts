@@ -145,9 +145,10 @@ export class SuffixTerm extends SuffixTermBase {
 		const atomLines = this.atom.toLines();
 		const trailersLines = this.trailers.map(t => t.toLines());
 		const flatLines = trailersLines.flat();
-		flatLines[0] = atomLines + flatLines[0];
+		if (flatLines.length === 0)
+			return atomLines;
 
-		return flatLines;
+		return atomLines.concat(flatLines);
 	}
 }
 

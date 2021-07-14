@@ -15,11 +15,11 @@ export class Tokenizer {
     private isLiteralToken: boolean = false;
     private isLiteralDeref: boolean = false;
     private currChar: string;
-    private line: number = 0;
+    private line: number = 1;
     /**
      * character position of line
      */
-    private chr: number = 0;
+    private chr: number = 1;
 
     constructor(document: string) {
         this.document = document;
@@ -32,12 +32,19 @@ export class Tokenizer {
 
     private Advance() {
         this.pos++;
+        this.chr++;
         if(this.pos >= this.document.length) {
             this.currChar = "EOF";
         } else {
             this.currChar = this.document[this.pos];
         }
         return this;
+    }
+
+    private AdvanceLine() {
+        this.chr = 0;
+        this.line++;
+        this.Advance();
     }
 
     private Peek(len:number = 1, skipWhite: boolean = false): string {
@@ -256,7 +263,7 @@ export class Tokenizer {
                     this.Advance();
                     continue;
                 case '\n':
-                    this.Advance();
+                    this.AdvanceLine();
                     return new Token(TokenType.EOL, "\n", p, this.genPosition());
                 case '.':
                     if (this.isDigit(this.Peek())) {

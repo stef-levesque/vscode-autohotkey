@@ -1,9 +1,9 @@
 import * as assert from 'assert';
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { SymbolKind } from 'vscode-languageserver-types';
-import { Lexer } from "../parser/ahkparser";
-import { NodeMatcher, ScriptFinder } from '../parser/scriptFinder';
-import { FuncNode, IFindResult } from '../parser/types';
+import { Lexer } from "../parser/regParser/ahkparser";
+import { NodeMatcher, ScriptFinder } from '../parser/regParser/scriptFinder';
+import { FuncNode, IFindResult } from '../parser/regParser/types';
 
 suite('Script Finder Test', () => {
     const ahkFile = `Supper(self, params*)

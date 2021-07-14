@@ -25,8 +25,6 @@ import {
 	CancellationToken,
 	DefinitionParams,
 	Definition,
-	Location,
-	Position,
 	CompletionParams
 } from 'vscode-languageserver';
 
@@ -41,9 +39,9 @@ import {
 } from './utilities/constants'
 
 import { builtin_variable } from "./utilities/builtins";
-import { Lexer } from './parser/ahkparser'
+import { Lexer } from './parser/regParser/ahkparser'
 import { TreeManager } from './services/treeManager';
-import { ISymbolNode } from './parser/types';
+import { ISymbolNode } from './parser/regParser/types';
 import { Logger } from './utilities/logger';
 
 
