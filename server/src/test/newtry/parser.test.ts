@@ -55,15 +55,15 @@ function arrayUnpackTest(value: IExpr, testFunc: (atom: Atom, index: number) => 
 function aarrayUnpackTest(value: IExpr, 
 	testKeyFunc: (atom: Atom, index: number) => void,
 	testValueFunc: (atom: Atom, index: number) => void) {
-	atomUnpackTest(value, arrayTerm => {
-		assert.strictEqual(arrayTerm instanceof SuffixTerm.AssociativeArray, true);
-		if (arrayTerm instanceof SuffixTerm.ArrayTerm) {
+	atomUnpackTest(value, aarray => {
+		assert.strictEqual(aarray instanceof SuffixTerm.AssociativeArray, true);
+		if (aarray instanceof SuffixTerm.AssociativeArray) {
 			let i = 0;
-			for (const item of arrayTerm.items) {
-				atomUnpackTest(item, atom => {
+			for (const pair of aarray.pairs) {
+				atomUnpackTest(pair.key, atom => {
 					testKeyFunc(atom, i);
 				});
-				atomUnpackTest(item, atom => {
+				atomUnpackTest(pair.value, atom => {
 					testValueFunc(atom, i);
 				});
 				i++;
