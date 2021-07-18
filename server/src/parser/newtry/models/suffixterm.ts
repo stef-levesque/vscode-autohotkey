@@ -312,7 +312,7 @@ export class Literal extends SuffixTermBase {
  */
 export class ArrayTerm extends SuffixTermBase {
     /**
-     * Constructor of percent dereference
+     * Constructor of Array
      * @param open Start [
      * @param close End ]
      * @param items items of arrays
@@ -353,7 +353,7 @@ export class ArrayTerm extends SuffixTermBase {
  */
  export class AssociativeArray extends SuffixTermBase {
     /**
-     * Constructor of percent dereference
+     * Constructor of Associative Array
      * @param open Start {
      * @param close End }
      * @param pairs key-value pairs of object
@@ -470,10 +470,10 @@ export class Grouping extends SuffixTermBase {
  */
  export class Pair extends SuffixTermBase {
     /**
-     * Grouping constructor
-     * @param key open paren token
-     * @param colon expression within the grouping
-     * @param value close paren token
+     * Pair constructor
+     * @param key key of pair
+     * @param colon middle :
+     * @param value value of pair
      */
     constructor(
         public readonly key: IExpr,

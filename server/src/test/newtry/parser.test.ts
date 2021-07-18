@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { AHKParser } from "../../parser/newtry/parser";
 // import { Tokenizer } from "../../parser/newtry/tokenizer";
-import { Atom, IExpr } from "../../parser/newtry/types";
+import { Atom, IExpr, SuffixTermTrailer } from "../../parser/newtry/types";
 import { TokenType } from "../../parser/newtry/tokenTypes";
 import * as Expr from '../../parser/newtry/models/expr';
 import * as SuffixTerm from '../../parser/newtry/models/suffixterm';
@@ -26,8 +26,8 @@ function AtomTestItem(source: string, type: TokenType, literal: any): IAtomTestI
 }
 
 function atomUnpackTest(value: IExpr, testFunc: (atom: Atom) => void) {
-	assert.strictEqual(value instanceof Expr.factor, true);
-	if (value instanceof Expr.factor) {
+	assert.strictEqual(value instanceof Expr.Factor, true);
+	if (value instanceof Expr.Factor) {
 		assert.strictEqual(value.trailer, undefined);
 		assert.strictEqual(value.suffixTerm instanceof SuffixTerm.SuffixTerm, true);
 		if (value.suffixTerm instanceof SuffixTerm.SuffixTerm) {
@@ -52,7 +52,7 @@ function arrayUnpackTest(value: IExpr, testFunc: (atom: Atom, index: number) => 
 	});
 }
 
-function aarrayUnpackTest(value: IExpr, 
+function aarrayUnpackTest(value: IExpr,
 	testKeyFunc: (atom: Atom, index: number) => void,
 	testValueFunc: (atom: Atom, index: number) => void) {
 	atomUnpackTest(value, aarray => {
@@ -71,6 +71,40 @@ function aarrayUnpackTest(value: IExpr,
 		}
 	});
 }
+
+function factorUpackTest(
+	value: IExpr,
+	atomTest: (atom: Atom) => void,
+	...trailerTests: ((trailer: SuffixTermTrailer) => void)[]
+) {
+	assert.strictEqual(value instanceof Expr.Factor, true);
+	if (value instanceof Expr.Factor) {
+		assert.strictEqual(value.trailer, undefined);
+		assert.strictEqual(value.suffixTerm instanceof SuffixTerm.SuffixTerm, true);
+		if (value.suffixTerm instanceof SuffixTerm.SuffixTerm) {
+			assert.strictEqual(trailerTests.length, value.suffixTerm.trailers.length);
+			atomTest(value.suffixTerm.atom);
+
+			for (let i = 1; i < value.suffixTerm.trailers.length; i += 1) {
+				trailerTests[i](value.suffixTerm.trailers[i]);
+			}
+		}
+	}
+};
+
+interface ICallTest {
+	source: string;
+	callee: string;
+	args: Function[];
+  }
+
+function callTest(
+	source: string,
+	callee: string,
+	args: Constructor<SuffixTerm.SuffixTermBase>[],
+): ICallTest {
+	return { source, callee, args };
+}  
 
 suite('Syntax Parser Expresion Test', () => {
 	test('basic valid literal', () => {
@@ -95,11 +129,13 @@ suite('Syntax Parser Expresion Test', () => {
 	});
 
 	// test('basic invalid literal', () => {
-		
+
 	// });
-	
+
 	test('basic valid expression', () => {
 		const actual = getExpr('1+3*2-12/3');
+		assert.strictEqual(actual.errors.length, 0);
+		assert.strictEqual(actual.value instanceof Expr.Binary, true);
 		assert.strictEqual(actual.value.toString(), '1 + 3 * 2 - 12 / 3');
 	});
 
@@ -140,19 +176,64 @@ suite('Syntax Parser Expresion Test', () => {
 		aarrayUnpackTest(
 			actuals.value,
 			(key, index) => {
-				assert.strictEqual(key instanceof SuffixTerm.Literal, true);
+				if (index === 2) 
+					assert.strictEqual(key instanceof SuffixTerm.Identifier, true);
+				else
+					assert.strictEqual(key instanceof SuffixTerm.Literal, true);
 				if (key instanceof SuffixTerm.Literal) {
 					assert.strictEqual(expects[index][0].type, key.token.type);
 					assert.strictEqual(expects[index][0].literal, key.token.content);
 				}
 			},
 			(value, index) => {
-				assert.strictEqual(value instanceof SuffixTerm.Literal, true);
+				if (index === 2) 
+					assert.strictEqual(value instanceof SuffixTerm.Identifier, true);
+				else
+					assert.strictEqual(value instanceof SuffixTerm.Literal, true);
 				if (value instanceof SuffixTerm.Literal) {
 					assert.strictEqual(expects[index][1].type, value.token.type);
 					assert.strictEqual(expects[index][1].literal, value.token.content);
 				}
 			}
 		);
-	})
+	});
+
+	test('basic valid call test', () => {
+		const expects = [
+			callTest('test(100, "water")', 'test', [
+				SuffixTerm.Literal,
+				SuffixTerm.Literal
+			]),
+			callTest('自动热键调用(AHK, "最好的热键语言")', '自动热键调用', [
+				SuffixTerm.Identifier,
+				SuffixTerm.Literal
+			]),
+			callTest('__EmptyCall()', '__EmptyCall', [])
+		];
+
+		for (const expect of expects) {
+			const actual = getExpr(expect.source);
+
+			assert.strictEqual(actual.errors.length, 0);
+
+			factorUpackTest(
+				actual.value,
+				atom => {
+					assert.strictEqual(atom instanceof SuffixTerm.Identifier, true);
+					if (atom instanceof SuffixTerm.Identifier) {
+						assert.strictEqual(atom.token.content, expect.callee);
+					}
+				},
+				trailer => {
+					assert.strictEqual(trailer instanceof SuffixTerm.Call, true);
+					if (trailer instanceof SuffixTerm.Call) {
+						for (let i = 0; i < trailer.args.length; i++)
+						atomUnpackTest(trailer.args[i], atom => {
+							assert.strictEqual(atom instanceof expect.args[i], true);
+						})
+					}
+				}
+			)
+		}
+	});
 });

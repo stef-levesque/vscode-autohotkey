@@ -290,9 +290,9 @@ export class AHKParser {
         }
     }
 
-    private factor(): INodeResult<Expr.factor> {
+    private factor(): INodeResult<Expr.Factor> {
         const suffixTerm = this.suffixTerm();
-        const factor = new Expr.factor(suffixTerm.value);
+        const factor = new Expr.Factor(suffixTerm.value);
         const errors = suffixTerm.errors;
 
         // check is if factor has a suffix
@@ -357,10 +357,12 @@ export class AHKParser {
 
     private atom(isTailor: boolean = false): INodeResult<Atom> {
         switch (this.currentToken.type) {
-            case TokenType.number:
             // TODO: All keywords is allowed in suffix.
             // But not allowed at first atom
             case TokenType.id:
+                this.advance();
+                return nodeResult(new SuffixTerm.Identifier(this.previous()), []);
+            case TokenType.number:
             case TokenType.string:
                 let t = this.currentToken;
                 this.advance();
@@ -436,14 +438,11 @@ export class AHKParser {
         // if there are pairs parse them all
         if (this.currentToken.type !== TokenType.closeBracket && 
             this.currentToken.type !== TokenType.EOF) {
-            let a = this.pair();
-            pairs.push(a.value);
-            errors.push(...a.errors);
-            while (this.eatDiscardCR(TokenType.comma)) {
-                a = this.pair();
+            do {
+                let a = this.pair();
                 pairs.push(a.value);
                 errors.push(...a.errors);
-            }
+            } while (this.eatDiscardCR(TokenType.comma))
         }
 
         const close = this.eatAndThrow(
@@ -470,10 +469,20 @@ export class AHKParser {
             );
         }
 
-        throw this.error(
-            this.previous(),
+        // if no colon, generate an error
+        // and contiune parsing rest of dict
+        errors.push(this.error(
+            this.currentToken,
             'Expect a ":" on key-value pairs in associative array'
-        )
+        ));
+        return nodeResult(
+            new SuffixTerm.Pair(
+                key.value,
+                this.currentToken,
+                new Expr.Invalid(this.currentToken.start, [this.currentToken])
+            ),
+            errors
+        );
     }
 
     private arrayBracket(): INodeResult<SuffixTerm.BracketIndex> {
@@ -510,7 +519,7 @@ export class AHKParser {
         }
         const close = this.eatAndThrow(
             TokenType.closeParen,
-            'Expected a "(" at end of call'
+            'Expected a ")" at end of call'
         );
         return nodeResult(
             new SuffixTerm.Call(open, args, close),
@@ -568,10 +577,6 @@ export class AHKParser {
     // }
 
     // private command(): INodeResult<ICommandCall> {
-
-    // }
-
-    // private assign(): INodeResult<IAssign> {
 
     // }
 

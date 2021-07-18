@@ -145,7 +145,7 @@ export class Binary extends Expr {
 /**
  * Class for all factor to be calcuated
  */
-export class factor extends Expr {
+export class Factor extends Expr {
     /**
      * Factor constructor
      * @param suffixTerm base suffix term
