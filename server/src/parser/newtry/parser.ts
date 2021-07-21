@@ -32,18 +32,21 @@ export class AHKParser {
         this.pos++;
         if (this.pos >= this.tokens.length) {
             this.currentToken = this.tokenizer.GetNextToken();
-            const saveToken = this.currentToken;
             // AHK connect next line to current line
             // when next line start with operators and ','
             if (this.currentToken.type === TokenType.EOL) {
+                const saveToken = this.currentToken;
+                this.currentToken = this.tokenizer.GetNextToken();
                 // 下一行是运算符或者','时丢弃EOL
+                // discard EOL
                 if (this.currentToken.type >= TokenType.pplus &&
                     this.currentToken.type <= TokenType.comma) {
-                    this.tokens.push(saveToken);
-                    this.currentToken = saveToken;
-                }
-                else
                     this.tokens.push(this.currentToken);
+                }
+                else {
+                    this.tokens.push(saveToken);
+                    this.tokens.push(this.currentToken);
+                }
             }
             else 
                 this.tokens.push(this.currentToken);
@@ -66,6 +69,7 @@ export class AHKParser {
 
         if (token.type === TokenType.EOL) {
             const saveToken = token;
+            token = this.tokenizer.GetNextToken();
             
             if (token.type >= TokenType.pplus &&
                 token.type <= TokenType.comma) {
