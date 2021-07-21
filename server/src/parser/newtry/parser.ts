@@ -11,6 +11,7 @@ import * as Expr from './models/expr';
 import * as SuffixTerm from './models/suffixterm';
 import { Precedences, UnaryPrecedence } from './models/precedences';
 import { nodeResult } from './utils/parseResult';
+import * as Decl from './models/declaration';
 
 export class AHKParser {
     private tokenizer: Tokenizer;
@@ -27,20 +28,25 @@ export class AHKParser {
         this.tokens.push(this.currentToken);
     }
 
-    // private nextToken(): Token {
-    //     try {
-    //         return this.tokenizer.GetNextToken();
-    //     }
-    //     catch (error) {
-
-    //     }
-    // }
-
     private advance() {
         this.pos++;
         if (this.pos >= this.tokens.length) {
             this.currentToken = this.tokenizer.GetNextToken();
-            this.tokens.push(this.currentToken)
+            const saveToken = this.currentToken;
+            // AHK connect next line to current line
+            // when next line start with operators and ','
+            if (this.currentToken.type === TokenType.EOL) {
+                // 下一行是运算符或者','时丢弃EOL
+                if (this.currentToken.type >= TokenType.pplus &&
+                    this.currentToken.type <= TokenType.comma) {
+                    this.tokens.push(saveToken);
+                    this.currentToken = saveToken;
+                }
+                else
+                    this.tokens.push(this.currentToken);
+            }
+            else 
+                this.tokens.push(this.currentToken);
         }
         return this
     }
@@ -50,12 +56,27 @@ export class AHKParser {
     }
 
     /**
-     * return newest token of tokenizer
+     * look ahead one token
      */
     private peek(): Token {
+        if (this.pos+1 <=  this.tokens.length-1) 
+            return this.tokens[this.pos+1];
+        
         let token = this.tokenizer.GetNextToken();
-        this.tokens.push(token);
-        return token
+
+        if (token.type === TokenType.EOL) {
+            const saveToken = token;
+            
+            if (token.type >= TokenType.pplus &&
+                token.type <= TokenType.comma) {
+                this.tokens.push(token);
+                return token;
+            }
+            this.tokens.push(saveToken);
+            this.tokens.push(token);
+            return saveToken;
+        }
+        return token;
     }
 
     private error(token: Token, message: string): ParseError {
@@ -75,6 +96,8 @@ export class AHKParser {
             //     return this.command();
             // case TokenType.if:
             //     return this.ifStmt();
+            // case TokenType.else:
+            //     return this.elseStmt();
             // case TokenType.break:
             //     return this.breakStmt();
             // case TokenType.return:
@@ -163,7 +186,7 @@ export class AHKParser {
                 case TokenType.global:
                 case TokenType.local:
                 case TokenType.static:
-                    return this.assign();
+                    return this.varDecl();
                 // !|^|# 开始的热键
                 // case TokenType.not:
                 // case TokenType.xor:
@@ -188,6 +211,59 @@ export class AHKParser {
         }
     }
 
+    private varDecl(): INodeResult<Decl.VarDecl> {
+        const scope = this.currentToken;
+        const assign: Decl.OptionalAssginStmt[] = [];
+        const errors: ParseError[] = [];
+        this.advance();
+        // check if there are varible,
+        // if any parse them all
+        do {
+            // TODO: Deal with errors 
+            // when second declaration contains no identifer
+            if (this.currentToken.type === TokenType.id) {
+                let id = this.currentToken;
+                this.advance();
+                const saveToken = this.currentToken;
+
+                // check if there is an assignment
+                if (saveToken.type === TokenType.aassign ||
+                    saveToken.type === TokenType.equal) {
+                    this.advance();
+                    const expr = this.expression();
+                    errors.push(...expr.errors);
+                    assign.push(new Decl.OptionalAssginStmt(
+                        id, saveToken, expr.value
+                    ))
+                }
+                else
+                    assign.push(new Decl.OptionalAssginStmt(id));
+                
+            }
+            else {
+                // Generate error when no varible is found
+                errors.push(this.error(
+                    this.currentToken,
+                    'Expect an identifer in varible declaration'
+                ));
+                // Generate Invalid Mark
+                assign.push(new Decl.OptionalAssginStmt(
+                    this.currentToken,
+                    undefined,
+                    new Expr.Invalid(
+                        this.currentToken.start,
+                        [this.currentToken]
+                    ))
+                );
+            }
+        } while (this.eatDiscardCR(TokenType.comma))
+
+        return nodeResult(
+            new Decl.VarDecl(scope, assign),
+            errors
+        );
+    }
+
     // assignment statemnet
     private assign(): INodeResult<Stmt.AssignStmt> {
         let id = this.currentToken;
@@ -210,6 +286,7 @@ export class AHKParser {
     private expression(p: number = 0): INodeResult<Expr.Expr> {
         let start = this.pos;
         let result: INodeResult<Expr.Expr>;
+                    
         try {
             switch (this.currentToken.type) {
                 // all Unary operator
@@ -225,6 +302,7 @@ export class AHKParser {
                     result = nodeResult(
                         new Expr.Unary(saveToken, expr.value),
                             expr.errors);
+                    break;
                 case TokenType.openParen:
                     // TODO: Process paren expression
                     let OPar = this.currentToken;
@@ -250,21 +328,92 @@ export class AHKParser {
             }
 
             // pratt parse
-            while ((this.currentToken.type >= TokenType.pplus &&
-                    this.currentToken.type <= TokenType.lshifteq) && 
-                    Precedences[this.currentToken.type] >= p) {
-                const saveToken = this.currentToken;
-                this.advance();
-                const q = Precedences[saveToken.type];
-                const right = this.expression(q + 1);
-                result = nodeResult(
-                    new Expr.Binary(
-                        result.value,
-                        saveToken,
-                        right.value
-                    ),
-                    result.errors.concat(right.errors)
-                );
+            while (true) {
+
+                // infix left-associative 
+                if ((this.currentToken.type >= TokenType.pplus &&
+                     this.currentToken.type <= TokenType.logicor) && 
+                     Precedences[this.currentToken.type] >= p) {
+                    const saveToken = this.currentToken;
+                    this.advance();
+                    const q = Precedences[saveToken.type];
+                    const right = this.expression(q + 1);
+                    result = nodeResult(
+                        new Expr.Binary(
+                            result.value,
+                            saveToken,
+                            right.value
+                        ),
+                        result.errors.concat(right.errors)
+                    );
+                    continue;
+                }
+
+                // infix and ternary, right-associative 
+                if ((this.currentToken.type >= TokenType.question &&
+                     this.currentToken.type <= TokenType.lshifteq) &&
+                     Precedences[this.currentToken.type] >= p) {
+                    const saveToken = this.currentToken;
+                    this.advance();
+                    const q = Precedences[saveToken.type];
+
+                    // ternary expression
+                    if (saveToken.type === TokenType.question) {
+                        // This expression has no relation 
+                        // with next expressions. Thus, 0 precedence
+                        const trueExpr = this.expression();
+                        const colon = this.eatAndThrow(
+                            TokenType.colon,
+                            'Expect a ":" in ternary expression'
+                        );
+                        // right-associative 
+                        const falseExpr = this.expression(q);
+                        result = nodeResult(
+                            new Expr.Ternary(
+                                result.value,
+                                saveToken,
+                                trueExpr.value,
+                                colon,
+                                falseExpr.value
+                            ),
+                            result.errors
+                            .concat(trueExpr.errors)
+                            .concat(falseExpr.errors)
+                        );
+                    }
+                    // other assignments
+                    else {
+                        // right-associative 
+                        const right = this.expression(q);
+                        result = nodeResult(
+                            new Expr.Binary(
+                                result.value,
+                                saveToken,
+                                right.value
+                            ),
+                            result.errors.concat(right.errors)
+                        );
+                    }
+                    continue;
+                }
+
+                // Implicit connect
+                if (this.currentToken.type >= TokenType.number &&
+                    this.currentToken.type <= TokenType.precent) {
+                    const right = this.expression(Precedences[TokenType.sconnect]+1);
+                    result = nodeResult(
+                        new Expr.Binary(
+                            result.value,
+                            new Token(TokenType.implconn, ' ', 
+                                result.value.end,
+                                right.value.start),
+                            right.value
+                        ),
+                        result.errors.concat(right.errors)
+                    );
+                }
+
+                break;
             }
                
             return result;

@@ -77,6 +77,13 @@ export class Tokenizer {
         return this.document[pos-1];
     }
 
+    private SikpWhiteSpace() {
+        while(this.currChar === '\s' ||
+              this.currChar === '\t' ||
+              this.currChar === '\r')
+            this.Advance();
+    }
+
     /**
      * Return current character position
      */
@@ -228,7 +235,7 @@ export class Tokenizer {
                     case '\t':
                     case '\r':
                         // skip
-                        this.Advance();
+                        this.SikpWhiteSpace();
                         continue;
                     case '%':
                         // If next character is a space, 
@@ -260,11 +267,17 @@ export class Tokenizer {
                 case '\t':
                 case '\r':
                     // skip
-                    this.Advance();
+                    this.SikpWhiteSpace();
                     continue;
                 case '\n':
                     this.AdvanceLine();
-                    return new Token(TokenType.EOL, "\n", p, this.genPosition());
+                    const t = new Token(TokenType.EOL, "\n", p, this.genPosition());
+                    // skip empty line
+                    while (this.currChar === '\n') {
+                        this.AdvanceLine();
+                        this.SikpWhiteSpace();
+                    }
+                    return t;
                 case '.':
                     if (this.isDigit(this.Peek())) {
                         return this.GetNumber();

@@ -60,6 +60,9 @@ export enum TokenType {
     rshifteq,    // >>=
     lshifteq,    // <<=
 
+    dot,         // .
+    comma,       // ,
+
     // literal
     number, string,
     true, false,
@@ -82,11 +85,7 @@ export enum TokenType {
     
     // marks
     sharp,       // #
-    dot,         // .
-    /**
-     * mark: ,
-     */
-    comma,       // ,
+
     /**
      * mark: :
      */
@@ -104,6 +103,7 @@ export enum TokenType {
 
     command,
     drective,
+    implconn,
     
     // file
     EOL, EOF,
