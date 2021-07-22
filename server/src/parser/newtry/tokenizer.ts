@@ -78,7 +78,7 @@ export class Tokenizer {
     }
 
     private SikpWhiteSpace() {
-        while(this.currChar === '\s' ||
+        while(this.currChar === ' '  ||
               this.currChar === '\t' ||
               this.currChar === '\r')
             this.Advance();

@@ -71,12 +71,12 @@ export enum TokenType {
     
     // paren
     openBrace,   // {
-    closeBrace,  // }
     openBracket, // [
-    closeBracket,// ]
     openParen,   // (
-    closeParen,  // )
     precent,     // %
+    closeBrace,  // }
+    closeBracket,// ]
+    closeParen,  // )
 
     // comment
     lineComment,       // ;

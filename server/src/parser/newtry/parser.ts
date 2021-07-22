@@ -46,6 +46,7 @@ export class AHKParser {
                 else {
                     this.tokens.push(saveToken);
                     this.tokens.push(this.currentToken);
+                    this.currentToken = saveToken;
                 }
             }
             else 

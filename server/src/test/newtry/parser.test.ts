@@ -139,6 +139,28 @@ suite('Syntax Parser Expresion Test', () => {
 		assert.strictEqual(actual.value.toString(), '1 + 3 * 2 - 12 / 3');
 	});
 
+	test('operator eol', () => {
+		const actuals = getExpr(`123
+		+ 99`);
+		assert.strictEqual(actuals.errors.length, 0);
+		assert.strictEqual(actuals.value instanceof Expr.Binary, true);
+		if (actuals.value instanceof Expr.Binary) {
+			atomUnpackTest(actuals.value.left, atom => {
+				assert.strictEqual(atom instanceof SuffixTerm.Literal, true);
+				if (atom instanceof SuffixTerm.Literal) {
+					assert.strictEqual(atom.token.content, '123');
+				}
+			});
+			assert.strictEqual(actuals.value.operator.type, TokenType.plus);
+			atomUnpackTest(actuals.value.right, atom => {
+				assert.strictEqual(atom instanceof SuffixTerm.Literal, true);
+				if (atom instanceof SuffixTerm.Literal) {
+					assert.strictEqual(atom.token.content, '99');
+				}
+			});
+		}
+	});
+
 	test('basic array', () => {
 		const expects = [
 			AtomTestItem('1', TokenType.number, '1'),
