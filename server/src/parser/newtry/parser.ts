@@ -483,7 +483,7 @@ export class AHKParser {
     private suffixTerm(isTailor: boolean = false): INodeResult<SuffixTerm.SuffixTerm> {
         const atom = this.atom(isTailor);
         const trailers: SuffixTermTrailer[] = [];
-        const errors: ParseError[] = [];
+        const errors: ParseError[] = [...atom.errors];
 
         const isValid = !(atom.value instanceof SuffixTerm.Invalid);
 
