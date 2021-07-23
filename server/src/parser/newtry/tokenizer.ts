@@ -190,20 +190,20 @@ export class Tokenizer {
         const p1 = currstr + this.Peek();
         const p2 = p1 + this.Peek(2);
         let mark = OTHER_MARK.get(p2);
-        if (mark) {
+        if (mark !== undefined) {
             // 3-char token
             this.Advance().Advance().Advance();
             return new Token(mark, p2, p, this.genPosition());
         }
         mark = OTHER_MARK.get(p1);
-        if (mark) {
+        if (mark !== undefined) {
             // 2-char token
             this.Advance().Advance();
             currstr += this.currChar;
             return new Token(mark, p1, p, this.genPosition());
         } 
         mark = OTHER_MARK.get(currstr);
-        if (mark) {
+        if (mark !== undefined) {
             // 1-char token
             this.Advance();
             return new Token(mark, currstr, p, this.genPosition());

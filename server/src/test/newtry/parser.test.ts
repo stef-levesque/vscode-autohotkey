@@ -161,6 +161,31 @@ suite('Syntax Parser Expresion Test', () => {
 		}
 	});
 
+	test('postfix operator', () => {
+		const actuals = getExpr('a+++10');
+		assert.strictEqual(actuals.errors.length, 0);
+		assert.strictEqual(actuals.value instanceof Expr.Binary, true);
+		if (actuals.value instanceof Expr.Binary) {
+			assert.strictEqual(actuals.value.left instanceof Expr.Unary, true);
+			if (actuals.value.left instanceof Expr.Unary) {
+				factorUpackTest(actuals.value.left.factor, atom => {
+					assert.strictEqual(atom instanceof SuffixTerm.Identifier, true);
+					if (atom instanceof SuffixTerm.Identifier) {
+						assert.strictEqual(atom.token.content, 'a');
+					}
+				});
+				assert.strictEqual(actuals.value.left.operator.type, TokenType.pplus);
+			}
+			assert.strictEqual(actuals.value.operator.type, TokenType.plus);
+			atomUnpackTest(actuals.value.right, atom => {
+				assert.strictEqual(atom instanceof SuffixTerm.Literal, true);
+				if (atom instanceof SuffixTerm.Literal) {
+					assert.strictEqual(atom.token.content, '10');
+				}
+			});
+		}
+	});
+
 	test('basic array', () => {
 		const expects = [
 			AtomTestItem('1', TokenType.number, '1'),

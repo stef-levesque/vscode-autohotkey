@@ -301,9 +301,15 @@ export class AHKParser {
                 case TokenType.multi:
                 case TokenType.not:
                 case TokenType.bnot:
+                case TokenType.pplus:
+                case TokenType.mminus:
                     const saveToken = this.currentToken;
                     this.advance();
-                    const expr = this.expression(UnaryPrecedence);
+                    const q = (saveToken.type >= TokenType.pplus && 
+                               saveToken.type <= TokenType.mminus) ?
+                              Precedences[TokenType.pplus] :
+                              UnaryPrecedence;
+                    const expr = this.expression(q);
                     result = nodeResult(
                         new Expr.Unary(saveToken, expr.value),
                             expr.errors);
@@ -336,7 +342,7 @@ export class AHKParser {
             while (true) {
 
                 // infix left-associative 
-                if ((this.currentToken.type >= TokenType.pplus &&
+                if ((this.currentToken.type >= TokenType.power &&
                      this.currentToken.type <= TokenType.logicor) && 
                      Precedences[this.currentToken.type] >= p) {
                     const saveToken = this.currentToken;
@@ -350,6 +356,23 @@ export class AHKParser {
                             right.value
                         ),
                         result.errors.concat(right.errors)
+                    );
+                    continue;
+                }
+
+                // postfix
+                if ((this.currentToken.type >= TokenType.pplus &&
+                     this.currentToken.type <= TokenType.mminus) && 
+                     Precedences[this.currentToken.type] >= p) {
+                    const saveToken = this.currentToken;
+                    this.advance();
+                    const q = Precedences[saveToken.type];
+                    result = nodeResult(
+                        new Expr.Unary(
+                            saveToken,
+                            result.value
+                        ),
+                        result.errors
                     );
                     continue;
                 }
@@ -403,8 +426,9 @@ export class AHKParser {
                 }
 
                 // Implicit connect
-                if (this.currentToken.type >= TokenType.number &&
-                    this.currentToken.type <= TokenType.precent) {
+                if ((this.currentToken.type >= TokenType.number &&
+                     this.currentToken.type <= TokenType.precent) &&
+                     Precedences[TokenType.sconnect] >= p) {
                     const right = this.expression(Precedences[TokenType.sconnect]+1);
                     result = nodeResult(
                         new Expr.Binary(
@@ -416,6 +440,7 @@ export class AHKParser {
                         ),
                         result.errors.concat(right.errors)
                     );
+                    continue;
                 }
 
                 break;
