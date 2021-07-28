@@ -24,7 +24,7 @@ export class AHKParser {
 
     constructor(document: string) {
         this.tokenizer = new Tokenizer(document);
-        this.currentToken = this.tokenizer.GetNextToken();
+        this.currentToken = this.tokenizer.nextNonMarkToken();
         this.tokens.push(this.currentToken);
     }
 
@@ -53,6 +53,15 @@ export class AHKParser {
                 this.tokens.push(this.currentToken);
         }
         return this
+    }
+
+    private nonMarkAdvance() {
+        this.pos++;
+        if (this.pos >= this.tokens.length) {
+            this.currentToken = this.tokenizer.nextNonMarkToken();
+            this.tokens.push(this.currentToken);
+        }
+        return this;
     }
 
     private previous() {
@@ -91,7 +100,11 @@ export class AHKParser {
         );
     }
 
-    declaration(): INodeResult<Stmt.Stmt> {
+    public testDeclaration(): INodeResult<Stmt.Stmt> {
+        return this.declaration();
+    }
+
+    private declaration(): INodeResult<Stmt.Stmt> {
         const start = this.pos;
         try {
             switch (this.currentToken.type) {
@@ -103,11 +116,18 @@ export class AHKParser {
                 case TokenType.local:
                 case TokenType.static:
                     return this.varDecl();
-                // !|^|# 开始的热键
+                case TokenType.key:
+                // 所有热键的修饰符
+                // case TokenType.sharp:
                 // case TokenType.not:
                 // case TokenType.xor:
-                // case TokenType.sharp:
-                //     return this.hotkey();
+                // case TokenType.plus:
+                // case TokenType.less:
+                // case TokenType.greater:
+                // case TokenType.multi:
+                // case TokenType.bnot:
+                // case TokenType.dollar:
+                    return this.hotkey();
                 default:
                     return this.statement();
             }
@@ -185,6 +205,57 @@ export class AHKParser {
         );
     }
 
+    private label(): INodeResult<Decl.Label> {
+        const name = this.currentToken;
+        this.advance();
+        const colon = this.currentToken;
+        this.advance();
+        return nodeResult(new Decl.Label(name, colon), []);
+    }
+
+    private hotkey(): INodeResult<Decl.Hotkey> {
+        const k1 = this.getKey();
+        if (this.currentToken.type === TokenType.hotkeyand) {
+            const and = this.currentToken;
+            this.nonMarkAdvance();
+            const k2 = this.getKey();
+            return nodeResult(new Decl.Hotkey(k1.value, and, k2.value), 
+                              k1.errors.concat(k2.errors));
+        }
+        return nodeResult(new Decl.Hotkey(k1.value), k1.errors);
+    }
+
+    // get hotkey and its modifiers
+    private getKey(): INodeResult<Decl.Key> {
+        const prefix: Token[] = [this.currentToken];
+        this.nonMarkAdvance();
+        // get all prefix modifiers
+        while(this.currentToken.type !== TokenType.hotkey &&
+              this.currentToken.type !== TokenType.hotkeyand &&
+              this.currentToken.type !== TokenType.EOF) {
+            prefix.push(this.currentToken);
+            this.nonMarkAdvance();
+        }
+
+        if (prefix.length === 0) {
+            // TODO: 更好地处理热键不正确的情况
+            return nodeResult(
+                new Decl.Key(this.currentToken),
+                [this.error(
+                    this.currentToken,
+                    'Expect a valid hotkey'
+                )]
+            )
+        }
+
+        return nodeResult(
+            new Decl.Key(
+                prefix[prefix.length-1], 
+                prefix.slice(0, -1)
+            ), []
+        );
+    }
+
     private statement(): INodeResult<Stmt.Stmt> {
         switch (this.currentToken.type) {
             case TokenType.id:
@@ -195,10 +266,10 @@ export class AHKParser {
             //     return this.command();
             case TokenType.if:
                 return this.ifStmt();
-            // case TokenType.break:
-            //     return this.breakStmt();
-            // case TokenType.return:
-            //     return this.returnStmt();
+            case TokenType.break:
+                return this.breakStmt();
+            case TokenType.return:
+                return this.returnStmt();
             // case TokenType.switch:
             //     return this.switchStmt();
             // case TokenType.loop:
@@ -300,13 +371,47 @@ export class AHKParser {
         );
     }
 
-    // private breakStmt(): INodeResult<IASTNode> {
+    private breakStmt(): INodeResult<Stmt.Break> {
+        const breakToken = this.currentToken;
+        this.advance();
 
-    // }
+        // If there are break label, parse it
+        if (!this.atLineEnd()) {
+            
+            // ',' is negotiable
+            this.eatDiscardCR(TokenType.comma);
+            const label = this.eatAndThrow(
+                TokenType.id,
+                'Expect a label name'
+            );
+            this.terminal();
+            return nodeResult(
+                new Stmt.Break(breakToken, label),
+                []
+            );
+        }
 
-    // private returnStmt(): INodeResult<IASTNode> {
+        this.terminal();
+        return nodeResult(new Stmt.Break(breakToken), []);
+    }
 
-    // }
+    private returnStmt(): INodeResult<Stmt.Return> {
+        const returnToken = this.currentToken;
+        
+        // If expersions parse all
+        if (!this.atLineEnd()) {
+            // ',' is negotiable
+            this.eatDiscardCR(TokenType.comma);
+            const expr = this.expression();
+            this.terminal()
+            return nodeResult(
+                new Stmt.Return(returnToken, expr.value),
+                expr.errors
+            );
+        }
+        this.terminal();
+        return nodeResult(new Stmt.Return(returnToken), []);
+    }
 
     // private switchStmt(): INodeResult<IASTNode> {
 
@@ -345,6 +450,10 @@ export class AHKParser {
 
     // for test expresion
     public testExpr(): INodeResult<Expr.Expr> {
+        this.tokens.pop();
+        this.tokenizer.Reset();
+        this.currentToken = this.tokenizer.GetNextToken();
+        this.tokens.push(this.currentToken);
         return this.expression();
     }
 
@@ -817,18 +926,6 @@ export class AHKParser {
 
     // }
 
-    // private hotkey(): INodeResult<IASTNode> {
-
-    // }
-
-    private label(): INodeResult<Decl.Label> {
-        const name = this.currentToken;
-        this.advance();
-        const colon = this.currentToken;
-        this.advance();
-        return nodeResult(new Decl.Label(name, colon), []);
-    }
-
     // private classDecl(): INodeResult<IClassDecl> {
 
     // }
@@ -891,11 +988,27 @@ export class AHKParser {
             throw this.error(this.currentToken, message);
     }
 
-    // private matchToken(t: TokenType): 
+    /**
+     * check if current token matches a set of tokens
+     * @param ts match types array 
+     */
+    private matchTokens(ts: TokenType[]): boolean {
+        if (this.currentToken.type === TokenType.EOF) return false;
+        for (const t of ts) {
+            if (t === this.currentToken.type)
+                return true;
+        }
+        return false;
+    }
 
     private jumpWhiteSpace() {
         while (this.currentToken.type === TokenType.EOL)
             this.advance();
+    }
+
+    private atLineEnd(): boolean {
+        return this.currentToken.type === TokenType.EOL ||
+               this.currentToken.type === TokenType.EOF;
     }
 
     // attempt to synchronize parser

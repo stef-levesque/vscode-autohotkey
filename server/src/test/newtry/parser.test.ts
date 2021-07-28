@@ -5,6 +5,7 @@ import { Atom, IExpr, SuffixTermTrailer } from "../../parser/newtry/types";
 import { TokenType } from "../../parser/newtry/tokenTypes";
 import * as Expr from '../../parser/newtry/models/expr';
 import * as SuffixTerm from '../../parser/newtry/models/suffixterm';
+import * as Decl from '../../parser/newtry/models/declaration';
 
 function getExpr(s: string) {
 	const p = new AHKParser(s);
@@ -284,4 +285,56 @@ suite('Syntax Parser Expresion Test', () => {
 			)
 		}
 	});
+});
+
+function getStmt(s: string) {
+	const p = new AHKParser(s);
+	return p.testDeclaration();
+}
+
+interface IKeyTest {
+	name: string,
+	modifiers: string[]
+}
+
+function keyTest(name: string, modifiers:string[]): IKeyTest {
+	return {
+		name: name,
+		modifiers: modifiers
+	};
+}
+
+suite('Syntax Parser Statment Test', () => {
+	test('valid hotkey', () => {
+		const actual = getStmt('^!#F1 & 1::');
+		const expects = [
+			keyTest(
+				'F1',
+				['^', '!', '#']
+			),
+			keyTest(
+				'1',
+				[]
+			)
+		];
+		assert.strictEqual(actual.errors.length, 0, 'counter errors');
+		const aHotkey = actual.value;
+		assert.strictEqual(aHotkey instanceof Decl.Hotkey, true, 'wrong instance');
+		if (aHotkey instanceof Decl.Hotkey) {
+			assert.strictEqual(aHotkey.key1.modifiers !== undefined, true, 'key1 modifiers wrong');
+			assert.strictEqual(aHotkey.key1.key.content, 'F1');
+			if (aHotkey.key1.modifiers) {
+				let i = 0;
+				for (const mod of aHotkey.key1.modifiers) {
+					assert.strictEqual(expects[0].modifiers[i], mod.content, 'key1 modifier name wrong');
+					i++;
+				}
+			}
+			assert.strictEqual(aHotkey.key2 !== undefined,true, 'Key2 exists');
+			if (aHotkey.key2) {
+				assert.strictEqual(aHotkey.key2.key.content, '1');
+				assert.strictEqual(aHotkey.key2.modifiers?.length === 0, true);
+			}
+		}
+	})
 });

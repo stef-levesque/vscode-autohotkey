@@ -65,7 +65,7 @@ export enum TokenType {
 
 
     // literal
-    number, string,
+    string, number,
     true, false,
 
     id,
@@ -79,24 +79,21 @@ export enum TokenType {
     closeBracket,
     closeParen,
 
-
-    // comment
-    lineComment,
-    openMultiComment,
-    closeMultiComment,
-
-
     // marks
     sharp,
-
-
-
+    dollar,
+    key,
 
     /**
-     * mark: :
+     * mark: ':'
      */
     colon,
     hotkey,
+    hotkeyand,
+
+    // comment
+    lineComment,
+    blockComment,
 
 
     // keyword

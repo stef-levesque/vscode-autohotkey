@@ -196,7 +196,7 @@ export class If extends Stmt {
 }
 
 export class Else extends Stmt {
-	
+
 	constructor(
 		public readonly elseToken: Token,
 		public readonly body: IStmt
@@ -229,3 +229,88 @@ export class Else extends Stmt {
 	// 	return visitor.visitElse(this, parameters);
 	// }
 }
+
+export class Break extends Stmt {
+	/**
+	 * 
+	 * @param breakToken break token
+	 * @param label label jumping to
+	 */
+	constructor(
+		public readonly breakToken: Token,
+		public readonly label?: Token
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		return this.label !== undefined ?
+			[`${this.breakToken.content} ${this.label.content}`] :
+			[`${this.breakToken.content}`];
+	}
+
+	public get start(): Position {
+		return this.breakToken.start;
+	}
+
+	public get end(): Position {
+		return this.breakToken.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.breakToken];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitBreak(this, parameters);
+	// }
+}
+
+export class Return extends Stmt {
+  
+	constructor(
+		public readonly returnToken: Token,
+		public readonly value?: IExpr
+	) {
+	  super();
+	}
+  
+	public toLines(): string[] {
+	  if (this.value !== undefined) {
+		const exprLines = this.value.toLines();
+  
+		exprLines[0] = `${this.returnToken.content} ${exprLines[0]}`;
+		exprLines[exprLines.length - 1] = `${exprLines[exprLines.length - 1]}.`;
+		return exprLines;
+	  }
+  
+	  return [`${this.returnToken.content}`];
+	}
+  
+	public get start(): Position {
+	  return this.returnToken.start;
+	}
+  
+	public get end(): Position {
+	  return this.value === undefined ? this.returnToken.end : this.value.end;
+	}
+  
+	public get ranges(): Range[] {
+	  let ranges: Range[] = [this.returnToken];
+	  if (this.value !== undefined) {
+		ranges = ranges.concat(this.value.ranges);
+	  }
+  
+	  return ranges;
+	}
+  
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitReturn(this, parameters);
+	// }
+  }

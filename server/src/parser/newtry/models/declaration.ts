@@ -127,6 +127,92 @@ export class Label extends Decl {
     }
 }
 
+export class Hotkey extends Decl {
+    /**
+     * 
+     * @param key1 First hotkey
+     * @param and '&' token
+     * @param key2 Second hotkey
+     */
+    constructor(
+        public readonly key1: Key,
+        public readonly and?: Token,
+        public readonly key2?: Key
+    ) {
+        super();
+    }
+
+    public toLines(): string[] {
+        const k1 = this.key1.toLines();
+        if (this.and !== undefined &&
+            this.key2 !== undefined) {
+            const k2 = this.key2.toLines();
+            return [`${k1[0]} & ${k2[0]}`]
+        }
+        return k1;
+    }
+
+    public get start(): Position {
+        return this.key1.start;
+    }
+
+    public get end(): Position {
+        return (this.and !== undefined &&
+               this.key2 !== undefined) ? 
+               this.key2.end :
+               this.key1.end;
+    }
+
+    public get ranges(): Range[] {
+        if (this.and !== undefined &&
+            this.key2 !== undefined) {
+            return [...this.key1.ranges, this.and, ...this.key2.ranges];
+        }
+        return this.key1.ranges;
+    }
+}
+
+export class Key extends NodeBase {
+    /**
+     * 
+     * @param key Key token
+     * @param modifiers modifiers of a hotkey
+     */
+    constructor(
+        public readonly key: Token, 
+        public readonly modifiers?: Token[]
+    ) {
+        super();
+    }
+
+    public toLines(): string[] {
+        if (this.modifiers !== undefined) {
+            let modifiersLine = '';
+            for (const t of this.modifiers) {
+                modifiersLine += t.content;
+            }
+            return [`${modifiersLine}${this.key.content}`]
+        }
+        return [`${this.key.content}`];
+    }
+
+    public get start(): Position {
+        return this.modifiers !== undefined ?
+               this.modifiers[0].start:
+               this.key.start;
+    }
+
+    public get end(): Position {
+        return this.key.end;
+    }
+
+    public get ranges(): Range[] {
+        return this.modifiers !== undefined ?
+               this.modifiers.concat(this.key) :
+               [this.key];
+    }
+}
+
 // TODO: need finish
 export class FuncDef extends Decl {
     /**

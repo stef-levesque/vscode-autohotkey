@@ -20,7 +20,8 @@ export class Tokenizer {
      * character position of line
      */
     private chr: number = 1;
-    private EscapeChar = '"'
+    private EscapeChar = '"';
+    private comments: Token[] = [];
 
     constructor(document: string) {
         this.document = document;
@@ -75,7 +76,7 @@ export class Tokenizer {
             }
             return this.document[pos-nwp];
         }
-        return this.document[pos-1];
+        return this.document[pos];
     }
 
     private SikpWhiteSpace() {
@@ -83,6 +84,34 @@ export class Tokenizer {
               this.currChar === '\t' ||
               this.currChar === '\r')
             this.Advance();
+    }
+
+    private SkipBlockComment() {
+        const offset = this.pos;
+        const p = this.genPosition();
+        this.Advance().Advance();
+        while (this.currChar !== 'EOF' && 
+               this.currChar !== '*' && 
+               this.Peek() !== '/') {
+            this.Advance();
+        }
+        this.Advance().Advance();
+        const s = this.document.slice(offset, this.pos);
+        // collect comments
+        this.comments.push(new Token(TokenType.blockComment, s, p, this.genPosition()));
+    }
+
+    private SkipLineComment() {
+        const offset = this.pos;
+        const p = this.genPosition();
+        this.Advance();
+        while (this.currChar !== 'EOF' && 
+               this.currChar !== '\n') {
+            this.Advance();
+        }
+        const s = this.document.slice(offset, this.pos);
+        // collect comments
+        this.comments.push(new Token(TokenType.lineComment, s, p, this.genPosition()));
     }
 
     /**
@@ -165,7 +194,7 @@ export class Tokenizer {
 
     /**
      * If # is a Drective return drective,
-     * else return # token 
+     * else return key token '#' 
      */
     private GetDrectivesOrSharp(): Token {
         const start = this.pos;
@@ -180,7 +209,8 @@ export class Tokenizer {
         this.pos = start;
         this.line = p.line;
         this.chr = p.character+1;
-        return new Token(TokenType.sharp, "#", p, this.genPosition());
+        this.currChar = d[0];
+        return new Token(TokenType.key, "#", p, this.genPosition());
     }
 
     private GetMark(): Token {
@@ -209,7 +239,7 @@ export class Tokenizer {
         }
         else {
             this.Advance();
-            return new Token(TokenType.unknown, currstr, p, this.genPosition());
+            return new Token(TokenType.key, currstr, p, this.genPosition());
         }
     }
 
@@ -269,15 +299,7 @@ export class Tokenizer {
                     this.SikpWhiteSpace();
                     continue;
                 case '\n':
-                    this.AdvanceLine();
-                    const t = new Token(TokenType.EOL, "\n", p, this.genPosition());
-                    // skip empty line
-                    this.SikpWhiteSpace()
-                    while (this.currChar === '\n') {
-                        this.AdvanceLine();
-                        this.SikpWhiteSpace();
-                    }
-                    return t;
+                    return this.returnSkipEmptyLine(p);
                 case '.':
                     if (this.isDigit(this.Peek())) {
                         return this.GetNumber();
@@ -295,6 +317,23 @@ export class Tokenizer {
                 case "#":
                     this.Advance();
                     return this.GetDrectivesOrSharp();
+                case '/':
+                    if (this.Peek() === '*') {
+                        this.SkipBlockComment();
+                        continue;
+                    }
+                    this.Advance();
+                    return new Token(TokenType.div, '/', p, this.genPosition());
+                case ';':
+                    this.SkipLineComment();
+                    continue;
+                case '&':
+                    if (this.isWhiteSpace(this.Peek()) && this.isWhiteSpace(this.BackPeek())) {
+                        this.Advance();
+                        return new Token(TokenType.hotkeyand, " & ", p, this.genPosition());
+                    }
+                    this.Advance();
+                    return new Token(TokenType.and, "&", p, this.genPosition());
                 default:
                     if (this.isDigit(this.currChar)) {
                         return this.GetNumber();
@@ -307,6 +346,46 @@ export class Tokenizer {
                         // if not return a unknown token in the function
                         return this.GetMark();
                     }
+            }
+        }
+        return new Token(TokenType.EOF, "EOF", this.genPosition(), this.genPosition());
+    }
+
+    // AHK的分词由开始是否含有id或者keyword或者drective决定
+    // 为了热键定义方便的语法解析起来是真的艹蛋，
+    // 不过用的时候是真香
+    public nextNonMarkToken(): Token {
+        if (this.currChar !== 'EOF') {
+            const p = this.genPosition();
+            if (this.isWhiteSpace(this.currChar)) {
+                this.SikpWhiteSpace();
+            }
+            if (this.isAlpha(this.currChar)) {
+                return this.GetId();
+            }
+            else if (this.currChar === '\n') {
+                return this.returnSkipEmptyLine(p);
+            }
+            else if (this.currChar === '#') {
+                this.Advance();
+                return this.GetDrectivesOrSharp();
+            }
+            else if (this.currChar === ':' && this.Peek() === ':') {
+                this.Advance().Advance();
+                return new Token(TokenType.hotkey, '::', p, this.genPosition());
+            }
+            else if (this.currChar === '&') {
+                if (this.isWhiteSpace(this.Peek()) && this.isWhiteSpace(this.BackPeek())) {
+                    this.Advance();
+                    return new Token(TokenType.hotkeyand, " & ", p, this.genPosition());
+                }
+                this.Advance();
+                return new Token(TokenType.key, "&", p, this.genPosition());
+            }
+            else {
+                const s = this.currChar;
+                this.Advance();
+                return new Token(TokenType.key, s, p, this.genPosition());
             }
         }
         return new Token(TokenType.EOF, "EOF", this.genPosition(), this.genPosition());
@@ -331,12 +410,30 @@ export class Tokenizer {
     private isWhiteSpace(s: string): boolean {
         return s === ' ' || s === '\t'
     }
+
+    /**
+     * skip empty line and return first '\n' token
+     * @param p start position
+     */
+    private returnSkipEmptyLine(p: Position): Token {
+        this.AdvanceLine();
+        const t = new Token(TokenType.EOL, "\n", p, this.genPosition());
+        // skip empty line
+        this.SikpWhiteSpace()
+        while (this.currChar === '\n') {
+            this.AdvanceLine();
+            this.SikpWhiteSpace();
+        }
+        return t;
+    }
     /**
      * reset tokenizer for new loop
      * @param document optional string to split
      */
     Reset(document?: string): void {
         this.pos = -1;
+        this.line = 1;
+        this.chr = 0;
         if (document) {
             this.document = document;
         }
@@ -463,7 +560,6 @@ const OTHER_MARK: ITokenMap = new Map([
     ["{", TokenType.openBrace], ["}", TokenType.closeBrace],
     ["[",TokenType.openBracket], ["]",TokenType.closeBracket],
     ["(", TokenType.openParen], [")", TokenType.closeParen],
-    ["/*", TokenType.openMultiComment], ["*/", TokenType.closeMultiComment],
     [";", TokenType.lineComment], ["=", TokenType.equal],
     ["#", TokenType.sharp],[",",TokenType.comma], [".", TokenType.dot], ["!", TokenType.not],
     ["&", TokenType.and], ["|", TokenType.or], ["^", TokenType.xor],
@@ -474,6 +570,7 @@ const OTHER_MARK: ITokenMap = new Map([
     ["?", TokenType.question], [":", TokenType.colon], ["::", TokenType.hotkey],
     ["%", TokenType.precent], [">>", TokenType.rshift], ["<<", TokenType.lshift],
     ["++", TokenType.pplus], ["--", TokenType.mminus], ["~", TokenType.bnot],
+    ["$", TokenType.dollar],
     // equals
     [":=", TokenType.aassign], ["=", TokenType.equal], ["+=", TokenType.pluseq], 
     ["-=", TokenType.minuseq], ["*=", TokenType.multieq], ["/=", TokenType.diveq], 
