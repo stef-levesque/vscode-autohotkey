@@ -440,6 +440,8 @@ const identifierTest = new RegExp(
     ["while", TokenType.while],
     ["loop", TokenType.loop], 
     ["until",TokenType.until], 
+    ["for", TokenType.for],
+    ["in", TokenType.in],
     ["switch", TokenType.switch], 
     ["case", TokenType.case], 
     ["break", TokenType.break],

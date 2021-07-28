@@ -135,7 +135,7 @@ export class FuncDef extends Decl {
      */
     constructor(
         public readonly nameToken: Token,
-        public readonly params: Param[],
+        public readonly params: Param,
         public readonly block: Block
     ) {
         super();
@@ -143,7 +143,7 @@ export class FuncDef extends Decl {
 
     public toLines(): string[] {
         const idLines = this.nameToken.content;
-        const params = this.params.flatMap(param => param.toLines());
+        const params = this.params.toLines();
         const block = this.block.toLines();    
         params[0] = idLines + params[0];
 

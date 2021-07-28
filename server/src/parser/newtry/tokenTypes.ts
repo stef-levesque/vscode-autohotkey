@@ -3,111 +3,119 @@ export enum TokenType {
     // operators
     pplus,
     mminus,
-    
-    power,       // **
-    
-    not,         // !
-    bnot,        // ~
-    
+
+    power,
+
+    not,
+    bnot,
+
     multi,
-    div,         // /
-    fdiv,        // //
-    
+    div,
+    fdiv,
+
     plus,
     minus,
-    
-    rshift,     // >>
-    lshift,     // <<
-    
-    and,         // &
-    xor,         // ^
-    or,          // |
-    
-    sconnect,    // string connect
-    
-    regeq,       // ~=
-    
+
+    rshift,
+    lshift,
+
+    and,
+    xor,
+    or,
+
+    sconnect,
+
+    regeq,
+
     greater,
     greaterEqual,
     less,
     lessEqual,
-    
-    equal,       // =
-    dequal,      // ==
-    glnequal,    // <>
-    notEqual,    // !=
-    
-    keynot,      // not
 
-    logicand,    // &&
+    equal,
+    dequal,
+    glnequal,
+    notEqual,
+
+    keynot,
+
+    logicand,
     keyand,
 
-    keyor, 
-    logicor,     // ||
+    keyor,
+    logicor,
 
     question,
 
-    aassign,     // :=
-    pluseq,      // +=
-    minuseq,     // -=
-    multieq,     // *=
-    diveq,       // /=
-    idiveq,      // //=
-    sconneq,     // .=
-    oreq,        // |=
-    andeq,       // &=
-    xoreq,       // ^=
-    rshifteq,    // >>=
-    lshifteq,    // <<=
+    aassign,
+    pluseq,
+    minuseq,
+    multieq,
+    diveq,
+    idiveq,
+    sconneq,
+    oreq,
+    andeq,
+    xoreq,
+    rshifteq,
+    lshifteq,
 
-    dot,         // .
-    comma,       // ,
+    dot,
+    comma,
+
 
     // literal
     number, string,
     true, false,
-    
+
     id,
-    
+
     // paren
-    openBrace,   // {
-    openBracket, // [
-    openParen,   // (
-    precent,     // %
-    closeBrace,  // }
-    closeBracket,// ]
-    closeParen,  // )
+    openBrace,
+    openBracket,
+    openParen,
+    precent,
+    closeBrace,
+    closeBracket,
+    closeParen,
+
 
     // comment
-    lineComment,       // ;
-    openMultiComment,  // /*
-    closeMultiComment, // */
-    
+    lineComment,
+    openMultiComment,
+    closeMultiComment,
+
+
     // marks
-    sharp,       // #
+    sharp,
+
+
+
 
     /**
      * mark: :
      */
-    colon,       // :
-    hotkey,      // ::
+    colon,
+    hotkey,
+
 
     // keyword
-    if, else, switch, case, loop, 
+    if, else, switch, case, loop,
+    for, in,
     while, until, break, continue,
-    try, catch, finally, 
-    gosub, goto, return, global, 
-    local, throw, class, 
+    try, catch, finally,
+    gosub, goto, return, global,
+    local, throw, class,
     extends, new, static,
-    
+
 
     command,
     drective,
     implconn,
-    
+
     // file
     EOL, EOF,
 
     // error
-    unknown
+    unknown,
 }
