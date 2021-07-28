@@ -20,6 +20,7 @@ export class Tokenizer {
      * character position of line
      */
     private chr: number = 1;
+    private EscapeChar = '"'
 
     constructor(document: string) {
         this.document = document;
@@ -91,27 +92,25 @@ export class Tokenizer {
         return Position.create(this.line, this.chr);
     }
 
-    private NumberAdvance(): string {
-        let sNum: string = '';
+    private NumberAdvance() {
         while(this.isDigit(this.currChar)) {
-            sNum += this.currChar;
             this.Advance();
         }
-        return sNum;
     }
 
     private GetNumber(): Token {
+        const offset = this.pos;
         let p = this.genPosition();
-        let sNum:string = this.NumberAdvance();
+        this.NumberAdvance();
         if (this.currChar === '.') {
-            sNum += '.';
             this.Advance();
-            sNum += this.NumberAdvance();
+            this.NumberAdvance();
         } 
         if (this.currChar === 'e' || this.currChar === 'E') {
-            sNum += this.currChar;
-            sNum += this.NumberAdvance();
+            this.currChar;
+            this.NumberAdvance();
         }
+        const sNum = this.document.slice(offset, this.pos);
         return new Token(TokenType.number, sNum, p, this.genPosition());
     }
 
@@ -273,6 +272,7 @@ export class Tokenizer {
                     this.AdvanceLine();
                     const t = new Token(TokenType.EOL, "\n", p, this.genPosition());
                     // skip empty line
+                    this.SikpWhiteSpace()
                     while (this.currChar === '\n') {
                         this.AdvanceLine();
                         this.SikpWhiteSpace();

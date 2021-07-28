@@ -1,4 +1,3 @@
-import { type } from 'os';
 import { Position, Range } from 'vscode-languageserver';
 import { ParseError } from './models/parseError';
 import { TokenType } from './tokenTypes';

@@ -35,6 +35,7 @@ assignment -> (':=' expression
 // statements
 statement -> ( statementBlock
     | commandStatement
+    | functionCall
     | if
     | break
     | return
@@ -51,6 +52,9 @@ statement -> ( statementBlock
 
 // directive
 directive -> '#' idenitifer parameters '\n'
+
+//functionCall
+functionCall -> factor call '\n'
 
 // block
 statementBlock -> '{' declarations* '}'

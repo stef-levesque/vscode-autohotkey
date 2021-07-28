@@ -91,16 +91,16 @@ export class AHKParser {
         );
     }
 
-    private statement(): INodeResult<IStmt> {
+    private statement(): INodeResult<Stmt.Stmt> {
         switch (this.currentToken.type) {
             case TokenType.id:
                 return this.idLeadStatement();
-            // case TokenType.openBrace:
-            //     return this.block();
+            case TokenType.openBrace:
+                return this.block();
             // case TokenType.command:
             //     return this.command();
-            // case TokenType.if:
-            //     return this.ifStmt();
+            case TokenType.if:
+                return this.ifStmt();
             // case TokenType.else:
             //     return this.elseStmt();
             // case TokenType.break:
@@ -124,13 +124,68 @@ export class AHKParser {
         }
     }
 
-    // private block(): INodeResult<IASTNode> {
+    private block(): INodeResult<Stmt.Block> {
+        const open = this.currentToken;
+        const errors: ParseError[] = [];
+        this.advance();
+        const block: Stmt.Stmt[] = [];
+        while (this.currentToken.type !== TokenType.closeBrace &&
+               this.currentToken.type !== TokenType.EOF) {
+            const stmt = this.declaration();
+            errors.push(...stmt.errors);
+            block.push(stmt.value);
+        }
+        const close = this.eatAndThrow(
+            TokenType.closeBrace,
+            'Expect a "}" at block end'
+        );
 
-    // }
+        return nodeResult(
+            new Stmt.Block(open, block, close),
+            errors
+        );
+    }
 
-    // private ifStmt(): INodeResult<IASTNode> {
+    private ifStmt(): INodeResult<Stmt.If> {
+        const iftoken = this.currentToken;
+        this.advance();
+        const errors: ParseError[] = [];
+        const condition = this.expression();
+        errors.push(...condition.errors);
+        // skip all EOL
+        this.jumpWhiteSpace();
+        const body = this.block();
+        errors.push(...body.errors);
+        
+        // parse else branch if found else
+        if (this.currentToken.type === TokenType.else) {
+            const elsetoken = this.currentToken;
+            this.advance()
+            const body = this.block();
+            errors.push(...body.errors);
+            return nodeResult(
+                new Stmt.If(
+                    iftoken,
+                    condition.value,
+                    body.value,
+                    new Stmt.Else(
+                        elsetoken,
+                        body.value
+                    )
+                ),
+                errors
+            );
+        }
 
-    // }
+        return nodeResult(
+            new Stmt.If(
+                iftoken,
+                condition.value,
+                body.value
+            ),
+            errors
+        );
+    }
 
     // private breakStmt(): INodeResult<IASTNode> {
 
@@ -160,7 +215,7 @@ export class AHKParser {
 
     // }
 
-    private idLeadStatement(): INodeResult<IStmt> {
+    private idLeadStatement(): INodeResult<Stmt.Stmt> {
         const p = this.peek()
         switch (p.type) {
             // case TokenType.openParen:
@@ -172,8 +227,8 @@ export class AHKParser {
             // case TokenType.and:
             // case TokenType.hotkey:
             //     return this.hotkey();
-            // case TokenType.colon:
-            //     return this.label();
+            case TokenType.colon:
+                return this.label();
             // 其他是语法错误，统一当作有错误的赋值语句
             default:
                 throw this.error(p,
@@ -181,7 +236,7 @@ export class AHKParser {
         }
     }
 
-    declaration(): INodeResult<IStmt> {
+    declaration(): INodeResult<Stmt.Stmt> {
         try {
             switch (this.currentToken.type) {
                 case TokenType.id:
@@ -751,10 +806,6 @@ export class AHKParser {
 
     // }
 
-    // private actualParams(): INodeResult<Expr[]> {
-
-    // }
-
     // private command(): INodeResult<ICommandCall> {
 
     // }
@@ -763,9 +814,13 @@ export class AHKParser {
 
     // }
 
-    // private label(): INodeResult<IASTNode> {
-
-    // }
+    private label(): INodeResult<Decl.Label> {
+        const name = this.currentToken;
+        this.advance();
+        const colon = this.currentToken;
+        this.advance();
+        return nodeResult(new Decl.Label(name, colon), []);
+    }
 
     // private classDecl(): INodeResult<IClassDecl> {
 
@@ -820,5 +875,9 @@ export class AHKParser {
 
     // private matchToken(t: TokenType): 
 
+    private jumpWhiteSpace() {
+        while (this.currentToken.type === TokenType.EOL) 
+            this.advance();
+    }
 
 }

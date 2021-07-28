@@ -141,6 +141,7 @@ suite('Syntax Parser Expresion Test', () => {
 
 	test('operator eol', () => {
 		const actuals = getExpr(`123
+		
 		+ 99`);
 		assert.strictEqual(actuals.errors.length, 0);
 		assert.strictEqual(actuals.value instanceof Expr.Binary, true);

@@ -1,5 +1,5 @@
 import { Position, Range } from 'vscode-languageserver';
-import { IStmt, SyntaxKind, Token } from '../types';
+import { IExpr, IStmt, SyntaxKind, Token } from '../types';
 import { NodeBase } from './nodeBase';
 import * as Expr from './expr'
 
@@ -95,4 +95,137 @@ export class AssignStmt extends Stmt {
 	public get ranges(): Range[] {
 		return [this.expr];
 	}
+}
+
+export class Block extends Stmt {
+
+	constructor(
+		public readonly open: Token,
+		public readonly stmts: Stmt[],
+		public readonly close: Token
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const lines = this.stmts.flatMap(stmt => stmt.toLines());
+
+		if (lines.length === 0) {
+			return [`${this.open.content} ${this.close.content}`];
+		}
+
+		if (lines.length === 1) {
+			return [`${this.open.content} ${lines[0]} ${this.close.content}`];
+		}
+
+		return [`${this.open.content}`].concat(
+			...lines.map(line => `    ${line}`),
+			`${this.close.content}`,
+		);
+	}
+
+	public get start(): Position {
+		return this.open.start;
+	}
+
+	public get end(): Position {
+		return this.close.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.open, ...this.stmts, this.close];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	// 	visitor: IStmtVisitor<T>,
+	// 	parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	// 	return visitor.visitBlock(this, parameters);
+	// }
+}
+
+export class If extends Stmt {
+
+	constructor(
+		public readonly ifToken: Token,
+		public readonly condition: IExpr,
+		public readonly body: IStmt,
+		public readonly elseStmt?: Else
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.condition.toLines();
+		const stmtLines = this.body.toLines();
+
+		conditionLines[0] = `${this.ifToken.content} ${conditionLines[0]}`;
+		const lines = conditionLines;
+
+		if (this.elseStmt !== undefined) {
+			const elseLines = this.elseStmt.toLines();
+			return lines;
+		}
+
+		return lines;
+	}
+
+	public get start(): Position {
+		return this.ifToken.start;
+	}
+
+	public get end(): Position {
+		return (this.elseStmt === undefined) ? this.body.end : this.elseStmt.end;
+	}
+
+	public get ranges(): Range[] {
+		const ranges = [this.ifToken, this.condition, this.body];
+		if (this.elseStmt !== undefined) {
+			ranges.push(this.elseStmt);
+		}
+
+		return ranges;
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	// 	visitor: IStmtVisitor<T>,
+	// 	parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	// 	return visitor.visitIf(this, parameters);
+	// }
+}
+
+export class Else extends Stmt {
+	
+	constructor(
+		public readonly elseToken: Token,
+		public readonly body: IStmt
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const lines = this.body.toLines();
+		lines[0] = `${this.elseToken.content} ${lines[0]}`;
+		return lines;
+	}
+
+	public get start(): Position {
+		return this.elseToken.start;
+	}
+
+	public get end(): Position {
+		return this.body.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.elseToken, this.body];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	// 	visitor: IStmtVisitor<T>,
+	// 	parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	// 	return visitor.visitElse(this, parameters);
+	// }
 }
