@@ -466,9 +466,42 @@ export class AHKParser {
         );
     }
 
-    // private tryStmt(): INodeResult<IASTNode> {
+    private tryStmt(): INodeResult<Stmt.TryStmt> {
+        const tryToken = this.currentToken;
+        this.advance();
+        this.jumpWhiteSpace();
+        const body = this.declaration();
+        const errors = body.errors;
+        let catchStmt: Maybe<Stmt.CatchStmt>;
+        let finallyStmt: Maybe<Stmt.FinallyStmt>;
 
-    // }
+        if (this.currentToken.type === TokenType.catch) {
+            const catchToken = this.currentToken;
+            this.advance();
+            const errorExpr = this.expression();
+            this.jumpWhiteSpace();
+            const body = this.declaration();
+            errors.push(...errorExpr.errors);
+            errors.push(...body.errors);
+            catchStmt = new Stmt.CatchStmt(
+                catchToken, errorExpr.value, body.value
+            );
+        }
+
+        if (this.currentToken.type === TokenType.finally) {
+            const finallyToken = this.currentToken;
+            this.advance();
+            this.jumpWhiteSpace();
+            const body = this.declaration();
+            errors.push(...body.errors);
+            finallyStmt = new Stmt.FinallyStmt(finallyToken, body.value);
+        }
+
+        return nodeResult(
+            new Stmt.TryStmt(tryToken, body.value, catchStmt, finallyStmt),
+            errors
+        );
+    }
 
     // private drective(): INodeResult<IASTNode> {
 

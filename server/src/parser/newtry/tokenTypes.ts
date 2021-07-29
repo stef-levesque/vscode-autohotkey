@@ -71,10 +71,10 @@ export enum TokenType {
     id,
 
     // paren
-    openBrace,
     openBracket,
     openParen,
     precent,
+    openBrace,
     closeBrace,
     closeBracket,
     closeParen,

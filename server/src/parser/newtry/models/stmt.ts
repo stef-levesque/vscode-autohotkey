@@ -435,4 +435,137 @@ export class Return extends Stmt {
 	// }
 }
 
+export class TryStmt extends Stmt {
+
+	constructor(
+		public readonly tryToken: Token,
+		public readonly body: IStmt,
+		public readonly catchStmt?: CatchStmt,
+		public readonly finallyStmt?: FinallyStmt
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const stmtLines = this.body.toLines();
+		stmtLines[0] = `${this.tryToken.content} ${stmtLines[0]}`;
+
+		let lines = stmtLines;
+
+		if (this.catchStmt !== undefined) {
+			lines = joinLines(' ', lines, this.catchStmt.toLines());
+		}
+
+		if (this.finallyStmt !== undefined) {
+			lines = joinLines(' ', lines, this.finallyStmt.toLines());
+		}
+
+		return lines;
+	}
+
+	public get start(): Position {
+		return this.tryToken.start;
+	}
+
+	public get end(): Position {
+		return (this.catchStmt === undefined) ? this.body.end : this.catchStmt.end;
+	}
+
+	public get ranges(): Range[] {
+		const ranges: Range[] = [this.tryToken, this.body];
+		if (this.catchStmt !== undefined) {
+			ranges.push(...this.catchStmt.ranges);
+		}
+
+		if (this.finallyStmt !== undefined) {
+			ranges.push(...this.finallyStmt.ranges);
+		}
+
+		return ranges;
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	// 	visitor: IStmtVisitor<T>,
+	// 	parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	// 	return visitor.visitIf(this, parameters);
+	// }
+}
+
+export class CatchStmt extends Stmt {
+
+	constructor(
+		public readonly catchToken: Token,
+		public readonly errors: IExpr,
+		public readonly body: IStmt
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.errors.toLines();
+		const bodyLines = this.body.toLines();
+
+		conditionLines[0] = `${this.catchToken.content} ${conditionLines[0]}`;
+
+		return joinLines(' ', conditionLines, bodyLines);
+	}
+
+	public get start(): Position {
+		return this.catchToken.start;
+	}
+
+	public get end(): Position {
+		return this.body.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.catchToken, this.errors, this.body];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
+export class FinallyStmt extends Stmt {
+
+	constructor(
+		public readonly finallToken: Token,
+		public readonly body: IStmt
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const bodyLines = this.body.toLines();
+
+		bodyLines[0] = `${this.finallToken.content} ${bodyLines[0]}`;
+
+		return bodyLines;
+	}
+
+	public get start(): Position {
+		return this.finallToken.start;
+	}
+
+	public get end(): Position {
+		return this.body.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.finallToken, this.body];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
 export type LoopStmt = Loop | UntilLoop;
