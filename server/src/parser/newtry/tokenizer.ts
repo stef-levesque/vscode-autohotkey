@@ -351,41 +351,54 @@ export class Tokenizer {
         return new Token(TokenType.EOF, "EOF", this.genPosition(), this.genPosition());
     }
 
-    // AHK的分词由开始是否含有id或者keyword或者drective决定
+    // AHK的分词由行开始是否含有id或者keyword或者drective决定
     // 为了热键定义方便的语法解析起来是真的艹蛋，
     // 不过用的时候是真香
     public nextNonMarkToken(): Token {
-        if (this.currChar !== 'EOF') {
+        while (this.currChar !== 'EOF') {
             const p = this.genPosition();
-            if (this.isWhiteSpace(this.currChar)) {
-                this.SikpWhiteSpace();
-            }
-            if (this.isAlpha(this.currChar)) {
-                return this.GetId();
-            }
-            else if (this.currChar === '\n') {
-                return this.returnSkipEmptyLine(p);
-            }
-            else if (this.currChar === '#') {
-                this.Advance();
-                return this.GetDrectivesOrSharp();
-            }
-            else if (this.currChar === ':' && this.Peek() === ':') {
-                this.Advance().Advance();
-                return new Token(TokenType.hotkey, '::', p, this.genPosition());
-            }
-            else if (this.currChar === '&') {
-                if (this.isWhiteSpace(this.Peek()) && this.isWhiteSpace(this.BackPeek())) {
+            switch (this.currChar) {
+                case ' ':
+                case '\t':
+                case '\r':
+                    // skip
+                    this.SikpWhiteSpace();
+                    continue;
+                case '\n':
+                    return this.returnSkipEmptyLine(p);
+                case '#':
                     this.Advance();
-                    return new Token(TokenType.hotkeyand, " & ", p, this.genPosition());
-                }
-                this.Advance();
-                return new Token(TokenType.key, "&", p, this.genPosition());
-            }
-            else {
-                const s = this.currChar;
-                this.Advance();
-                return new Token(TokenType.key, s, p, this.genPosition());
+                    return this.GetDrectivesOrSharp();
+                case ':':
+                    if (this.Peek() === ':') {
+                        this.Advance().Advance();
+                        return new Token(TokenType.hotkey, '::', p, this.genPosition());
+                    }
+                    return new Token(TokenType.key, ':',p , this.genPosition());
+                case '&':
+                    if (this.isWhiteSpace(this.Peek()) && this.isWhiteSpace(this.BackPeek())) {
+                        this.Advance();
+                        return new Token(TokenType.hotkeyand, " & ", p, this.genPosition());
+                    }
+                    this.Advance();
+                    return new Token(TokenType.key, "&", p, this.genPosition());
+                case '/':
+                    if (this.Peek() === '*') {
+                        this.SkipBlockComment();
+                        continue;
+                    }
+                    this.Advance();
+                    return new Token(TokenType.key, '/', p, this.genPosition());
+                case ';':
+                    this.SkipLineComment();
+                    continue;
+                default:
+                    if (this.isAlpha(this.currChar)) {
+                        return this.GetId();
+                    }
+                    const s = this.currChar;
+                    this.Advance();
+                    return new Token(TokenType.key, s, p, this.genPosition());   
             }
         }
         return new Token(TokenType.EOF, "EOF", this.genPosition(), this.genPosition());
