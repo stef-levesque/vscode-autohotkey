@@ -55,6 +55,8 @@ export class AHKParser {
         return this
     }
 
+    // take token for hotkey
+    // hotkey 专用的分词器入口
     private nonMarkAdvance() {
         this.pos++;
         if (this.pos >= this.tokens.length) {
@@ -272,10 +274,10 @@ export class AHKParser {
                 return this.returnStmt();
             // case TokenType.switch:
             //     return this.switchStmt();
-            // case TokenType.loop:
-            //     return this.loopStmt();
-            // case TokenType.while:
-            //     return this.whileStmt();
+            case TokenType.loop:
+                return this.loopStmt();
+            case TokenType.while:
+                return this.whileStmt();
             // case TokenType.try:
             //     return this.tryStmt();
             // case TokenType.drective:
@@ -296,9 +298,9 @@ export class AHKParser {
             case TokenType.aassign:
                 // expression is only allowed in assignment in AHK
                 return this.assign();
-            // case TokenType.and:
-            // case TokenType.hotkey:
-            //     return this.hotkey();
+            case TokenType.hotkeyand:
+            case TokenType.hotkey:
+                return this.hotkey();
             case TokenType.colon:
                 return this.label();
             // 其他是语法错误，统一当作有错误的赋值语句
@@ -338,7 +340,7 @@ export class AHKParser {
         errors.push(...condition.errors);
         // skip all EOL
         this.jumpWhiteSpace();
-        const body = this.block();
+        const body = this.declaration();
         errors.push(...body.errors);
 
         // parse else branch if found else
@@ -417,13 +419,52 @@ export class AHKParser {
 
     // }
 
-    // private loopStmt(): INodeResult<IASTNode> {
+    private loopStmt(): INodeResult<Stmt.LoopStmt> {
+        const loop = this.currentToken;
+        this.advance();
 
-    // }
+        // if no expression follows is a until loop
+        if (this.matchTokens([
+            TokenType.EOL,
+            TokenType.openBrace
+        ])) {
+            this.jumpWhiteSpace();
+            const body = this.declaration();
+            const until = this.eatAndThrow(
+                TokenType.until,
+                'Expect a until in loop-until'
+            );
+            const cond = this.expression();
+            this.terminal();
+            return nodeResult(
+                new Stmt.UntilLoop(loop, body.value, 
+                    until, cond.value),
+                body.errors.concat(cond.errors)
+            );
+        }
 
-    // private whileStmt(): INodeResult<IASTNode> {
+        const cond = this.expression();
+        this.jumpWhiteSpace();
+        const body = this.declaration();
+        return nodeResult(
+            new Stmt.Loop(loop, cond.value, body.value),
+            cond.errors.concat(body.errors)
+        );
+    }
 
-    // }
+    private whileStmt(): INodeResult<Stmt.WhileStmt> {
+        const whileToken = this.currentToken;
+        this.advance();
+        const cond = this.expression();
+        // skip all EOL
+        this.jumpWhiteSpace();
+        const body = this.declaration();
+
+        return nodeResult(
+            new Stmt.WhileStmt(whileToken, cond.value, body.value),
+            cond.errors.concat(body.errors)
+        );
+    }
 
     // private tryStmt(): INodeResult<IASTNode> {
 

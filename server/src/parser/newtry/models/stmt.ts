@@ -2,6 +2,7 @@ import { Position, Range } from 'vscode-languageserver';
 import { IExpr, IStmt, SyntaxKind, Token } from '../types';
 import { NodeBase } from './nodeBase';
 import * as Expr from './expr'
+import { joinLines } from '../utils/stringUtils';
 
 /**
  * Statement base class
@@ -230,6 +231,125 @@ export class Else extends Stmt {
 	// }
 }
 
+export class Loop extends Stmt {
+
+	constructor(
+		public readonly loop: Token,
+		public readonly condition: IExpr,
+		public readonly body: IStmt
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.condition.toLines();
+		const bodyLines = this.body.toLines();
+
+		conditionLines[0] = `${this.loop.content} ${conditionLines[0]}`;
+
+		return joinLines(' ', conditionLines, bodyLines);
+	}
+
+	public get start(): Position {
+		return this.loop.start;
+	}
+
+	public get end(): Position {
+		return this.body.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.loop, this.condition, this.body];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
+export class UntilLoop extends Stmt {
+
+	constructor(
+		public readonly loop: Token,
+		public readonly body: IStmt,
+		public readonly until: Token,
+		public readonly condition: IExpr,
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.condition.toLines();
+		const bodyLines = this.body.toLines();
+
+		bodyLines[0] = `${this.loop.content} ${bodyLines[0]}`;
+		conditionLines[0] = `${this.until.content} ${conditionLines[0]}`;
+
+		return joinLines(' ', bodyLines, conditionLines);
+	}
+
+	public get start(): Position {
+		return this.loop.start;
+	}
+
+	public get end(): Position {
+		return this.body.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.loop, this.condition, this.body];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
+export class WhileStmt extends Stmt {
+
+	constructor(
+		public readonly whileToken: Token,
+		public readonly condition: IExpr,
+		public readonly body: IStmt
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.condition.toLines();
+		const bodyLines = this.body.toLines();
+
+		conditionLines[0] = `${this.whileToken.content} ${conditionLines[0]}`;
+
+		return joinLines(' ', conditionLines, bodyLines);
+	}
+
+	public get start(): Position {
+		return this.whileToken.start;
+	}
+
+	public get end(): Position {
+		return this.body.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.whileToken, this.condition, this.body];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
 export class Break extends Stmt {
 	/**
 	 * 
@@ -270,47 +390,49 @@ export class Break extends Stmt {
 }
 
 export class Return extends Stmt {
-  
+
 	constructor(
 		public readonly returnToken: Token,
 		public readonly value?: IExpr
 	) {
-	  super();
+		super();
 	}
-  
+
 	public toLines(): string[] {
-	  if (this.value !== undefined) {
-		const exprLines = this.value.toLines();
-  
-		exprLines[0] = `${this.returnToken.content} ${exprLines[0]}`;
-		exprLines[exprLines.length - 1] = `${exprLines[exprLines.length - 1]}.`;
-		return exprLines;
-	  }
-  
-	  return [`${this.returnToken.content}`];
+		if (this.value !== undefined) {
+			const exprLines = this.value.toLines();
+
+			exprLines[0] = `${this.returnToken.content} ${exprLines[0]}`;
+			exprLines[exprLines.length - 1] = `${exprLines[exprLines.length - 1]}.`;
+			return exprLines;
+		}
+
+		return [`${this.returnToken.content}`];
 	}
-  
+
 	public get start(): Position {
-	  return this.returnToken.start;
+		return this.returnToken.start;
 	}
-  
+
 	public get end(): Position {
-	  return this.value === undefined ? this.returnToken.end : this.value.end;
+		return this.value === undefined ? this.returnToken.end : this.value.end;
 	}
-  
+
 	public get ranges(): Range[] {
-	  let ranges: Range[] = [this.returnToken];
-	  if (this.value !== undefined) {
-		ranges = ranges.concat(this.value.ranges);
-	  }
-  
-	  return ranges;
+		let ranges: Range[] = [this.returnToken];
+		if (this.value !== undefined) {
+			ranges = ranges.concat(this.value.ranges);
+		}
+
+		return ranges;
 	}
-  
+
 	// public accept<T extends (...args: any) => any>(
 	//   visitor: IStmtVisitor<T>,
 	//   parameters: Parameters<T>,
 	// ): ReturnType<T> {
 	//   return visitor.visitReturn(this, parameters);
 	// }
-  }
+}
+
+export type LoopStmt = Loop | UntilLoop;
