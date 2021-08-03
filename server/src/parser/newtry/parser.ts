@@ -24,6 +24,7 @@ export class AHKParser {
 
     constructor(document: string) {
         this.tokenizer = new Tokenizer(document);
+        this.tokenizer.isParseHotkey = true;
         this.currentToken = this.tokenizer.GetNextToken(TokenType.EOL);
         this.tokens.push(this.currentToken);
     }
@@ -55,7 +56,7 @@ export class AHKParser {
         return this
     }
 
-    private previous() {
+    private previous(): Token {
         return this.tokens[this.pos - 1];
     }
 
@@ -66,7 +67,9 @@ export class AHKParser {
         if (this.pos + 1 <= this.tokens.length - 1)
             return this.tokens[this.pos + 1];
 
-        let token = this.tokenizer.GetNextToken(this.previous().type);
+        let token = this.tokenizer.GetNextToken(
+            this.pos === 0 ? TokenType.EOL : this.previous().type
+        );
 
         if (token.type === TokenType.EOL) {
             const saveToken = token;
@@ -205,47 +208,53 @@ export class AHKParser {
     }
 
     private hotkey(): INodeResult<Decl.Hotkey> {
-        const k1 = this.getKey();
+        const k1 = new Decl.Key(this.currentToken);
+        this.advance();
         if (this.currentToken.type === TokenType.hotkeyand) {
             const and = this.currentToken;
             this.advance();
-            const k2 = this.getKey();
-            return nodeResult(new Decl.Hotkey(k1.value, and, k2.value), 
-                              k1.errors.concat(k2.errors));
+            const k2 = new Decl.Key(this.currentToken);
+            this.advance();
+            return nodeResult(new Decl.Hotkey(k1, and, k2), 
+                              []);
         }
-        return nodeResult(new Decl.Hotkey(k1.value), k1.errors);
+        this.eatAndThrow(
+            TokenType.hotkey,
+            'Expect a "::" at the end of hotkey declaration'
+        );
+        return nodeResult(new Decl.Hotkey(k1), []);
     }
 
     // get hotkey and its modifiers
-    private getKey(): INodeResult<Decl.Key> {
-        const prefix: Token[] = [this.currentToken];
-        this.advance();
-        // get all prefix modifiers
-        while(this.currentToken.type !== TokenType.hotkey &&
-              this.currentToken.type !== TokenType.hotkeyand &&
-              this.currentToken.type !== TokenType.EOF) {
-            prefix.push(this.currentToken);
-            this.advance();
-        }
+    // private getKey(): INodeResult<Decl.Key> {
+    //     const prefix: Token[] = [this.currentToken];
+    //     this.advance();
+    //     // get all prefix modifiers
+    //     while(this.currentToken.type !== TokenType.hotkey &&
+    //           this.currentToken.type !== TokenType.hotkeyand &&
+    //           this.currentToken.type !== TokenType.EOF) {
+    //         prefix.push(this.currentToken);
+    //         this.advance();
+    //     }
 
-        if (prefix.length === 0) {
-            // TODO: 更好地处理热键不正确的情况
-            return nodeResult(
-                new Decl.Key(this.currentToken),
-                [this.error(
-                    this.currentToken,
-                    'Expect a valid hotkey'
-                )]
-            )
-        }
+    //     if (prefix.length === 0) {
+    //         // TODO: 更好地处理热键不正确的情况
+    //         return nodeResult(
+    //             new Decl.Key(this.currentToken),
+    //             [this.error(
+    //                 this.currentToken,
+    //                 'Expect a valid hotkey'
+    //             )]
+    //         )
+    //     }
 
-        return nodeResult(
-            new Decl.Key(
-                prefix[prefix.length-1], 
-                prefix.slice(0, -1)
-            ), []
-        );
-    }
+    //     return nodeResult(
+    //         new Decl.Key(
+    //             prefix[prefix.length-1], 
+    //             prefix.slice(0, -1)
+    //         ), []
+    //     );
+    // }
 
     private statement(): INodeResult<Stmt.Stmt> {
         switch (this.currentToken.type) {
@@ -521,6 +530,7 @@ export class AHKParser {
 
     private expression(p: number = 0): INodeResult<Expr.Expr> {
         let start = this.pos;
+        this.tokenizer.isParseHotkey = false;
         let result: INodeResult<Expr.Expr>;
 
         try {
@@ -676,7 +686,7 @@ export class AHKParser {
 
                 break;
             }
-
+            this.tokenizer.isParseHotkey = true;
             return result;
         }
         catch (error) {

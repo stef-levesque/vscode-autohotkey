@@ -309,7 +309,7 @@ suite('Syntax Parser Statment Test', () => {
 		const actual = getStmt('^!#F12 & 1::');
 		const expects = [
 			keyTest(
-				'F1',
+				'^!#F12',
 				['^', '!', '#']
 			),
 			keyTest(
@@ -321,8 +321,8 @@ suite('Syntax Parser Statment Test', () => {
 		const aHotkey = actual.value;
 		assert.strictEqual(aHotkey instanceof Decl.Hotkey, true, 'wrong instance');
 		if (aHotkey instanceof Decl.Hotkey) {
-			assert.strictEqual(aHotkey.key1.modifiers !== undefined, true, 'key1 modifiers wrong');
-			assert.strictEqual(aHotkey.key1.key.content, 'F1');
+			// assert.strictEqual(aHotkey.key1.modifiers !== undefined, true, 'key1 modifiers wrong');
+			assert.strictEqual(aHotkey.key1.key.content, expects[0].name);
 			if (aHotkey.key1.modifiers) {
 				let i = 0;
 				for (const mod of aHotkey.key1.modifiers) {
@@ -332,8 +332,8 @@ suite('Syntax Parser Statment Test', () => {
 			}
 			assert.strictEqual(aHotkey.key2 !== undefined,true, 'Key2 exists');
 			if (aHotkey.key2) {
-				assert.strictEqual(aHotkey.key2.key.content, '1');
-				assert.strictEqual(aHotkey.key2.modifiers?.length === 0, true);
+				assert.strictEqual(aHotkey.key2.key.content, expects[1].name);
+				assert.strictEqual(aHotkey.key2.modifiers, undefined);
 			}
 		}
 	})

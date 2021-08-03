@@ -10,7 +10,7 @@ function getalltoken(text: string): Token[] {
 	let actualTokens: Token[] = [];
 	while (token.type != TokenType.EOF) {
 		actualTokens.push(token);
-		token = tokenizer.GetNextToken();
+		token = tokenizer.GetNextToken(token.type);
 	}
 	actualTokens.push(token);
 	return actualTokens;
@@ -99,7 +99,7 @@ suite('Function token test', () => {
 	let actualTokens: Token[] = getalltoken(cmdTokenStr);
 
 	test('length test', () => {
-		assert.ok(actualTokens.length === expectTokens.length, `acl: ${actualTokens.length} expl: ${expectTokens.length}`);
+		assert.strictEqual(actualTokens.length, expectTokens.length, `acl: ${actualTokens.length} expl: ${expectTokens.length}`);
 	});
 
 	test('token content test', () => {

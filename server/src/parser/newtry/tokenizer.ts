@@ -172,7 +172,7 @@ export class Tokenizer {
         return new Token(TokenType.string, str, p, this.genPosition());
     }
 
-    private GetId(): Token {
+    private GetId(preType: TokenType): Token {
         let value: string;
         let offset = this.pos;
         let p = this.genPosition();
@@ -184,12 +184,12 @@ export class Tokenizer {
         if (keyword) {
             return new Token(keyword, value, p, this.genPosition());
         }
-        if (this.currChar === ':' && this.Peek() !== ':') {
+        if (preType === TokenType.EOL && this.currChar === ':' && this.Peek() !== ':') {
             this.Advance();
             return new Token(TokenType.label, value, p, this.genPosition());
         }
         // A id token confirmed, check if it is a command start
-        if (this.BackPeek(value.length, true) === '\n' && this.Peek(1, true) === ',') {
+        if (preType === TokenType.EOL && this.Peek(1, true) === ',') {
             // set command scan start flag
             this.isLiteralToken = true;
             return new Token(TokenType.command, value, p, this.genPosition());
@@ -256,7 +256,7 @@ export class Tokenizer {
         return new Token(TokenType.string, value, p, this.genPosition());
     }
 
-    GetNextToken(preType: TokenType): Token {
+    GetNextToken(preType: TokenType = TokenType.EOL): Token {
         while (this.currChar !== "EOF") {
             let p = this.genPosition();
             if (this.isLiteralToken) {
@@ -277,7 +277,7 @@ export class Tokenizer {
                         this.Advance();
                         // TODO: AHK allows number as identifier to be derefered
                         // This is for get cli parameter
-                        let token = this.GetId();
+                        let token = this.GetId(TokenType.precent);
                         // FIXME: check close % of %% dereference
                         this.Advance();
                         return token;
@@ -370,7 +370,7 @@ export class Tokenizer {
                         ])) {
                             return this.CheckHotkey(CharType.mark);
                         }
-                        return this.GetId();
+                        return this.GetId(preType);
                     }
                     else {
                         // last check if current char is a mark,
@@ -414,7 +414,7 @@ export class Tokenizer {
                 return new Token(TokenType.key, this.document[offset], p, this.genPosition());
             }
             else if (this.isAlpha(this.currChar)) {
-                const key1 = this.GetId();
+                const key1 = this.GetId(TokenType.precent);
                 if (this.isWhiteSpace(this.currChar)) {
                     this.SikpWhiteSpace();
                 }
@@ -443,14 +443,32 @@ export class Tokenizer {
             else if (this.isHotkeyToken()) {
                 return new Token(TokenType.key, this.document[offset], p, this.genPosition());
             }
+            // mark
             else {
-                this.pos = offset + 1;
-                return new Token(TokenType.key, this.document[offset], p, this.genPosition());
+                while (this.isMark(this.currChar) && this.currChar !== 'EOF') {
+                    this.Advance();
+                }
+                let marks = this.document.slice(offset, this.pos);
+                let end = this.genPosition();
+                if (this.isAlphaNumeric(this.currChar)) {
+                    const key1 = this.GetId(TokenType.precent);
+                    marks += key1.content;
+                    end = key1.end;
+                }
+                if (this.isWhiteSpace(this.currChar)) {
+                    this.SikpWhiteSpace();
+                }
+                if (this.isHotkeyToken() || this.isHotkeyAndToken()) {
+                    return new Token(TokenType.key, marks, p, end);
+                }
+                // backwards
+                this.BackTo(offset);
+                return this.GetMark();
             }
         }
 
         if (preCharType === CharType.char) {
-            const key1 = this.GetId();
+            const key1 = this.GetId(TokenType.EOL);
             const content = this.document[offset] + key1.content;
             if (this.isWhiteSpace(this.currChar)) {
                 this.SikpWhiteSpace();
