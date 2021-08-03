@@ -306,7 +306,7 @@ function keyTest(name: string, modifiers:string[]): IKeyTest {
 
 suite('Syntax Parser Statment Test', () => {
 	test('valid hotkey', () => {
-		const actual = getStmt('^!#F1 & 1::');
+		const actual = getStmt('^!#F12 & 1::');
 		const expects = [
 			keyTest(
 				'F1',

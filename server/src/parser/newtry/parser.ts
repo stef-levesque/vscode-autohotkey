@@ -24,19 +24,19 @@ export class AHKParser {
 
     constructor(document: string) {
         this.tokenizer = new Tokenizer(document);
-        this.currentToken = this.tokenizer.nextNonMarkToken();
+        this.currentToken = this.tokenizer.GetNextToken(TokenType.EOL);
         this.tokens.push(this.currentToken);
     }
 
     private advance() {
         this.pos++;
         if (this.pos >= this.tokens.length) {
-            this.currentToken = this.tokenizer.GetNextToken();
+            this.currentToken = this.tokenizer.GetNextToken(this.previous().type);
             // AHK connect next line to current line
             // when next line start with operators and ','
             if (this.currentToken.type === TokenType.EOL) {
                 const saveToken = this.currentToken;
-                this.currentToken = this.tokenizer.GetNextToken();
+                this.currentToken = this.tokenizer.GetNextToken(saveToken.type);
                 // 下一行是运算符或者','时丢弃EOL
                 // discard EOL
                 if (this.currentToken.type >= TokenType.pplus &&
@@ -55,17 +55,6 @@ export class AHKParser {
         return this
     }
 
-    // take token for hotkey
-    // hotkey 专用的分词器入口
-    private nonMarkAdvance() {
-        this.pos++;
-        if (this.pos >= this.tokens.length) {
-            this.currentToken = this.tokenizer.nextNonMarkToken();
-            this.tokens.push(this.currentToken);
-        }
-        return this;
-    }
-
     private previous() {
         return this.tokens[this.pos - 1];
     }
@@ -77,11 +66,11 @@ export class AHKParser {
         if (this.pos + 1 <= this.tokens.length - 1)
             return this.tokens[this.pos + 1];
 
-        let token = this.tokenizer.GetNextToken();
+        let token = this.tokenizer.GetNextToken(this.previous().type);
 
         if (token.type === TokenType.EOL) {
             const saveToken = token;
-            token = this.tokenizer.GetNextToken();
+            token = this.tokenizer.GetNextToken(saveToken.type);
 
             if (token.type >= TokenType.pplus &&
                 token.type <= TokenType.comma) {
@@ -118,6 +107,8 @@ export class AHKParser {
                 case TokenType.local:
                 case TokenType.static:
                     return this.varDecl();
+                case TokenType.label:
+                    return this.label();
                 case TokenType.key:
                 // 所有热键的修饰符
                 // case TokenType.sharp:
@@ -210,16 +201,14 @@ export class AHKParser {
     private label(): INodeResult<Decl.Label> {
         const name = this.currentToken;
         this.advance();
-        const colon = this.currentToken;
-        this.advance();
-        return nodeResult(new Decl.Label(name, colon), []);
+        return nodeResult(new Decl.Label(name), []);
     }
 
     private hotkey(): INodeResult<Decl.Hotkey> {
         const k1 = this.getKey();
         if (this.currentToken.type === TokenType.hotkeyand) {
             const and = this.currentToken;
-            this.nonMarkAdvance();
+            this.advance();
             const k2 = this.getKey();
             return nodeResult(new Decl.Hotkey(k1.value, and, k2.value), 
                               k1.errors.concat(k2.errors));
@@ -230,13 +219,13 @@ export class AHKParser {
     // get hotkey and its modifiers
     private getKey(): INodeResult<Decl.Key> {
         const prefix: Token[] = [this.currentToken];
-        this.nonMarkAdvance();
+        this.advance();
         // get all prefix modifiers
         while(this.currentToken.type !== TokenType.hotkey &&
               this.currentToken.type !== TokenType.hotkeyand &&
               this.currentToken.type !== TokenType.EOF) {
             prefix.push(this.currentToken);
-            this.nonMarkAdvance();
+            this.advance();
         }
 
         if (prefix.length === 0) {
@@ -278,8 +267,8 @@ export class AHKParser {
                 return this.loopStmt();
             case TokenType.while:
                 return this.whileStmt();
-            // case TokenType.try:
-            //     return this.tryStmt();
+            case TokenType.try:
+                return this.tryStmt();
             // case TokenType.drective:
             //     return this.drective();
             default:
@@ -301,8 +290,6 @@ export class AHKParser {
             case TokenType.hotkeyand:
             case TokenType.hotkey:
                 return this.hotkey();
-            case TokenType.colon:
-                return this.label();
             // 其他是语法错误，统一当作有错误的赋值语句
             default:
                 throw this.error(p,
@@ -526,7 +513,8 @@ export class AHKParser {
     public testExpr(): INodeResult<Expr.Expr> {
         this.tokens.pop();
         this.tokenizer.Reset();
-        this.currentToken = this.tokenizer.GetNextToken();
+        this.tokenizer.isParseHotkey = false;
+        this.currentToken = this.tokenizer.GetNextToken(TokenType.EOL);
         this.tokens.push(this.currentToken);
         return this.expression();
     }

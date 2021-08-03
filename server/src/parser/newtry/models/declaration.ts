@@ -99,19 +99,16 @@ export class OptionalAssginStmt extends Stmt {
 export class Label extends Decl {
     /**
      * @param name name of Label
-     * @param colon colon token
      */
     constructor(
-        public readonly name: Token,
-        public readonly colon: Token
+        public readonly name: Token
     ) {
         super();
     }
 
     public toLines(): string[] {
         const idLines = this.name.content;
-        const colon = this.colon.content;
-        return [`${idLines} ${colon}`];
+        return [`${idLines}:`];
     }
 
     public get start(): Position {
@@ -119,11 +116,11 @@ export class Label extends Decl {
     }
 
     public get end(): Position {
-        return this.colon.end;
+        return this.name.end;
     }
 
     public get ranges(): Range[] {
-        return [this.name, this.colon];
+        return [this.name];
     }
 }
 
