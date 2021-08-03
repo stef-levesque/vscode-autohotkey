@@ -468,15 +468,17 @@ export class Tokenizer {
         }
 
         if (preCharType === CharType.char) {
+            this.BackTo(offset);
             const key1 = this.GetId(TokenType.EOL);
-            const content = this.document[offset] + key1.content;
+            if (key1.type >= TokenType.if && key1.type <= TokenType.static)
+                return key1;
             if (this.isWhiteSpace(this.currChar)) {
                 this.SikpWhiteSpace();
             }
             if (this.isHotkeyToken() || this.isHotkeyAndToken()) {
-                return new Token(TokenType.key, content, p, key1.end);
+                return new Token(TokenType.key, key1.content, p, key1.end);
             }
-            return new Token(TokenType.id, content, p, key1.end); 
+            return key1; 
         }
 
         if (preCharType === CharType.digit) {
@@ -504,7 +506,6 @@ export class Tokenizer {
             CharType.char :
             CharType.mark
         );
-        const key2EndOffset = this.pos;
         if (key2.type === TokenType.key &&
             this.GetNextToken(key2.type).type === TokenType.hotkey) {
             this.BackTo(offset+2);
