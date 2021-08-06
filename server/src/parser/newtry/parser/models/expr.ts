@@ -1,11 +1,11 @@
 import { Position, Range } from 'vscode-languageserver';
-import { TokenType } from '../tokenTypes';
+import { TokenType } from '../../tokenizor/tokenTypes';
 import {
     IExpr,
     SyntaxKind,
     Token,
     SyntaxNode
-} from '../types';
+} from '../../types';
 import { NodeBase } from './nodeBase';
 import * as SuffixTerm from './suffixterm'
 

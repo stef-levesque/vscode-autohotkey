@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import { Token } from '../../parser/newtry/types';
 
-import { Tokenizer } from '../../parser/newtry/tokenizer';
-import { TokenType } from '../../parser/newtry/tokenTypes';
+import { Tokenizer } from '../../parser/newtry/tokenizor/tokenizer';
+import { TokenType } from '../../parser/newtry/tokenizor/tokenTypes';
 import { Position } from 'vscode-languageserver';
 function getalltoken(text: string): Token[] {
 	let tokenizer = new Tokenizer(text);

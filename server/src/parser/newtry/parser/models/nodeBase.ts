@@ -1,5 +1,5 @@
 import { Location, Position, Range } from 'vscode-languageserver';
-import { RangeSequence } from "../types";
+import { RangeSequence } from "../../types";
 
 export abstract class NodeBase implements RangeSequence {
 	/**

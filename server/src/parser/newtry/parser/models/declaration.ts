@@ -1,6 +1,7 @@
 import { Position, Range } from 'vscode-languageserver';
-import { TokenType } from '../tokenTypes';
-import { IExpr, IStmt, Token } from '../types';
+import { TokenType } from '../../tokenizor/tokenTypes';
+import { IExpr, IStmt, Token } from '../../types';
+import { joinLines } from '../utils/stringUtils';
 import { NodeBase } from './nodeBase';
 import { Block, Stmt } from "./stmt";
 
@@ -210,16 +211,16 @@ export class Key extends NodeBase {
     }
 }
 
-// TODO: need finish
 export class FuncDef extends Decl {
     /**
      * @param nameToken name of function
-     * @param colon colon token
+     * @param params parameters of function
+     * @param body body of function defination
      */
     constructor(
         public readonly nameToken: Token,
         public readonly params: Param,
-        public readonly block: Block
+        public readonly body: Block
     ) {
         super();
     }
@@ -227,10 +228,10 @@ export class FuncDef extends Decl {
     public toLines(): string[] {
         const idLines = this.nameToken.content;
         const params = this.params.toLines();
-        const block = this.block.toLines();    
+        const block = this.body.toLines();    
         params[0] = idLines + params[0];
 
-        return params.concat(block);
+        return joinLines(' ', params, block);
     }
 
     public get start(): Position {
@@ -238,11 +239,11 @@ export class FuncDef extends Decl {
     }
 
     public get end(): Position {
-        return this.block.end;;
+        return this.body.end;
     }
 
     public get ranges(): Range[] {
-        return [this.nameToken];
+        return [this.nameToken, ...this.params.ranges, ...this.body.ranges];
     }
 }
 

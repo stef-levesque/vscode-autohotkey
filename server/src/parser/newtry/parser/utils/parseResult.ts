@@ -1,4 +1,4 @@
-import { INodeResult } from '../types';
+import { INodeResult } from '../../types';
 import { ParseError } from '../models/parseError';
 
 export const nodeResult = <T>(

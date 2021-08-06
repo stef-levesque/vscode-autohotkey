@@ -1,5 +1,3 @@
-import { TokenType } from '../tokenTypes';
-
 /**
  * Precedences for all operators
  * total 14 level. 

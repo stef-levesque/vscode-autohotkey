@@ -1,10 +1,10 @@
-import { Tokenizer } from "./tokenizer";
-import { Atom, IExpr, IStmt, SuffixTermTrailer, Token } from "./types";
-import { TokenType } from "./tokenTypes";
+import { Tokenizer } from "../tokenizor/tokenizer";
+import { Atom, IExpr, IStmt, SuffixTermTrailer, Token } from "../types";
+import { TokenType } from "../tokenizor/tokenTypes";
 import {
     INodeResult,
     IParseError,
-} from "./types";
+} from "../types";
 import { ParseError } from './models/parseError';
 import * as Stmt from './models/stmt';
 import * as Expr from './models/expr';
@@ -207,6 +207,7 @@ export class AHKParser {
         return nodeResult(new Decl.Label(name), []);
     }
 
+    // v1 version
     private hotkey(): INodeResult<Decl.Hotkey> {
         const k1 = new Decl.Key(this.currentToken);
         this.advance();
@@ -278,8 +279,8 @@ export class AHKParser {
                 return this.whileStmt();
             case TokenType.try:
                 return this.tryStmt();
-            // case TokenType.drective:
-            //     return this.drective();
+            case TokenType.drective:
+                return this.drective();
             default:
                 throw this.error(
                     this.currentToken,
@@ -490,6 +491,11 @@ export class AHKParser {
         );
     }
 
+    /**
+     * Parse all statement below a case,
+     * for switch-case statement
+     * 用来解析switch下面的没有大括号的语句
+     */
     private stmtList(): INodeResult<Stmt.Stmt[]> {
         const stmts: Stmt.Stmt[] = [];
         const errors: ParseError[] = [];
@@ -593,9 +599,23 @@ export class AHKParser {
         );
     }
 
-    // private drective(): INodeResult<IASTNode> {
+    // TODO: Need Finish
+    private drective(): INodeResult<Stmt.Drective> {
+        const drective = this.eat();
+        const errors: ParseError[] = [];
+        const args: IExpr[] = [];
+        while (this.currentToken.type !== TokenType.EOL) {
+            const a = this.expression();
+            errors.push(...a.errors);
+            args.push(a.value);
+        }
 
-    // }
+        this.terminal();
+        return nodeResult(
+            new Stmt.Drective(drective, args),
+            errors
+        );
+    }
 
     // assignment statemnet
     private assign(): INodeResult<Stmt.AssignStmt> {
@@ -624,6 +644,8 @@ export class AHKParser {
 
     private expression(p: number = 0): INodeResult<Expr.Expr> {
         let start = this.pos;
+        // let tokenizer parse operators as normal
+        // 让分词器不进行热键分词正常返回符号
         this.tokenizer.isParseHotkey = false;
         let result: INodeResult<Expr.Expr>;
 
@@ -675,7 +697,7 @@ export class AHKParser {
 
             // pratt parse
             while (true) {
-
+                this.tokenizer.isParseHotkey = false;
                 // infix left-associative 
                 if ((this.currentToken.type >= TokenType.power &&
                     this.currentToken.type <= TokenType.logicor) &&

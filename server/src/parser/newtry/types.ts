@@ -1,9 +1,9 @@
 import { Position, Range } from 'vscode-languageserver';
-import { ParseError } from './models/parseError';
-import { TokenType } from './tokenTypes';
-import * as Expr from './models/expr';
-import * as Stmt from './models/stmt';
-import * as SuffixTerm from './models/suffixterm'
+import { ParseError } from './parser/models/parseError';
+import { TokenType } from './tokenizor/tokenTypes';
+import * as Expr from './parser/models/expr';
+import * as Stmt from './parser/models/stmt';
+import * as SuffixTerm from './parser/models/suffixterm'
 
 export enum SyntaxKind {
 	script,

@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { Position, Range } from 'vscode-languageserver';
-import { TokenType } from '../tokenTypes';
+import { TokenType } from '../../tokenizor/tokenTypes';
 import {
     Atom,
     IExpr,
@@ -8,7 +8,7 @@ import {
     SuffixTermTrailer,
     SyntaxKind,
     Token
-} from '../types';
+} from '../../types';
 import { NodeBase } from './nodeBase';
 
 /**

@@ -1,7 +1,7 @@
 import {
     Token,
     ITokenMap,
-} from "./types";
+} from "../types";
 
 import { TokenType } from "./tokenTypes"
 import { Position } from 'vscode-languageserver';
@@ -352,6 +352,13 @@ export class Tokenizer {
                     }
                     this.Advance();
                     return new Token(TokenType.and, "&", p, this.genPosition());
+                case ':':
+                    // check if hotstring
+                    // ahk的破烂语法真难解析
+                    if (preType === TokenType.EOL &&
+                        this.isParseHotkey) {
+                        
+                    }
                 default:
                     if (this.isDigit(this.currChar)) {
                         if (this.isParseHotkey &&
@@ -657,22 +664,6 @@ export class Tokenizer {
             this.SkipBlockComment()
             return t;
         }
-        // if (this.isHotkey()) {
-        //     this.keyAdvance();
-
-        //     if (this.currChar === ' ' &&
-        //         this.Peek() === '&' &&
-        //         this.Peek(2) === ' ') {
-        //         const p = this.genPosition();
-        //         this.Advance().Advance().Advance();
-        //         const t = new Token(TokenType.hotkeyand, ' & ', p, this.genPosition());
-        //         this.tempTokenArray.push(t);
-
-        //         // check next key
-        //         this.keyAdvance();
-        //     }
-        // }
-
         return t;
     }
     /**
@@ -847,7 +838,8 @@ const DRECTIVE_TEST: Set<string> = new Set([
     "ifwinnotactive", "ifwinnotactiveclose", "ifwinnotexist", "include", "includeagain",
     "inputlevel", "installkeybdhook", "installmousehook", "keyhistory", "ltrim",
     "maxhotkeysperinterval", "maxmem", "maxthreads", "maxthreadsbuffer", "maxthreadsperhotkey",
-    "menumaskkey", "noenv", "notrayicon", "persistent", "singleinstance", "usehook", "warn", "winactivateforce"
+    "menumaskkey", "noenv", "notrayicon", "persistent", "singleinstance", "usehook", "warn", 
+    "winactivateforce", "requires"
 ])
 
 enum CharType {

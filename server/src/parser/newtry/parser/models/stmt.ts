@@ -1,5 +1,5 @@
 import { Position, Range } from 'vscode-languageserver';
-import { IExpr, IStmt, SyntaxKind, Token } from '../types';
+import { IExpr, IStmt, SyntaxKind, Token } from '../../types';
 import { NodeBase } from './nodeBase';
 import * as Expr from './expr'
 import { joinLines } from '../utils/stringUtils';
@@ -737,6 +737,42 @@ export class FinallyStmt extends Stmt {
 	// ): ReturnType<T> {
 	//   return visitor.visitWhen(this, parameters);
 	// }
+}
+
+export class Drective extends Stmt {
+	constructor(
+        public readonly drective: Token,
+        public readonly args: IExpr[]
+    ) {
+        super();
+    }
+
+    public get start(): Position {
+        return this.drective.start;
+    }
+
+    public get end(): Position {
+			return (this.args.length === 0) ? 
+				    this.drective.end :
+					this.args[this.args.length-1].end;
+    }
+
+    public get ranges(): Range[] {
+		const argsRange = this.args.flatMap(arg => arg.ranges);
+        return [this.drective, ...argsRange];
+    }
+
+    public toLines(): string[] {
+        if (this.args.length === 0) {
+            return [`${this.drective.content}`];
+        }
+
+        const argsLines = this.args.flatMap(a => a.toLines());
+        const argsResult = joinLines(', ', argsLines);
+
+        argsResult[0] = `${this.drective.content}${argsResult[0]}`;
+        return argsResult;
+    }
 }
 
 export type LoopStmt = Loop | UntilLoop;
