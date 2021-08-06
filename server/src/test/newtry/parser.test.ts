@@ -1,11 +1,11 @@
 import * as assert from 'assert';
-import { AHKParser } from "../../parser/newtry/parser";
+import { AHKParser } from "../../parser/newtry/parser/parser";
 // import { Tokenizer } from "../../parser/newtry/tokenizer";
 import { Atom, IExpr, SuffixTermTrailer } from "../../parser/newtry/types";
-import { TokenType } from "../../parser/newtry/tokenTypes";
-import * as Expr from '../../parser/newtry/models/expr';
-import * as SuffixTerm from '../../parser/newtry/models/suffixterm';
-import * as Decl from '../../parser/newtry/models/declaration';
+import { TokenType } from "../../parser/newtry/tokenizor/tokenTypes";
+import * as Expr from '../../parser/newtry/parser/models/expr';
+import * as SuffixTerm from '../../parser/newtry/parser/models/suffixterm';
+import * as Decl from '../../parser/newtry/parser/models/declaration';
 
 function getExpr(s: string) {
 	const p = new AHKParser(s);
