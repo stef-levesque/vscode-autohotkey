@@ -270,8 +270,8 @@ export class AHKParser {
                 return this.breakStmt();
             case TokenType.return:
                 return this.returnStmt();
-            // case TokenType.switch:
-            //     return this.switchStmt();
+            case TokenType.switch:
+                return this.switchStmt();
             case TokenType.loop:
                 return this.loopStmt();
             case TokenType.while:
@@ -411,13 +411,107 @@ export class AHKParser {
         return nodeResult(new Stmt.Return(returnToken), []);
     }
 
-    // private switchStmt(): INodeResult<IASTNode> {
+    private switchStmt(): INodeResult<Stmt.SwitchStmt> {
+        const switchToken = this.eat();
+        const errors: ParseError[] = [];
 
-    // }
+        const cond = this.expression();
+        errors.push(...cond.errors);
+
+        const open = this.eatAndThrow(
+            TokenType.openBrace,
+            'Expect a "{"'
+        );
+        
+        const cases: Stmt.CaseStmt[] = [];
+        let inloop = true;
+        while (inloop) {
+            switch (this.currentToken.type) {
+                case TokenType.closeBrace:
+                    // TODO: warning 0 case found
+                    inloop = false;
+                    break;
+                case TokenType.case:
+                    const caseToken = this.eat();
+                    const conditions: IExpr[] = []
+                    
+                    do {
+                        const cond = this.expression();
+                        errors.push(...cond.errors);
+                        conditions.push(cond.value);
+                    } while (this.eatDiscardCR(TokenType.comma));
+                    
+                    const colon = this.eatAndThrow(
+                        TokenType.colon,
+                        'Expect a ":" at end of case'
+                    );
+                    const stmts = this.stmtList();
+                    errors.push(...stmts.errors);
+                    cases.push(
+                        new Stmt.CaseStmt(
+                            new Stmt.CaseExpr(caseToken, conditions, colon),
+                            stmts.value
+                        )
+                    );
+                    break;
+                case TokenType.label:
+                    if (this.currentToken.content === 'default') {
+                        // TODO: warning multidefault found
+                        const caseToken = this.eat();
+                        const CaseNode = new Stmt.DefaultCase(caseToken);
+                        const stmts = this.stmtList();
+                        errors.push(...stmts.errors);
+                        cases.push(
+                            new Stmt.CaseStmt(
+                                CaseNode,
+                                stmts.value
+                            )
+                        );
+                        break;
+                    }
+                    // throw other label to default
+                default:
+                    this.error(
+                        this.currentToken,
+                        'Expect "case" statement or "default:"'
+                    )
+            }
+
+        }
+        const close = this.eatAndThrow(
+            TokenType.closeBrace,
+            'Expect a "}"'
+        );
+        return nodeResult(
+            new Stmt.SwitchStmt(
+                switchToken, cond.value,
+                open, cases, close
+            ), errors
+        );
+    }
+
+    private stmtList(): INodeResult<Stmt.Stmt[]> {
+        const stmts: Stmt.Stmt[] = [];
+        const errors: ParseError[] = [];
+        do {
+            const stmt = this.declaration();
+            stmts.push(stmt.value);
+            errors.push(...stmt.errors);
+
+            // stop at default case
+            if (this.currentToken.type === TokenType.label && 
+                this.currentToken.content === 'default')
+                break;
+        } while (!this.matchTokens([
+            TokenType.case,
+            TokenType.closeBrace
+        ]));
+
+        return nodeResult(stmts, errors);
+    }
 
     private loopStmt(): INodeResult<Stmt.LoopStmt> {
-        const loop = this.currentToken;
-        this.advance();
+        const loop = this.eat();
 
         // if no expression follows is a until loop
         if (this.matchTokens([
@@ -1049,6 +1143,11 @@ export class AHKParser {
 
     private check(t: TokenType): boolean {
         return t === this.currentToken.type;
+    }
+
+    private eat(): Token {
+        this.advance();
+        return this.previous();
     }
 
     private eatAndThrow(t: TokenType, message: string) {

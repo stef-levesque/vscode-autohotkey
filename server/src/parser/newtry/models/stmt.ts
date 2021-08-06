@@ -231,6 +231,177 @@ export class Else extends Stmt {
 	// }
 }
 
+export class SwitchStmt extends Stmt {
+
+	constructor(
+		public readonly switchToken: Token,
+		public readonly condition: IExpr,
+		public readonly open: Token,
+		public readonly cases: CaseStmt[],
+		public readonly close: Token
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.condition.toLines();
+		const casesLines = this.caseLines();
+
+		conditionLines[0] = `${this.switchToken.content} ${conditionLines[0]}`;
+		
+		return joinLines(' ', conditionLines, casesLines);
+	}
+
+	private caseLines(): string[] {
+		const lines = this.cases.flatMap(stmt => stmt.toLines());
+
+		if (lines.length === 0) {
+			return [`${this.open.content} ${this.close.content}`];
+		}
+
+		if (lines.length === 1) {
+			return [`${this.open.content} ${lines[0]} ${this.close.content}`];
+		}
+
+		return [`${this.open.content}`].concat(
+			...lines.map(line => `    ${line}`),
+			`${this.close.content}`,
+		);
+	}
+
+	public get start(): Position {
+		return this.switchToken.start;
+	}
+
+	public get end(): Position {
+		return this.close.end;
+	}
+
+	public get ranges(): Range[] {
+		const casesRange = this.cases.flatMap(c => c.ranges);
+		return [
+			this.switchToken, ...this.condition.ranges, 
+			this.open, ...casesRange, this.close
+		];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	// 	visitor: IStmtVisitor<T>,
+	// 	parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	// 	return visitor.visitIf(this, parameters);
+	// }
+}
+
+export class CaseStmt extends Stmt {
+
+	constructor(
+		public readonly CaseNode: CaseExpr|DefaultCase,
+		public readonly body: IStmt[]
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const CaseNodeLines = this.CaseNode.toLines();
+		const bodyLines = this.body.map(stmt => stmt.toLines());
+
+		return joinLines(' ', CaseNodeLines, ...bodyLines);
+	}
+
+	public get start(): Position {
+		return this.CaseNode.start;
+	}
+
+	public get end(): Position {
+		if (this.body.length !== 0)
+			return this.CaseNode.end;
+		else
+			return this.body[this.body.length-1].end;
+	}
+
+	public get ranges(): Range[] {
+		const bodyRange = this.body.flatMap(b => b.ranges);
+		return [...this.CaseNode.ranges, ...bodyRange];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
+export class CaseExpr extends NodeBase {
+	constructor(
+		public readonly caseToken: Token,
+		public readonly conditions: IExpr[],
+		public readonly colon: Token
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.conditions.flatMap(cond => cond.toLines());
+
+		conditionLines[0] = `${this.caseToken.content} ${conditionLines[0]}`;
+		conditionLines[conditionLines.length-1] += this.colon.content;
+		return conditionLines;
+	}
+
+	public get start(): Position {
+		return this.caseToken.start;
+	}
+
+	public get end(): Position {
+		return this.colon.end;
+	}
+
+	public get ranges(): Range[] {
+		const condRange = this.conditions.flatMap(cond => cond.ranges);
+		return [this.caseToken, ...condRange, this.colon];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
+export class DefaultCase extends NodeBase {
+	constructor(
+		public readonly defaultToken: Token
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		return [`${this.defaultToken.content}:`];
+	}
+
+	public get start(): Position {
+		return this.defaultToken.start;
+	}
+
+	public get end(): Position {
+		return this.defaultToken.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.defaultToken];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitWhen(this, parameters);
+	// }
+}
+
 export class Loop extends Stmt {
 
 	constructor(

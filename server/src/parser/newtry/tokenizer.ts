@@ -186,6 +186,7 @@ export class Tokenizer {
         }
         if (preType === TokenType.EOL && this.currChar === ':' && this.Peek() !== ':') {
             this.Advance();
+            // only store the name of label
             return new Token(TokenType.label, value, p, this.genPosition());
         }
         // A id token confirmed, check if it is a command start
