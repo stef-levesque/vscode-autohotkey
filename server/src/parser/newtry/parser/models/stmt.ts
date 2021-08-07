@@ -98,6 +98,42 @@ export class AssignStmt extends Stmt {
 	}
 }
 
+/**
+ * class containing function call and ',' expressions
+ */
+export class ExprStmt extends Stmt {
+	constructor(public readonly suffix: Expr.Factor) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const suffixLines = this.suffix.toLines();
+		suffixLines[suffixLines.length - 1] = `${suffixLines[suffixLines.length - 1]
+			}.`;
+
+		return suffixLines;
+	}
+
+	public get start(): Position {
+		return this.suffix.start;
+	}
+
+	public get end(): Position {
+		return this.suffix.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.suffix];
+	}
+
+	// public accept<T extends (...args: any) => any>(
+	//   visitor: IStmtVisitor<T>,
+	//   parameters: Parameters<T>,
+	// ): ReturnType<T> {
+	//   return visitor.visitExpr(this, parameters);
+	// }
+}
+
 export class Block extends Stmt {
 
 	constructor(
@@ -248,7 +284,7 @@ export class SwitchStmt extends Stmt {
 		const casesLines = this.caseLines();
 
 		conditionLines[0] = `${this.switchToken.content} ${conditionLines[0]}`;
-		
+
 		return joinLines(' ', conditionLines, casesLines);
 	}
 
@@ -280,7 +316,7 @@ export class SwitchStmt extends Stmt {
 	public get ranges(): Range[] {
 		const casesRange = this.cases.flatMap(c => c.ranges);
 		return [
-			this.switchToken, ...this.condition.ranges, 
+			this.switchToken, ...this.condition.ranges,
 			this.open, ...casesRange, this.close
 		];
 	}
@@ -296,7 +332,7 @@ export class SwitchStmt extends Stmt {
 export class CaseStmt extends Stmt {
 
 	constructor(
-		public readonly CaseNode: CaseExpr|DefaultCase,
+		public readonly CaseNode: CaseExpr | DefaultCase,
 		public readonly body: IStmt[]
 	) {
 		super();
@@ -317,7 +353,7 @@ export class CaseStmt extends Stmt {
 		if (this.body.length !== 0)
 			return this.CaseNode.end;
 		else
-			return this.body[this.body.length-1].end;
+			return this.body[this.body.length - 1].end;
 	}
 
 	public get ranges(): Range[] {
@@ -346,7 +382,7 @@ export class CaseExpr extends NodeBase {
 		const conditionLines = this.conditions.flatMap(cond => cond.toLines());
 
 		conditionLines[0] = `${this.caseToken.content} ${conditionLines[0]}`;
-		conditionLines[conditionLines.length-1] += this.colon.content;
+		conditionLines[conditionLines.length - 1] += this.colon.content;
 		return conditionLines;
 	}
 
@@ -741,38 +777,38 @@ export class FinallyStmt extends Stmt {
 
 export class Drective extends Stmt {
 	constructor(
-        public readonly drective: Token,
-        public readonly args: IExpr[]
-    ) {
-        super();
-    }
+		public readonly drective: Token,
+		public readonly args: IExpr[]
+	) {
+		super();
+	}
 
-    public get start(): Position {
-        return this.drective.start;
-    }
+	public get start(): Position {
+		return this.drective.start;
+	}
 
-    public get end(): Position {
-			return (this.args.length === 0) ? 
-				    this.drective.end :
-					this.args[this.args.length-1].end;
-    }
+	public get end(): Position {
+		return (this.args.length === 0) ?
+			this.drective.end :
+			this.args[this.args.length - 1].end;
+	}
 
-    public get ranges(): Range[] {
+	public get ranges(): Range[] {
 		const argsRange = this.args.flatMap(arg => arg.ranges);
-        return [this.drective, ...argsRange];
-    }
+		return [this.drective, ...argsRange];
+	}
 
-    public toLines(): string[] {
-        if (this.args.length === 0) {
-            return [`${this.drective.content}`];
-        }
+	public toLines(): string[] {
+		if (this.args.length === 0) {
+			return [`${this.drective.content}`];
+		}
 
-        const argsLines = this.args.flatMap(a => a.toLines());
-        const argsResult = joinLines(', ', argsLines);
+		const argsLines = this.args.flatMap(a => a.toLines());
+		const argsResult = joinLines(', ', argsLines);
 
-        argsResult[0] = `${this.drective.content}${argsResult[0]}`;
-        return argsResult;
-    }
+		argsResult[0] = `${this.drective.content}${argsResult[0]}`;
+		return argsResult;
+	}
 }
 
 export type LoopStmt = Loop | UntilLoop;

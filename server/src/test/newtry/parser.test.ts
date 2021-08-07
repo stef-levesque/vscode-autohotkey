@@ -134,10 +134,10 @@ suite('Syntax Parser Expresion Test', () => {
 	// });
 
 	test('basic valid expression', () => {
-		const actual = getExpr('1+3*2-12/3');
+		const actual = getExpr('a:=1+3*2-12/3');
 		assert.strictEqual(actual.errors.length, 0);
 		assert.strictEqual(actual.value instanceof Expr.Binary, true);
-		assert.strictEqual(actual.value.toString(), '1 + 3 * 2 - 12 / 3');
+		assert.strictEqual(actual.value.toString(), 'a := 1 + 3 * 2 - 12 / 3');
 	});
 
 	test('operator eol', () => {
@@ -317,7 +317,7 @@ suite('Syntax Parser Statment Test', () => {
 				[]
 			)
 		];
-		assert.strictEqual(actual.errors.length, 0, 'counter errors');
+		assert.strictEqual(actual.errors.length, 0, `counter errors: ${actual.errors[0]}`);
 		const aHotkey = actual.value;
 		assert.strictEqual(aHotkey instanceof Decl.Hotkey, true, 'wrong instance');
 		if (aHotkey instanceof Decl.Hotkey) {

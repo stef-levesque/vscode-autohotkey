@@ -12,6 +12,7 @@ import * as SuffixTerm from './models/suffixterm';
 import { Precedences, UnaryPrecedence } from './models/precedences';
 import { nodeResult } from './utils/parseResult';
 import * as Decl from './models/declaration';
+import { IDiagnosticInfo, TokenKind } from '../tokenizor/types';
 
 export class AHKParser {
     private tokenizer: Tokenizer;
@@ -20,24 +21,34 @@ export class AHKParser {
      * list for storaging all tokens
      */
     private tokens: Token[] = [];
+    private tokenErrors: IDiagnosticInfo[] = [];
     private pos: number = 0;
 
     constructor(document: string) {
         this.tokenizer = new Tokenizer(document);
         this.tokenizer.isParseHotkey = true;
-        this.currentToken = this.tokenizer.GetNextToken(TokenType.EOL);
+        this.currentToken = this.nextToken(TokenType.EOL);
         this.tokens.push(this.currentToken);
+    }
+
+    private nextToken(preType: TokenType): Token {
+        let token = this.tokenizer.GetNextToken(preType);
+        while (token.kind === TokenKind.Diagnostic) {
+            this.tokenErrors.push(token.result);
+            token = this.tokenizer.GetNextToken(TokenType.unknown);
+        }
+        return token.result;
     }
 
     private advance() {
         this.pos++;
         if (this.pos >= this.tokens.length) {
-            this.currentToken = this.tokenizer.GetNextToken(this.previous().type);
+            this.currentToken = this.nextToken(this.previous().type);
             // AHK connect next line to current line
             // when next line start with operators and ','
             if (this.currentToken.type === TokenType.EOL) {
                 const saveToken = this.currentToken;
-                this.currentToken = this.tokenizer.GetNextToken(saveToken.type);
+                this.currentToken = this.nextToken(saveToken.type);
                 // 下一行是运算符或者','时丢弃EOL
                 // discard EOL
                 if (this.currentToken.type >= TokenType.pplus &&
@@ -67,13 +78,13 @@ export class AHKParser {
         if (this.pos + 1 <= this.tokens.length - 1)
             return this.tokens[this.pos + 1];
 
-        let token = this.tokenizer.GetNextToken(
+        let token = this.nextToken(
             this.pos === 0 ? TokenType.EOL : this.previous().type
         );
 
         if (token.type === TokenType.EOL) {
             const saveToken = token;
-            token = this.tokenizer.GetNextToken(saveToken.type);
+            token = this.nextToken(saveToken.type);
 
             if (token.type >= TokenType.pplus &&
                 token.type <= TokenType.comma) {
@@ -124,6 +135,8 @@ export class AHKParser {
                 // case TokenType.bnot:
                 // case TokenType.dollar:
                     return this.hotkey();
+                // case TokenType.hotstringOpen:
+                //     return this.hotstring();
                 default:
                     return this.statement();
             }
@@ -291,8 +304,8 @@ export class AHKParser {
     private idLeadStatement(): INodeResult<Stmt.Stmt> {
         const p = this.peek()
         switch (p.type) {
-            // case TokenType.openParen:
-            //     return this.func();
+            case TokenType.openParen:
+                return this.func();
             case TokenType.equal:
             case TokenType.aassign:
                 // expression is only allowed in assignment in AHK
@@ -637,7 +650,7 @@ export class AHKParser {
         this.tokens.pop();
         this.tokenizer.Reset();
         this.tokenizer.isParseHotkey = false;
-        this.currentToken = this.tokenizer.GetNextToken(TokenType.EOL);
+        this.currentToken = this.nextToken(TokenType.EOL);
         this.tokens.push(this.currentToken);
         return this.expression();
     }
@@ -1065,46 +1078,38 @@ export class AHKParser {
         );
     }
 
-    // private func(): INodeResult<IFunctionCall|FunctionDeclaration> {
-    //     let token = this.currentToken
-    //     this.advance();
-    //     let unclosed: number = 1;
-    //     while (unclosed <= 0) {
-    //         let t = this.peek().type
-    //         if (t === TokenType.closeParen)
-    //             unclosed--;
-    //         if (t === TokenType.openParen) 
-    //             unclosed++;
-    //     }
+    private func(): INodeResult<Stmt.ExprStmt|Decl.FuncDef> {
+        let token = this.currentToken
+        this.advance();
+        let unclosed: number = 1;
+        while (unclosed <= 0) {
+            let t = this.peek().type
+            if (t === TokenType.closeParen)
+                unclosed--;
+            if (t === TokenType.openParen) 
+                unclosed++;
+        }
 
-    //     if (this.peek().type === TokenType.openBrace) {
-    //         let parameters = this.parameters();
-    //         let block = this.block();
-    //         let errors = parameters.errors.concat(block.errors);
-    //         return {
-    //             errors: errors,
-    //             value: new FunctionDeclaration(
-    //                 token.content,
-    //                 parameters.value,
-    //                 block.value,
-    //                 token
-    //             )
-    //         };
-    //     }
-    //     let actualParams = this.actualParams();
-    //     return {
-    //         errors: actualParams.errors,
-    //         value: new FunctionCall(
-    //             token.content,
-    //             actualParams.value,
-    //             token,
-    //             {
-    //                 start: token.start,
-    //                 end: token.end
-    //             }
-    //         )
-    //     };
-    // }
+        // if (this.peek().type === TokenType.openBrace) {
+        //     let parameters = this.parameters();
+        //     let block = this.block();
+        //     let errors = parameters.errors.concat(block.errors);
+        //     return {
+        //         errors: errors,
+        //         value: new Decl.FuncDef(
+        //             token.content,
+        //             parameters.value,
+        //             block.value,
+        //             token
+        //         )
+        //     };
+        // }
+        let call = this.factor();
+        return nodeResult(
+            new Stmt.ExprStmt(call.value),
+            call.errors
+        );
+    }
 
     // private parameters(): INodeResult<IParameter[]> {
 
