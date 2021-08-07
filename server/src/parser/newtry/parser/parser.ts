@@ -270,6 +270,8 @@ export class AHKParser {
     //     );
     // }
 
+    // private hotstring():
+
     private statement(): INodeResult<Stmt.Stmt> {
         switch (this.currentToken.type) {
             case TokenType.id:
@@ -1081,6 +1083,7 @@ export class AHKParser {
     private func(): INodeResult<Stmt.ExprStmt|Decl.FuncDef> {
         let token = this.currentToken
         this.advance();
+        const pos = this.pos;
         let unclosed: number = 1;
         while (unclosed <= 0) {
             let t = this.peek().type
@@ -1088,32 +1091,83 @@ export class AHKParser {
                 unclosed--;
             if (t === TokenType.openParen) 
                 unclosed++;
+            this.advance();
         }
 
-        // if (this.peek().type === TokenType.openBrace) {
-        //     let parameters = this.parameters();
-        //     let block = this.block();
-        //     let errors = parameters.errors.concat(block.errors);
-        //     return {
-        //         errors: errors,
-        //         value: new Decl.FuncDef(
-        //             token.content,
-        //             parameters.value,
-        //             block.value,
-        //             token
-        //         )
-        //     };
-        // }
-        let call = this.factor();
+        if (this.peek().type === TokenType.openBrace) {
+            this.backto(pos);
+            let parameters = this.parameters();
+            let block = this.block();
+            let errors = parameters.errors.concat(block.errors);
+            return {
+                errors: errors,
+                value: new Decl.FuncDef(
+                    token,
+                    parameters.value,
+                    block.value
+                )
+            };
+        }
+
+        this.backto(pos);
+        const call = this.factor();
         return nodeResult(
             new Stmt.ExprStmt(call.value),
             call.errors
         );
     }
 
-    // private parameters(): INodeResult<IParameter[]> {
+    private parameters(): INodeResult<Decl.Param> {
+        const open = this.eat();
+        const errors: ParseError[] = [];
+        const requiredParameters: Decl.Parameter[] = [];
+        const DefaultParameters: Decl.DefaultParam[] = [];
+        let isDefaultParam = false;
+        do {
+            const name = this.eatAndThrow(
+                TokenType.id,
+                'Expect an identifier in parameter'
+            );
 
-    // }
+            if (this.matchTokens([
+                TokenType.aassign,
+                TokenType.equal
+            ])) {
+                const assign = this.eat();
+                const dflt = this.expression();
+                errors.push(...dflt.errors);
+                DefaultParameters.push(
+                    new Decl.DefaultParam(
+                        name, assign, dflt.value
+                    )
+                );
+                isDefaultParam = true;
+            }
+
+            if (isDefaultParam) 
+                errors.push(this.error(
+                    name,
+                    'Expect a Optional parameter'
+                ));
+            
+            requiredParameters.push(
+                new Decl.Parameter(name)
+            );
+        } while(this.eatDiscardCR(TokenType.comma));
+
+        const close = this.eatAndThrow(
+            TokenType.closeParen,
+            'Expect a ")"'
+        );
+        return nodeResult(
+            new Decl.Param(
+                open,
+                requiredParameters,
+                DefaultParameters,
+                close
+            ), errors
+        );
+    }
 
     // private command(): INodeResult<ICommandCall> {
 
@@ -1147,6 +1201,15 @@ export class AHKParser {
                 TokenType.EOL,
                 'Expect "`n" to terminate statement'
             );
+    }
+
+    /**
+     * backwards tokens
+     * @param pos position to
+     */
+    private backto(pos: number) {
+        this.pos = pos;
+        this.currentToken = this.tokens[pos];
     }
 
     /**
