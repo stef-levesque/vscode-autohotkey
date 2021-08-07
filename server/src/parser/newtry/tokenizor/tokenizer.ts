@@ -251,7 +251,7 @@ export class Tokenizer {
         }
     }
 
-    private LiteralToken() {
+    private LiteralToken(): TokenResult {
         let start = this.pos;
         let p = this.genPosition();
         while (this.Peek() !== ',' && this.Peek() !== '%' && this.currChar !== "EOF") {
@@ -263,9 +263,62 @@ export class Tokenizer {
         return this.CreateToken(TokenType.string, value, p, this.genPosition());
     }
 
-    GetNextToken(preType: TokenType = TokenType.EOL): TokenResult {
+    private getHotString(): TokenResult {
+        const offset = this.pos;
+        const p = this.genPosition();
+        while (!(this.currChar === ':') &&
+               !(this.currChar === '\n') &&
+               !(this.Peek() === ':')) {
+            this.Advance();
+        }
+        this.Advance().Advance();
+        if (offset === this.pos) 
+            return this.CreateError('', p, this.genPosition());
+        const content = this.document.slice(offset, this.pos);
+        return this.CreateToken(TokenType.hotstringEnd, content, p, this.genPosition());
+    }
+
+    private getExpendString(): TokenResult {
+        if (this.isWhiteSpace(this.currChar)) {
+            this.SikpWhiteSpace();
+        }
+        const offset = this.pos;
+        if (this.currChar === '\n') {
+            // check  multi-line expend
+            if (this.Peek() === '(') {
+                this.Advance();
+                const p = this.genPosition();
+                while (this.Peek() !== ')') {
+                    this.Advance();
+                }
+                this.Advance();
+                const content = this.document.slice(offset, this.pos);
+                return this.CreateToken(TokenType.string, content, p, this.genPosition());
+            }
+            // if not multi-line expend return eol
+            const p = this.genPosition();
+            this.Advance();
+            return this.CreateToken(TokenType.EOL, '\n', p, this.genPosition());
+        }
+        
+        const p = this.genPosition();
+        while (this.currChar !== '\n') {
+            this.Advance();
+        }
+        const content = this.document.slice(offset, this.pos);
+        return this.CreateToken(TokenType.string, content, p, this.genPosition());
+    }
+
+    public GetNextToken(preType: TokenType = TokenType.EOL): TokenResult {
         while (this.currChar !== "EOF") {
             let p = this.genPosition();
+            if (preType === TokenType.hotstringOpen) {
+                return this.getHotString();
+            }
+            if (preType === TokenType.hotstringEnd) {
+                return this.getExpendString();
+            }
+            
             if (this.isLiteralToken) {
                 switch (this.currChar) {
                     case ' ':
@@ -299,6 +352,7 @@ export class Tokenizer {
 
                 }
             }
+            
             switch (this.currChar) {
                 case ' ':
                 case '\t':

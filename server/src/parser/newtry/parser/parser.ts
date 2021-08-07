@@ -135,8 +135,8 @@ export class AHKParser {
                 // case TokenType.bnot:
                 // case TokenType.dollar:
                     return this.hotkey();
-                // case TokenType.hotstringOpen:
-                //     return this.hotstring();
+                case TokenType.hotstringOpen:
+                    return this.hotstring();
                 default:
                     return this.statement();
             }
@@ -239,38 +239,23 @@ export class AHKParser {
         return nodeResult(new Decl.Hotkey(k1), []);
     }
 
-    // get hotkey and its modifiers
-    // private getKey(): INodeResult<Decl.Key> {
-    //     const prefix: Token[] = [this.currentToken];
-    //     this.advance();
-    //     // get all prefix modifiers
-    //     while(this.currentToken.type !== TokenType.hotkey &&
-    //           this.currentToken.type !== TokenType.hotkeyand &&
-    //           this.currentToken.type !== TokenType.EOF) {
-    //         prefix.push(this.currentToken);
-    //         this.advance();
-    //     }
-
-    //     if (prefix.length === 0) {
-    //         // TODO: 更好地处理热键不正确的情况
-    //         return nodeResult(
-    //             new Decl.Key(this.currentToken),
-    //             [this.error(
-    //                 this.currentToken,
-    //                 'Expect a valid hotkey'
-    //             )]
-    //         )
-    //     }
-
-    //     return nodeResult(
-    //         new Decl.Key(
-    //             prefix[prefix.length-1], 
-    //             prefix.slice(0, -1)
-    //         ), []
-    //     );
-    // }
-
-    // private hotstring():
+    private hotstring(): INodeResult<Decl.HotString> {
+        const option = this.eat();
+        const str = this.eatAndThrow(
+            TokenType.hotstringEnd,
+            'Expect a hotstring in hotstring'
+        );
+        // TODO: FINISH X OPTION
+        if (this.currentToken.type === TokenType.EOL) {
+            const expend = this.eat();
+            return nodeResult(new Decl.HotString(option, str, expend), []);
+        }
+        const expend = this.eatAndThrow(
+            TokenType.string,
+            'Expect a expend string in hotstring'
+        );
+        return nodeResult(new Decl.HotString(option, str, expend), []);
+    } 
 
     private statement(): INodeResult<Stmt.Stmt> {
         switch (this.currentToken.type) {

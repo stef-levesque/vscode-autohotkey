@@ -211,6 +211,38 @@ export class Key extends NodeBase {
     }
 }
 
+export class HotString extends Decl {
+    /**
+     * 
+     * @param option ':option:'
+     * @param str hotstring'::'
+     * @param expend expend string
+     */
+    constructor(
+        public readonly option: Token,
+        public readonly str: Token,
+        public readonly expend: Token
+    ) {
+        super();
+    }
+
+    public toLines(): string[] {
+        return [`${this.option.content}${this.str.content}${this.expend.content}`];
+    }
+
+    public get start(): Position {
+        return this.option.start;
+    }
+
+    public get end(): Position {
+        return this.expend.end
+    }
+
+    public get ranges(): Range[] {
+        return [this.option, this.str, this.expend];
+    }
+}
+
 export class FuncDef extends Decl {
     /**
      * @param nameToken name of function
@@ -247,6 +279,9 @@ export class FuncDef extends Decl {
     }
 }
 
+/**
+ * Class contains all parameters of a function define
+ */
 export class Param extends Decl {
 
     constructor(
@@ -305,6 +340,9 @@ export class Param extends Decl {
     // }
 }
 
+/**
+ * Class contains all required parameters of a function define
+ */
 export class Parameter extends NodeBase {
     constructor(public readonly identifier: Token) {
         super();
@@ -331,6 +369,9 @@ export class Parameter extends NodeBase {
     }
 }
 
+/**
+ * Class contains all default parameters of a function define
+ */
 export class DefaultParam extends Parameter {
     constructor(
         identifier: Token,
