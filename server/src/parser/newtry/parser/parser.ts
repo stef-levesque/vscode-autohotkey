@@ -22,6 +22,7 @@ export class AHKParser {
      */
     private tokens: Token[] = [];
     private tokenErrors: IDiagnosticInfo[] = [];
+    private comments: Token[] = [];
     private pos: number = 0;
 
     constructor(document: string) {
@@ -33,9 +34,15 @@ export class AHKParser {
 
     private nextToken(preType: TokenType): Token {
         let token = this.tokenizer.GetNextToken(preType);
-        while (token.kind === TokenKind.Diagnostic) {
-            this.tokenErrors.push(token.result);
-            token = this.tokenizer.GetNextToken(TokenType.unknown);
+        while (token.kind !== TokenKind.Token) {
+            if (token.kind === TokenKind.Diagnostic) {
+                this.tokenErrors.push(token.result);
+                token = this.tokenizer.GetNextToken(TokenType.unknown);
+            }
+            else if (token.kind === TokenKind.Commnet) {
+                this.comments.push(token.result);
+                token = this.tokenizer.GetNextToken(token.result.type);
+            }
         }
         return token.result;
     }
@@ -115,8 +122,8 @@ export class AHKParser {
             switch (this.currentToken.type) {
                 case TokenType.id:
                     return this.idLeadStatement();
-                // case TokenType.class:
-                //     return this.classDecl();
+                case TokenType.class:
+                    return this.classDefine();
                 case TokenType.global:
                 case TokenType.local:
                 case TokenType.static:
@@ -204,13 +211,42 @@ export class AHKParser {
                     ))
                 );
             }
-        } while (this.eatDiscardCR(TokenType.comma))
+        } while (this.eatDiscardCR(TokenType.comma));
 
         this.terminal();
 
         return nodeResult(
             new Decl.VarDecl(scope, assign),
             errors
+        );
+    }
+
+    private classDefine(): INodeResult<Decl.ClassDef> {
+        const classToken = this.eat();
+        const name = this.eatAndThrow(
+            TokenType.id,
+            'Expect an indentifier in class define'
+        );
+        if (this.currentToken.type === TokenType.extends) {
+            const extendsToken = this.eat();
+            const parentName = this.eatAndThrow(
+                TokenType.id,
+                'Expect an indentifier after "extends" keyword'
+            );
+            const body = this.block();
+            return nodeResult(
+                new Decl.ClassDef(
+                    classToken, name,
+                    body.value, extendsToken,
+                    parentName
+                ),
+                body.errors
+            );
+        }
+        const body = this.block();
+        return nodeResult(
+            new Decl.ClassDef(classToken, name, body.value),
+            body.errors
         );
     }
 
@@ -1155,10 +1191,6 @@ export class AHKParser {
     }
 
     // private command(): INodeResult<ICommandCall> {
-
-    // }
-
-    // private classDecl(): INodeResult<IClassDecl> {
 
     // }
 

@@ -5,7 +5,7 @@ import {
 
 import { TokenType } from "./tokenTypes"
 import { Position, Range } from 'vscode-languageserver';
-import { TakeDiagnostic, TakeToken, TokenKind, TokenResult } from './types';
+import { TakeComment, TakeDiagnostic, TakeToken, TokenKind, TokenResult } from './types';
 
 export class Tokenizer {
     /**
@@ -22,7 +22,6 @@ export class Tokenizer {
      */
     private chr: number = 1;
     private EscapeChar = '"';
-    private comments: Token[] = [];
     public isParseHotkey: boolean = false;
 
     constructor(document: string) {
@@ -88,7 +87,7 @@ export class Tokenizer {
             this.Advance();
     }
 
-    private SkipBlockComment() {
+    private SkipBlockComment(): TakeComment {
         const offset = this.pos;
         const p = this.genPosition();
         this.Advance().Advance();
@@ -100,10 +99,10 @@ export class Tokenizer {
         this.Advance().Advance();
         const s = this.document.slice(offset, this.pos);
         // collect comments
-        this.comments.push(new Token(TokenType.blockComment, s, p, this.genPosition()));
+        return this.CreateComment(TokenType.blockComment, s, p, this.genPosition());
     }
 
-    private SkipLineComment() {
+    private SkipLineComment(): TakeComment {
         const offset = this.pos;
         const p = this.genPosition();
         this.Advance();
@@ -113,7 +112,7 @@ export class Tokenizer {
         }
         const s = this.document.slice(offset, this.pos);
         // collect comments
-        this.comments.push(new Token(TokenType.lineComment, s, p, this.genPosition()));
+        return this.CreateComment(TokenType.lineComment, s, p, this.genPosition());
     }
 
     /**
@@ -389,8 +388,7 @@ export class Tokenizer {
                     return this.GetDrectivesOrSharp();
                 case '/':
                     if (this.Peek() === '*') {
-                        this.SkipBlockComment();
-                        continue;
+                        return this.SkipBlockComment();
                     }
                     if (this.isParseHotkey &&
                         matchTypes(preType, [
@@ -402,8 +400,7 @@ export class Tokenizer {
                     this.Advance();
                     return this.CreateToken(TokenType.div, '/', p, this.genPosition());
                 case ';':
-                    this.SkipLineComment();
-                    continue;
+                    return this.SkipLineComment();
                 case '&':
                     if (this.isParseHotkey&&
                         this.isWhiteSpace(this.Peek()) && 
@@ -674,6 +671,13 @@ export class Tokenizer {
                 range: Range.create(start, end)
             },
             kind: TokenKind.Diagnostic
+        };
+    }
+
+    private CreateComment(t: TokenType, c: string, start: Position, end: Position): TakeComment {
+        return {
+            result: new Token(t, c, start, end),
+            kind: TokenKind.Commnet
         };
     }
 

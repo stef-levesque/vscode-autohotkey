@@ -12,7 +12,11 @@ export enum TokenKind {
 	/**
 	 * tokenizor enconter an error
 	 */
-	Diagnostic
+	Diagnostic,
+	/**
+	 * got a comment
+	 */
+	Commnet
 }
 
 export interface Result<T, TokenKind> {
@@ -36,7 +40,9 @@ export interface IDiagnosticInfo {
 
 export type TakeToken = Result<Token, TokenKind.Token>;
 export type TakeDiagnostic = Result<IDiagnosticInfo, TokenKind.Diagnostic>;
+export type TakeComment = Result<Token, TokenKind.Commnet>;
 
 export type TokenResult = 
 	| TakeToken
-	| TakeDiagnostic;
+	| TakeDiagnostic
+	| TakeComment;

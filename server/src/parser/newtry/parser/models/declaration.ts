@@ -97,6 +97,49 @@ export class OptionalAssginStmt extends Stmt {
     }
 }
 
+export class ClassDef extends Decl {
+    /**
+     * @param classToken class keyword
+     * @param name class name
+     * @param extendsToken extens keyword
+     * @param parentName parent class name
+     * @param body body of class
+     */
+    constructor(
+        public readonly classToken: Token,
+        public readonly name: Token,
+        public readonly body: Block,
+        public readonly extendsToken?: Token,
+        public readonly parentName?: Token
+    ) {
+        super();
+    }
+
+    public toLines(): string[] {
+        const defLine = [`${this.classToken.content} ${this.name.content}`];
+        if (this.extendsToken !== undefined && this.parentName !== undefined) {
+            defLine[0] += `${this.extendsToken.content} ${this.parentName.content}`;
+        }
+        const block = this.body.toLines();
+
+        return joinLines(' ', defLine, block);
+    }
+
+    public get start(): Position {
+        return this.classToken.start;
+    }
+
+    public get end(): Position {
+        return this.body.end;
+    }
+
+    public get ranges(): Range[] {
+        return (this.extendsToken !== undefined && this.parentName !== undefined) ?
+                [this.classToken, this.name, this.extendsToken, this.parentName, ...this.body.ranges] :
+                [this.classToken, this.name, ...this.body.ranges];
+    }
+}
+
 export class Label extends Decl {
     /**
      * @param name name of Label
