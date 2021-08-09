@@ -250,6 +250,17 @@ export class AHKParser {
         );
     }
 
+    // TODO:  class block statement
+    // private classBlock(): INodeResult<Stmt.Block> {
+    //     switch (this.currentToken.type) {
+    //         case TokenType.id:
+    //             switch (this.peek().type) {
+    //                 case TokenType.openBracket:
+
+    //             }
+    //     }
+    // }
+
     private label(): INodeResult<Decl.Label> {
         const name = this.currentToken;
         this.advance();
@@ -554,24 +565,30 @@ export class AHKParser {
 
     private loopStmt(): INodeResult<Stmt.LoopStmt> {
         const loop = this.eat();
-
-        // if no expression follows is a until loop
+        // TODO: LOOP Funtoins
+        // if no expression follows, check if is until loop
         if (this.matchTokens([
             TokenType.EOL,
             TokenType.openBrace
         ])) {
             this.jumpWhiteSpace();
             const body = this.declaration();
-            const until = this.eatAndThrow(
-                TokenType.until,
-                'Expect a until in loop-until'
-            );
-            const cond = this.expression();
-            this.terminal();
+            if (this.matchTokens([TokenType.until])) {
+                const until = this.eatAndThrow(
+                    TokenType.until,
+                    'Expect a until in loop-until'
+                );
+                const cond = this.expression();
+                this.terminal();
+                return nodeResult(
+                    new Stmt.UntilLoop(loop, body.value, 
+                        until, cond.value),
+                    body.errors.concat(cond.errors)
+                );
+            }
             return nodeResult(
-                new Stmt.UntilLoop(loop, body.value, 
-                    until, cond.value),
-                body.errors.concat(cond.errors)
+                new Stmt.Loop(loop, body.value),
+                body.errors
             );
         }
 
@@ -579,7 +596,7 @@ export class AHKParser {
         this.jumpWhiteSpace();
         const body = this.declaration();
         return nodeResult(
-            new Stmt.Loop(loop, cond.value, body.value),
+            new Stmt.Loop(loop, body.value, cond.value),
             cond.errors.concat(body.errors)
         );
     }

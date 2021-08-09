@@ -442,19 +442,22 @@ export class Loop extends Stmt {
 
 	constructor(
 		public readonly loop: Token,
-		public readonly condition: IExpr,
-		public readonly body: IStmt
+		public readonly body: IStmt,
+		public readonly condition?: IExpr
 	) {
 		super();
 	}
 
 	public toLines(): string[] {
-		const conditionLines = this.condition.toLines();
 		const bodyLines = this.body.toLines();
-
-		conditionLines[0] = `${this.loop.content} ${conditionLines[0]}`;
-
-		return joinLines(' ', conditionLines, bodyLines);
+		if (this.condition !== undefined) {
+			const conditionLines = this.condition.toLines();
+	
+			conditionLines[0] = `${this.loop.content} ${conditionLines[0]}`;
+	
+			return joinLines(' ', conditionLines, bodyLines);
+		}
+		return joinLines(' ', [this.loop.content], bodyLines);
 	}
 
 	public get start(): Position {
@@ -466,7 +469,9 @@ export class Loop extends Stmt {
 	}
 
 	public get ranges(): Range[] {
-		return [this.loop, this.condition, this.body];
+		return this.condition ? 
+			[this.loop, this.condition, this.body] :
+			[this.loop, this.body];
 	}
 
 	// public accept<T extends (...args: any) => any>(
