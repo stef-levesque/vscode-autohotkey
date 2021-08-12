@@ -4,6 +4,7 @@ import { TokenType } from './tokenizor/tokenTypes';
 import * as Expr from './parser/models/expr';
 import * as Stmt from './parser/models/stmt';
 import * as SuffixTerm from './parser/models/suffixterm'
+import { IDiagnosticInfo } from './tokenizor/types';
 
 export enum SyntaxKind {
 	script,
@@ -39,9 +40,17 @@ export interface IParseError extends Range {
 	message: string;
 }
 
+export interface IAST {
+	script: IScript;
+	sytanxErrors: IParseError[];
+	tokenErrors: IDiagnosticInfo[];
+} 
+
 export interface IScript {
 	stmts: IStmt[];
-	include: Set<string>;
+	tokens: Token[];
+	comments: Token[];
+	include?: Set<string>;
 	uri: string;
 	tag: SyntaxKind.script;
 }

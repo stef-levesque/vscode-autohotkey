@@ -8,7 +8,7 @@ import * as SuffixTerm from '../../parser/newtry/parser/models/suffixterm';
 import * as Decl from '../../parser/newtry/parser/models/declaration';
 
 function getExpr(s: string) {
-	const p = new AHKParser(s);
+	const p = new AHKParser(s, '');
 	return p.testExpr();
 }
 
@@ -288,7 +288,7 @@ suite('Syntax Parser Expresion Test', () => {
 });
 
 function getStmt(s: string) {
-	const p = new AHKParser(s);
+	const p = new AHKParser(s, '');
 	return p.testDeclaration();
 }
 
@@ -337,4 +337,72 @@ suite('Syntax Parser Statment Test', () => {
 			}
 		}
 	})
+});
+
+suite('Full file test', () => {
+	test('class file', () => {
+		const file = `class IncludeType
+		{
+			static Path := "Path"
+			static Lib := "Lib"
+			static Auto := "Auto"
+			static Directory := "Directory"
+			static Error := "Error"
+		}
+		
+		
+		a := "abcdefbcd"
+		
+		b := 10 + Ord "b"		
+		`;
+		const parser = new AHKParser(file, '');
+		const fileAST = parser.parse();
+		assert.strictEqual(fileAST.tokenErrors.length, 0, 'Enconter Token error');
+		assert.strictEqual(fileAST.sytanxErrors.length, 0, 'Enconter Parser error');
+	});
+	test('Function define file', () => {
+		const file = `a()
+		{
+			Path := "Path"
+			Lib := "Lib"
+			Auto := "Auto"
+			Directory := "Directory"
+			Error := "Error"
+		}
+		
+		
+		a := "abcdefbcd"
+		
+		b := 10 + Ord "b"		
+		`;
+		const parser = new AHKParser(file, '');
+		const fileAST = parser.parse();
+		assert.strictEqual(fileAST.tokenErrors.length, 0, 'Enconter Token error');
+		assert.strictEqual(fileAST.sytanxErrors.length, 0, 'Enconter Parser error');
+	});
+
+	test('Method define file', () => {
+		const file = `class IncludeType
+		{
+			static Path := "Path"
+			static Lib := "Lib"
+			static Auto := "Auto"
+			static Directory := "Directory"
+			static Error := "Error"
+
+			__New() {
+				this.a := 12
+			}
+		}
+		
+		
+		a := "abcdefbcd"
+		
+		b := 10 + Ord "b"		
+		`;
+		const parser = new AHKParser(file, '');
+		const fileAST = parser.parse();
+		assert.strictEqual(fileAST.tokenErrors.length, 0, 'Enconter Token error');
+		assert.strictEqual(fileAST.sytanxErrors.length, 0, 'Enconter Parser error');
+	});
 });

@@ -1,5 +1,5 @@
 import { Tokenizer } from "../tokenizor/tokenizer";
-import { Atom, IExpr, IStmt, SuffixTermTrailer, Token } from "../types";
+import { Atom, IAST, IExpr, IStmt, SuffixTermTrailer, Token } from "../types";
 import { TokenType } from "../tokenizor/tokenTypes";
 import {
     INodeResult,
@@ -13,23 +13,31 @@ import { Precedences, UnaryPrecedence } from './models/precedences';
 import { nodeResult } from './utils/parseResult';
 import * as Decl from './models/declaration';
 import { IDiagnosticInfo, TokenKind } from '../tokenizor/types';
+import { mockLogger } from '../../../utilities/logger';
+import { Script } from '../models/script';
 
 export class AHKParser {
     private tokenizer: Tokenizer;
     private currentToken: Token;
+    private pos: number = 0;
+
     /**
      * list for storaging all tokens
      */
+    private readonly uri: string;
     private tokens: Token[] = [];
     private tokenErrors: IDiagnosticInfo[] = [];
     private comments: Token[] = [];
-    private pos: number = 0;
 
-    constructor(document: string) {
+    private readonly logger: ILoggerBase;
+
+    constructor(document: string, uri: string, logger: ILoggerBase = mockLogger) {
         this.tokenizer = new Tokenizer(document);
         this.tokenizer.isParseHotkey = true;
         this.currentToken = this.nextToken(TokenType.EOL);
         this.tokens.push(this.currentToken);
+        this.logger = logger;
+        this.uri = uri;
     }
 
     private nextToken(preType: TokenType): Token {
@@ -50,7 +58,7 @@ export class AHKParser {
     private advance() {
         this.pos++;
         if (this.pos >= this.tokens.length) {
-            this.currentToken = this.nextToken(this.previous().type);
+            this.currentToken = this.nextToken(this.currentToken.type);
             // AHK connect next line to current line
             // when next line start with operators and ','
             if (this.currentToken.type === TokenType.EOL) {
@@ -71,6 +79,7 @@ export class AHKParser {
             else
                 this.tokens.push(this.currentToken);
         }
+        this.currentToken = this.tokens[this.pos];
         return this
     }
 
@@ -85,9 +94,7 @@ export class AHKParser {
         if (this.pos + 1 <= this.tokens.length - 1)
             return this.tokens[this.pos + 1];
 
-        let token = this.nextToken(
-            this.pos === 0 ? TokenType.EOL : this.previous().type
-        );
+        let token = this.nextToken(this.currentToken.type);
 
         if (token.type === TokenType.EOL) {
             const saveToken = token;
@@ -102,6 +109,7 @@ export class AHKParser {
             this.tokens.push(token);
             return saveToken;
         }
+        this.tokens.push(token);
         return token;
     }
 
@@ -110,6 +118,46 @@ export class AHKParser {
             token,
             message
         );
+    }
+
+    public parse(): IAST {
+        const statment: IStmt[] = [];
+        const diagnostics: IParseError[] = [];
+        const baseName = this.uri.split('/').slice(-1)[0];
+
+        this.logger.info(`Parsing started for ${baseName}`);
+        
+        try {
+            this.jumpWhiteSpace();
+            while (this.currentToken.type !== TokenType.EOF) {
+                let { errors, value } = this.declaration();
+                statment.push(value);
+                diagnostics.push(...errors);
+                this.jumpWhiteSpace();
+            }
+            
+            this.logger.info(`Parsing finished for ${baseName}`);
+
+            return {
+                script: new Script(
+                    this.uri,
+                    statment,
+                    this.tokens,
+                    this.comments,
+                ),
+                sytanxErrors: diagnostics,
+                tokenErrors: this.tokenErrors
+            };
+        }
+        catch (error) {
+            this.logger.error(error);
+        }
+
+        return {
+            script: new Script(this.uri, [], [], []),
+            sytanxErrors: [],
+            tokenErrors: []
+        };
     }
 
     public testDeclaration(): INodeResult<Stmt.Stmt> {
@@ -342,6 +390,8 @@ export class AHKParser {
                 return this.func();
             case TokenType.equal:
             case TokenType.aassign:
+            case TokenType.dot:
+            case TokenType.openBracket:
                 // expression is only allowed in assignment in AHK
                 return this.assign();
             case TokenType.hotkeyand:
@@ -355,15 +405,22 @@ export class AHKParser {
     }
 
     private block(): INodeResult<Stmt.Block> {
-        const open = this.currentToken;
+        const open = this.eatDiscardCR(TokenType.openBrace);
+        if (!open) {
+            throw this.error(
+                this.currentToken,
+                'Expect a "{" at begining of block'
+            );
+        }
         const errors: ParseError[] = [];
-        this.advance();
         const block: Stmt.Stmt[] = [];
+        this.jumpWhiteSpace();
         while (this.currentToken.type !== TokenType.closeBrace &&
             this.currentToken.type !== TokenType.EOF) {
             const stmt = this.declaration();
             errors.push(...stmt.errors);
             block.push(stmt.value);
+            this.jumpWhiteSpace();
         }
         const close = this.eatAndThrow(
             TokenType.closeBrace,
@@ -836,7 +893,7 @@ export class AHKParser {
                 }
 
                 // Implicit connect
-                if ((this.currentToken.type >= TokenType.number &&
+                if ((this.currentToken.type >= TokenType.string &&
                     this.currentToken.type <= TokenType.precent) &&
                     Precedences[TokenType.sconnect] >= p) {
                     const right = this.expression(Precedences[TokenType.sconnect] + 1);
@@ -1123,7 +1180,7 @@ export class AHKParser {
         this.advance();
         const pos = this.pos;
         let unclosed: number = 1;
-        while (unclosed <= 0) {
+        while (unclosed > 0) {
             let t = this.peek().type
             if (t === TokenType.closeParen)
                 unclosed--;
@@ -1132,7 +1189,8 @@ export class AHKParser {
             this.advance();
         }
 
-        if (this.peek().type === TokenType.openBrace) {
+        this.advance();
+        if (this.eatDiscardCR(TokenType.openBrace)) {
             this.backto(pos);
             let parameters = this.parameters();
             let block = this.block();
@@ -1161,37 +1219,40 @@ export class AHKParser {
         const requiredParameters: Decl.Parameter[] = [];
         const DefaultParameters: Decl.DefaultParam[] = [];
         let isDefaultParam = false;
-        do {
-            const name = this.eatAndThrow(
-                TokenType.id,
-                'Expect an identifier in parameter'
-            );
 
-            if (this.matchTokens([
-                TokenType.aassign,
-                TokenType.equal
-            ])) {
-                const assign = this.eat();
-                const dflt = this.expression();
-                errors.push(...dflt.errors);
-                DefaultParameters.push(
-                    new Decl.DefaultParam(
-                        name, assign, dflt.value
-                    )
+        if (this.currentToken.type !== TokenType.closeParen) {
+            do {
+                const name = this.eatAndThrow(
+                    TokenType.id,
+                    'Expect an identifier in parameter'
                 );
-                isDefaultParam = true;
-            }
-
-            if (isDefaultParam) 
-                errors.push(this.error(
-                    name,
-                    'Expect a Optional parameter'
-                ));
-            
-            requiredParameters.push(
-                new Decl.Parameter(name)
-            );
-        } while(this.eatDiscardCR(TokenType.comma));
+    
+                if (this.matchTokens([
+                    TokenType.aassign,
+                    TokenType.equal
+                ])) {
+                    const assign = this.eat();
+                    const dflt = this.expression();
+                    errors.push(...dflt.errors);
+                    DefaultParameters.push(
+                        new Decl.DefaultParam(
+                            name, assign, dflt.value
+                        )
+                    );
+                    isDefaultParam = true;
+                }
+    
+                if (isDefaultParam) 
+                    errors.push(this.error(
+                        name,
+                        'Expect a Optional parameter'
+                    ));
+                
+                requiredParameters.push(
+                    new Decl.Parameter(name)
+                );
+            } while(this.eatDiscardCR(TokenType.comma));
+        }
 
         const close = this.eatAndThrow(
             TokenType.closeParen,
@@ -1210,21 +1271,6 @@ export class AHKParser {
     // private command(): INodeResult<ICommandCall> {
 
     // }
-
-    program() {
-        const statment: IStmt[] = [];
-        const diagnostics: IParseError[] = [];
-        try {
-            while (this.currentToken.type !== TokenType.EOF) {
-                let { errors, value } = this.declaration();
-                statment.push(value);
-                diagnostics.push(...errors);
-            }
-        }
-        catch (error) {
-            console.error(error);
-        }
-    }
 
     /**
      * Check the the statement is terminated
@@ -1251,18 +1297,18 @@ export class AHKParser {
      * and when token is return 
      * check next token 
      */
-    private eatDiscardCR(t: TokenType): boolean {
-        if (this.currentToken.type === TokenType.return) {
-            if (this.check(this.peek().type)) {
+    private eatDiscardCR(t: TokenType): Maybe<Token> {
+        if (this.currentToken.type === TokenType.EOL) {
+            if (this.peek().type === t) {
                 this.advance().advance();
-                return true;
+                return this.previous();
             }
         }
         else if (this.check(t)) {
             this.advance();
-            return true;
+            return this.previous();
         }
-        return false;
+        return undefined;
     }
 
     private check(t: TokenType): boolean {

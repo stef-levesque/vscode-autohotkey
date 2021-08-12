@@ -16,11 +16,11 @@ export class Tokenizer {
     private isLiteralToken: boolean = false;
     private isLiteralDeref: boolean = false;
     private currChar: string;
-    private line: number = 1;
+    private line: number = 0;
     /**
      * character position of line
      */
-    private chr: number = 1;
+    private chr: number = 0;
     private EscapeChar = '"';
     public isParseHotkey: boolean = false;
 
@@ -45,9 +45,9 @@ export class Tokenizer {
     }
 
     private AdvanceLine() {
+        this.Advance();
         this.chr = 0;
         this.line++;
-        this.Advance();
     }
 
     private Peek(len: number = 1, skipWhite: boolean = false): string {
@@ -450,7 +450,7 @@ export class Tokenizer {
                             TokenType.EOL,
                             TokenType.hotkeyand
                         ])) {
-                            return this.CheckHotkey(CharType.mark);
+                            return this.CheckHotkey(CharType.char);
                         }
                         return this.GetId(preType);
                     }
@@ -653,7 +653,9 @@ export class Tokenizer {
     }
 
     private BackTo(offset: number) {
+        const delta = this.pos - offset;
         this.pos = offset;
+        this.chr -= delta;
         this.currChar = this.document[offset];
     }
 
@@ -936,6 +938,7 @@ const RESERVED_KEYWORDS: ITokenMap = new Map([
     ["return", TokenType.return],
     ["global", TokenType.global],
     ["local", TokenType.local],
+    ["static", TokenType.static],
     ["throw", TokenType.throw],
     ["continue", TokenType.continue],
     ["and", TokenType.keyand],
