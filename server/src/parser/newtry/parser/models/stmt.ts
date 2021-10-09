@@ -1,5 +1,5 @@
 import { Position, Range } from 'vscode-languageserver';
-import { IExpr, IStmt, SyntaxKind, Token } from '../../types';
+import { IExpr, IStmt, IStmtVisitor, SyntaxKind, Token } from '../../types';
 import { NodeBase } from './nodeBase';
 import * as Expr from './expr'
 import { joinLines } from '../utils/stringUtils';
@@ -18,10 +18,10 @@ export abstract class Stmt extends NodeBase implements IStmt {
 
 export class Invalid extends Stmt {
 	/**
-   * Construct a new invalid statement
-   * @param pos Provides the start position of this statement
-   * @param tokens tokens involved in this invalid statement
-   */
+	 * Construct a new invalid statement
+	 * @param pos Provides the start position of this statement
+	 * @param tokens tokens involved in this invalid statement
+	 */
 	constructor(
 		public readonly pos: Position,
 		public readonly tokens: Token[]
@@ -62,6 +62,13 @@ export class Invalid extends Stmt {
 		}
 		return ranges;
 	}
+
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	  ): ReturnType<T> {
+		return visitor.visitStmtInvalid(this, parameters);
+	}
 }
 
 export class AssignStmt extends Stmt {
@@ -96,6 +103,13 @@ export class AssignStmt extends Stmt {
 	public get ranges(): Range[] {
 		return [this.expr];
 	}
+
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	  ): ReturnType<T> {
+		return visitor.visitAssign(this, parameters);
+	}
 }
 
 /**
@@ -108,8 +122,7 @@ export class ExprStmt extends Stmt {
 
 	public toLines(): string[] {
 		const suffixLines = this.suffix.toLines();
-		suffixLines[suffixLines.length - 1] = `${suffixLines[suffixLines.length - 1]
-			}.`;
+		suffixLines[suffixLines.length - 1] = `${suffixLines[suffixLines.length - 1]}`;
 
 		return suffixLines;
 	}
@@ -126,12 +139,12 @@ export class ExprStmt extends Stmt {
 		return [this.suffix];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitExpr(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitExpr(this, parameters);
+	}
 }
 
 export class Block extends Stmt {
@@ -173,12 +186,12 @@ export class Block extends Stmt {
 		return [this.open, ...this.stmts, this.close];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	// 	visitor: IStmtVisitor<T>,
-	// 	parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	// 	return visitor.visitBlock(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitBlock(this, parameters);
+	}
 }
 
 export class If extends Stmt {
@@ -224,12 +237,12 @@ export class If extends Stmt {
 		return ranges;
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	// 	visitor: IStmtVisitor<T>,
-	// 	parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	// 	return visitor.visitIf(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitIf(this, parameters);
+	}
 }
 
 export class Else extends Stmt {
@@ -259,12 +272,12 @@ export class Else extends Stmt {
 		return [this.elseToken, this.body];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	// 	visitor: IStmtVisitor<T>,
-	// 	parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	// 	return visitor.visitElse(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitElse(this, parameters);
+	}
 }
 
 export class SwitchStmt extends Stmt {
@@ -321,12 +334,12 @@ export class SwitchStmt extends Stmt {
 		];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	// 	visitor: IStmtVisitor<T>,
-	// 	parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	// 	return visitor.visitIf(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitSwitch(this, parameters);
+	}
 }
 
 export class CaseStmt extends Stmt {
@@ -361,12 +374,12 @@ export class CaseStmt extends Stmt {
 		return [...this.CaseNode.ranges, ...bodyRange];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitWhen(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+	  return visitor.visitCase(this, parameters);
+	}
 }
 
 export class CaseExpr extends NodeBase {
@@ -474,12 +487,12 @@ export class Loop extends Stmt {
 			[this.loop, this.body];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitWhen(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+	  return visitor.visitLoop(this, parameters);
+	}
 }
 
 export class UntilLoop extends Stmt {
@@ -515,12 +528,12 @@ export class UntilLoop extends Stmt {
 		return [this.loop, this.condition, this.body];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitWhen(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+	  return visitor.visitLoop(this, parameters);
+	}
 }
 
 export class WhileStmt extends Stmt {
@@ -554,12 +567,53 @@ export class WhileStmt extends Stmt {
 		return [this.whileToken, this.condition, this.body];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitWhen(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+	  return visitor.visitWhile(this, parameters);
+	}
+}
+
+// TODO: Finish for loop
+export class ForStmt extends Stmt {
+	constructor(
+		public readonly forToken: Token,
+		public readonly condition: IExpr,
+		public readonly inToken: Token,
+		public readonly iterable: IExpr,
+		public readonly body: IStmt
+	) {
+		super();
+	}
+
+	public toLines(): string[] {
+		const conditionLines = this.condition.toLines();
+		const bodyLines = this.body.toLines();
+
+		conditionLines[0] = `${this.forToken.content} ${conditionLines[0]}`;
+
+		return joinLines(' ', conditionLines, bodyLines);
+	}
+
+	public get start(): Position {
+		return this.forToken.start;
+	}
+
+	public get end(): Position {
+		return this.body.end;
+	}
+
+	public get ranges(): Range[] {
+		return [this.forToken, this.condition,this.inToken, this.iterable, this.body];
+	}
+
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+	  return visitor.visitFor(this, parameters);
+	}
 }
 
 export class Break extends Stmt {
@@ -593,12 +647,12 @@ export class Break extends Stmt {
 		return [this.breakToken];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitBreak(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitBreak(this, parameters);
+	}
 }
 
 export class Return extends Stmt {
@@ -639,12 +693,12 @@ export class Return extends Stmt {
 		return ranges;
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitReturn(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitReturn(this, parameters);
+	}
 }
 
 export class TryStmt extends Stmt {
@@ -696,12 +750,12 @@ export class TryStmt extends Stmt {
 		return ranges;
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	// 	visitor: IStmtVisitor<T>,
-	// 	parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	// 	return visitor.visitIf(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	): ReturnType<T> {
+		return visitor.visitTry(this, parameters);
+	}
 }
 
 export class CatchStmt extends Stmt {
@@ -735,12 +789,12 @@ export class CatchStmt extends Stmt {
 		return [this.catchToken, this.errors, this.body];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitWhen(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+	  return visitor.visitCatch(this, parameters);
+	}
 }
 
 export class FinallyStmt extends Stmt {
@@ -772,12 +826,12 @@ export class FinallyStmt extends Stmt {
 		return [this.finallToken, this.body];
 	}
 
-	// public accept<T extends (...args: any) => any>(
-	//   visitor: IStmtVisitor<T>,
-	//   parameters: Parameters<T>,
-	// ): ReturnType<T> {
-	//   return visitor.visitWhen(this, parameters);
-	// }
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	  ): ReturnType<T> {
+		return visitor.visitFinally(this, parameters);
+	}
 }
 
 export class Drective extends Stmt {
@@ -813,6 +867,13 @@ export class Drective extends Stmt {
 
 		argsResult[0] = `${this.drective.content}${argsResult[0]}`;
 		return argsResult;
+	}
+
+	public accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	  ): ReturnType<T> {
+		return visitor.visitDrective(this, parameters);
 	}
 }
 

@@ -1,4 +1,3 @@
-import { join } from 'path';
 import { Position, Range } from 'vscode-languageserver';
 import { TokenType } from '../../tokenizor/tokenTypes';
 import {

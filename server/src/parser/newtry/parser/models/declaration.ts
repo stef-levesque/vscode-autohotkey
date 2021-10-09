@@ -1,6 +1,6 @@
 import { Position, Range } from 'vscode-languageserver';
 import { TokenType } from '../../tokenizor/tokenTypes';
-import { IExpr, IStmt, Token } from '../../types';
+import { IExpr, IStmt, IStmtVisitor, Token } from '../../types';
 import { joinLines } from '../utils/stringUtils';
 import { NodeBase } from './nodeBase';
 import { Block, Stmt } from "./stmt";
@@ -46,6 +46,13 @@ export class VarDecl extends Decl {
         return [this.scope as Range]
             .concat(this.assigns.flatMap(assign => assign.ranges));
     }
+
+	public accept<T extends (...args: any) => any>(
+	  visitor: IStmtVisitor<T>,
+	  parameters: Parameters<T>,
+	): ReturnType<T> {
+	  return visitor.visitDeclVariable(this, parameters);
+	}
 }
 
 /**
@@ -138,6 +145,13 @@ export class ClassDef extends Decl {
                 [this.classToken, this.name, this.extendsToken, this.parentName, ...this.body.ranges] :
                 [this.classToken, this.name, ...this.body.ranges];
     }
+
+    public accept<T extends (...args: any) => any>(
+        visitor: IStmtVisitor<T>,
+        parameters: Parameters<T>,
+      ): ReturnType<T> {
+        return visitor.visitDeclClass(this, parameters);
+      }
 }
 
 export class Label extends Decl {
@@ -166,6 +180,13 @@ export class Label extends Decl {
     public get ranges(): Range[] {
         return [this.name];
     }
+
+    public accept<T extends (...args: any) => any>(
+        visitor: IStmtVisitor<T>,
+        parameters: Parameters<T>,
+      ): ReturnType<T> {
+        return visitor.visitDeclLabel(this, parameters);
+      }
 }
 
 export class Hotkey extends Decl {
@@ -210,6 +231,13 @@ export class Hotkey extends Decl {
             return [...this.key1.ranges, this.and, ...this.key2.ranges];
         }
         return this.key1.ranges;
+    }
+
+    public accept<T extends (...args: any) => any>(
+        visitor: IStmtVisitor<T>,
+        parameters: Parameters<T>,
+    ): ReturnType<T> {
+        return visitor.visitDeclHotkey(this, parameters);
     }
 }
 
@@ -284,6 +312,13 @@ export class HotString extends Decl {
     public get ranges(): Range[] {
         return [this.option, this.str, this.expend];
     }
+
+    public accept<T extends (...args: any) => any>(
+        visitor: IStmtVisitor<T>,
+        parameters: Parameters<T>,
+    ): ReturnType<T> {
+        return visitor.visitDeclHotString(this, parameters);
+    }
 }
 
 export class FuncDef extends Decl {
@@ -319,6 +354,13 @@ export class FuncDef extends Decl {
 
     public get ranges(): Range[] {
         return [this.nameToken, ...this.params.ranges, ...this.body.ranges];
+    }
+
+    public accept<T extends (...args: any) => any>(
+        visitor: IStmtVisitor<T>,
+        parameters: Parameters<T>,
+    ): ReturnType<T> {
+        return visitor.visitDeclFunction(this, parameters);
     }
 }
 
@@ -375,12 +417,12 @@ export class Param extends Decl {
             //    .concat([this.end as Range])
     }
 
-    // public accept<T extends (...args: any) => any>(
-    //     visitor: IStmtVisitor<T>,
-    //     parameters: Parameters<T>,
-    // ): ReturnType<T> {
-    //     return visitor.visitDeclParameter(this, parameters);
-    // }
+    public accept<T extends (...args: any) => any>(
+        visitor: IStmtVisitor<T>,
+        parameters: Parameters<T>,
+    ): ReturnType<T> {
+        return visitor.visitDeclParameter(this, parameters);
+    }
 }
 
 /**

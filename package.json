@@ -59,7 +59,7 @@
 		],
 		"configuration": {
 			"type": "object",
-			"title": "AutoHotKey",
+			"title": "AutoHotKeySimpleSupport",
 			"properties": {
 				"AutohotkeyLanguageServer.trace.server": {
 					"scope": "window",
