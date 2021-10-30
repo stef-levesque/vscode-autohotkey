@@ -102,6 +102,13 @@ export class OptionalAssginStmt extends Stmt {
             [this.identifer, this.assign, this.expr] :
             [this.identifer];
     }
+
+    public accept<T extends (...args: any) => any>(
+        visitor: IStmtVisitor<T>, 
+        parameters: Parameters<T>
+    ): ReturnType<T> {
+        throw new Error('Method not implemented.');
+    }
 }
 
 export class ClassDef extends Decl {

@@ -5,7 +5,7 @@ import * as Stmt from '../parser/models/stmt';
 import * as Decl from '../parser/models/declaration';
 import { SymbolTable } from './models/symbolTable';
 import { IScript } from '../types';
-import { AHKMethodSymbol, AHKObjectSymbol, VaribaleSymbol } from './models/symbol';
+import { AHKMethodSymbol, AHKObjectSymbol, HotkeySymbol, HotStringSymbol, LabelSymbol, VaribaleSymbol } from './models/symbol';
 import { IScoop, VarKind } from './types';
 import { TokenType } from '../tokenizor/tokenTypes';
 
@@ -98,7 +98,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		const dfltParams = this.paramAction(params.optionalParameters);
 		const sym = new AHKMethodSymbol(
 			decl.nameToken.content,
-			Range.create(decl.start, decl.end),
+			copyRange(decl),
 			reqParams,
 			dfltParams,
 			this.supperGlobal
@@ -114,12 +114,59 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		for(const param of params) {
 			syms.push(new VaribaleSymbol(
 				param.identifier.content,
-				Range.create(param.start, param.end),
+				copyRange(param),
 				VarKind.parameter,
 				undefined
 			));
 		}
 		return syms;
+	}
+
+	public visitDeclClass(decl: Decl.ClassDef): Diagnostics {
+		// TODO: parent scoop of class
+		const parentScoop = undefined;
+		const objTable = new AHKObjectSymbol(
+			decl.name.content,
+			copyRange(decl),
+			parentScoop,
+			this.currentScoop
+		);
+		const errors: Diagnostics = [];
+		errors.push(... decl.body.accept(this, []));
+		return errors;
+	}
+
+	public visitDeclHotkey(decl: Decl.Hotkey): Diagnostics {
+		const name: string = decl.key2 ? 
+			decl.key1.key.content + ' & ' + decl.key2.key.content :
+			decl.key1.key.content;
+		this.table.define(
+			new HotkeySymbol(
+				name,
+				copyRange(decl)
+			)
+		);
+		return [];
+	}
+
+	public visitDeclHotString(decl: Decl.HotString): Diagnostics {
+		this.table.define(
+			new HotStringSymbol(
+				decl.str.content,
+				copyRange(decl)
+			)
+		);
+		return [];
+	}
+
+	public visitDeclLabel(decl: Decl.Label): Diagnostics {
+		this.table.define(
+			new LabelSymbol(
+				decl.name.content,
+				copyRange(decl)
+			)
+		);
+		return [];
 	}
 
 	private createVarSym(assigns: Decl.OptionalAssginStmt[]): [Diagnostics, VaribaleSymbol[]] {
@@ -144,3 +191,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		);
 	}
 } 
+
+function copyRange(r: Range) {
+	return Range.create(r.start, r.end);
+}
