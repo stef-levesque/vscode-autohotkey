@@ -14,6 +14,16 @@ export abstract class Stmt extends NodeBase implements IStmt {
 	get tag(): SyntaxKind.stmt {
 		return SyntaxKind.stmt;
 	}
+
+	/**
+	 * All statement implement the accept method
+	 * Called when he node should execute the visitors methods
+	 * @param visitor visitor object
+	 */
+	public abstract accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	): ReturnType<T>;
 }
 
 export class Invalid extends Stmt {

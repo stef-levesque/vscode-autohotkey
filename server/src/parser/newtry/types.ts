@@ -79,6 +79,10 @@ export interface IExpr extends RangeSequence {
 export interface IStmt extends RangeSequence {
 	toLines(): string[];
 	toString(): string;
+	accept<T extends (...args: any) => any>(
+		visitor: IStmtVisitor<T>,
+		parameters: Parameters<T>,
+	): ReturnType<T>;
 	tag: SyntaxKind.stmt;
 }
 
