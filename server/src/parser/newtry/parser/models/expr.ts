@@ -64,7 +64,7 @@ export class Invalid extends Expr {
 }
 
 /**
- * Class holding all valid unary expressions in KOS
+ * Class holding all valid unary expressions in AHK
  */
 export class Unary extends Expr {
     /**
