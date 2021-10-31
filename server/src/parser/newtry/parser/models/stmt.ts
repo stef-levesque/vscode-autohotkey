@@ -589,21 +589,22 @@ export class WhileStmt extends Stmt {
 export class ForStmt extends Stmt {
 	constructor(
 		public readonly forToken: Token,
-		public readonly condition: IExpr,
 		public readonly inToken: Token,
-		public readonly iterable: IExpr,
-		public readonly body: IStmt
+		public readonly body: IStmt,
+		public readonly iter1id: Token,
+		public readonly comma?: Token,
+		public readonly iter2id?: Token
 	) {
 		super();
 	}
 
 	public toLines(): string[] {
-		const conditionLines = this.condition.toLines();
+		const iterLine = this.comma && this.iter2id ?
+		 				`${this.iter1id.content} ${this.comma} ${this.iter2id}` :
+						 this.iter1id.content;
 		const bodyLines = this.body.toLines();
 
-		conditionLines[0] = `${this.forToken.content} ${conditionLines[0]}`;
-
-		return joinLines(' ', conditionLines, bodyLines);
+		return joinLines(' ', [iterLine], bodyLines);
 	}
 
 	public get start(): Position {
@@ -615,7 +616,9 @@ export class ForStmt extends Stmt {
 	}
 
 	public get ranges(): Range[] {
-		return [this.forToken, this.condition,this.inToken, this.iterable, this.body];
+		if (this.comma && this.iter2id)
+			return [this.forToken, this.iter1id, this.comma, this.iter2id, this.inToken, this.body];
+		return [this.forToken, this.iter1id, this.inToken, this.body];
 	}
 
 	public accept<T extends (...args: any) => any>(
@@ -772,19 +775,17 @@ export class CatchStmt extends Stmt {
 
 	constructor(
 		public readonly catchToken: Token,
-		public readonly errors: IExpr,
+		public readonly errors: Token,
 		public readonly body: IStmt
 	) {
 		super();
 	}
 
 	public toLines(): string[] {
-		const conditionLines = this.errors.toLines();
+		const conditionLines = `${this.catchToken.content} ${this.errors.content}`;
 		const bodyLines = this.body.toLines();
 
-		conditionLines[0] = `${this.catchToken.content} ${conditionLines[0]}`;
-
-		return joinLines(' ', conditionLines, bodyLines);
+		return joinLines(' ', [conditionLines], bodyLines);
 	}
 
 	public get start(): Position {

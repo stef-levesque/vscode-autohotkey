@@ -245,6 +245,140 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		return errors;
 	}
 
+	public visitIf(stmt: Stmt.If): Diagnostics {
+		const condExpr = stmt.condition;
+		const errors: Diagnostics = [...this.processExpr(condExpr)];
+		errors.push(...stmt.body.accept(this, []));
+		if (stmt.elseStmt) {
+			const elseStmt = stmt.elseStmt;
+			errors.push(...elseStmt.accept(this, []));
+		}
+		return errors;
+	}
+
+	public visitElse(stmt: Stmt.Else): Diagnostics {
+		const erorrs: Diagnostics = [];
+		// TODO: else if
+		erorrs.push(...stmt.body.accept(this, []));
+		return erorrs;
+	}
+
+	public visitReturn(stmt: Stmt.Return): Diagnostics {
+		// If any value returns process them
+		if (stmt.value) {
+			return this.processExpr(stmt.value)
+		}
+		return [];
+	}
+
+	public visitBreak(stmt: Stmt.Break): Diagnostics {
+		// Nothing need to do with break in propcesss
+		// Since label can be defined after break
+		return [];
+	}
+
+	public visitSwitch(stmt: Stmt.SwitchStmt): Diagnostics {
+		const errors: Diagnostics = [...this.processExpr(stmt.condition)];
+		// process every case
+		for (const caseStmt of stmt.cases) {
+			errors.push(...caseStmt.accept(this, []));
+		}
+
+		return errors;
+	}
+
+	public visitCase(stmt: Stmt.CaseStmt): Diagnostics {
+		const errors: Diagnostics = [];
+		// if is case <experssion>, process every expressions
+		if (stmt.CaseNode instanceof Stmt.CaseExpr) {
+			for (const cond of stmt.CaseNode.conditions) {
+				errors.push(...this.processExpr(cond));
+			}
+		}
+		// process every single statement under this case
+		for (const s of stmt.body) {
+			errors.push(...s.accept(this, []));
+		}
+
+		return errors;
+	}
+
+	public visitLoop(stmt: Stmt.LoopStmt): Diagnostics {
+		const errors: Diagnostics = [];
+		// loop <expression> body
+		if (stmt instanceof Stmt.Loop) {
+			// if any expression
+			if (stmt.condition)
+				errors.push(...this.processExpr(stmt.condition));
+			errors.push(...stmt.body.accept(this, []));
+			return errors;
+		}
+
+		// loop body until <expression>
+		errors.push(...stmt.body.accept(this, []));
+		errors.push(...this.processExpr(stmt.condition));
+		return errors;
+	}
+
+	public visitWhile(stmt: Stmt.WhileStmt): Diagnostics {
+		const errors: Diagnostics = [...this.processExpr(stmt.condition)];
+		errors.push(...stmt.body.accept(this, []));
+		return errors;
+	}
+
+	public visitFor(stmt: Stmt.ForStmt): Diagnostics {
+		// check if iter varible is defined, if not define them
+		if (!this.currentScoop.resolve(stmt.iter1id.content)) {
+			const sym = new VaribaleSymbol(
+				stmt.iter1id.content,
+				copyRange(stmt.iter1id),
+				VarKind.variable,
+				undefined
+			)
+			this.currentScoop.define(sym);
+		}
+		if (stmt.iter2id) {
+			const sym = new VaribaleSymbol(
+				stmt.iter1id.content,
+				copyRange(stmt.iter2id),
+				VarKind.variable,
+				undefined
+			)
+			this.currentScoop.define(sym);
+		}
+		return stmt.body.accept(this, []);
+	}
+
+	public visitTry(stmt: Stmt.TryStmt): Diagnostics {
+		const errors: Diagnostics = [];
+		errors.push(...stmt.body.accept(this, []));
+		if (stmt.catchStmt) {
+			errors.push(...stmt.catchStmt.accept(this, []));
+		}
+		if (stmt.finallyStmt) {
+			errors.push(...stmt.finallyStmt.accept(this, []));
+		}
+		return errors;
+	}
+
+	public visitCatch(stmt: Stmt.CatchStmt): Diagnostics {
+		// check if output varible is defined, if not define it
+		if (!this.currentScoop.resolve(stmt.errors.content)) {
+			const sym = new VaribaleSymbol(
+				stmt.errors.content,
+				copyRange(stmt.errors),
+				VarKind.variable,
+				undefined
+			);
+			this.currentScoop.define(sym);
+		}
+		return stmt.body.accept(this, []);
+	}
+
+	public visitFinally(stmt: Stmt.FinallyStmt): Diagnostics {
+		return stmt.body.accept(this, []);
+	}
+
 	private enterScoop(scoop: IScoop) {
 		this.stack.push(scoop);
 		this.currentScoop = scoop;

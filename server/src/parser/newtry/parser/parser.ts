@@ -372,6 +372,8 @@ export class AHKParser {
                 return this.loopStmt();
             case TokenType.while:
                 return this.whileStmt();
+            case TokenType.for:
+                return this.forStmt();
             case TokenType.try:
                 return this.tryStmt();
             case TokenType.drective:
@@ -672,6 +674,51 @@ export class AHKParser {
         );
     }
 
+    private forStmt(): INodeResult<Stmt.ForStmt> {
+        const forToken = this.currentToken;
+        this.advance();
+        const id1 = this.eatAndThrow(
+            TokenType.id,
+            'Expect an identifer in for loop'
+        );
+        if (this.currentToken.type === TokenType.comma) {
+            const comma = this.eat();
+            const id2 = this.eatAndThrow(
+                TokenType.id,
+                'Expect second identifer after `,` in for loop'
+            );
+            const inToken = this.eatAndThrow(
+                TokenType.in,
+                'Expect in keyword in for loop'
+            );
+            const body = this.declaration();
+            const errors = body.errors;
+            return nodeResult(
+                new Stmt.ForStmt(
+                    forToken, inToken,
+                    body.value,
+                    id1, comma, id2
+                ),
+                errors
+            );
+        }
+
+        const inToken = this.eatAndThrow(
+            TokenType.in,
+            'Expect in keyword in for loop'
+        );
+        const body = this.declaration();
+        const errors = body.errors;
+        return nodeResult(
+            new Stmt.ForStmt(
+                forToken, inToken,
+                body.value,
+                id1
+            ),
+            errors
+        );
+    }
+
     private tryStmt(): INodeResult<Stmt.TryStmt> {
         const tryToken = this.currentToken;
         this.advance();
@@ -684,13 +731,15 @@ export class AHKParser {
         if (this.currentToken.type === TokenType.catch) {
             const catchToken = this.currentToken;
             this.advance();
-            const errorExpr = this.expression();
+            const errorVar = this.eatAndThrow(
+                TokenType.id,
+                'Expect an identifer as output variable'
+            );
             this.jumpWhiteSpace();
             const body = this.declaration();
-            errors.push(...errorExpr.errors);
             errors.push(...body.errors);
             catchStmt = new Stmt.CatchStmt(
-                catchToken, errorExpr.value, body.value
+                catchToken, errorVar, body.value
             );
         }
 
