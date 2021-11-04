@@ -1,5 +1,5 @@
 import { IScoop, ISymbol, ISymType, VarKind } from '../types';
-import { Range } from 'vscode-languageserver';
+import { Range, SymbolInformation, SymbolKind } from 'vscode-languageserver';
 
 export abstract class AHKSymbol implements ISymbol {
 	public readonly name: string;
@@ -116,17 +116,52 @@ export abstract class ScopedSymbol extends AHKSymbol implements IScoop {
 	public resolve(name: string): Maybe<ISymbol> {
 		if (this.symbols.has(name)) 
 			return this.symbols.get(name);
-		let searchScoop = this.enclosingScoop;
-		while (searchScoop) {
-			const sym = searchScoop.resolve(name);
-			if (sym) return sym;
-			searchScoop = searchScoop.enclosingScoop;
-		}
-		return undefined;
+		return this.enclosingScoop?.resolve(name);
 	}
 
 	public addScoop(scoop: IScoop) {
 		this.dependcyScoop.add(scoop);
+	}
+
+	public symbolInformations(): SymbolInformation[] {
+		const info: SymbolInformation[] = [];
+		for (const [name, sym] of this.symbols) {
+			if (sym instanceof VaribaleSymbol && sym.tag !== VarKind.parameter) {
+				const kind = sym.tag === VarKind.variable ? SymbolKind.Variable : SymbolKind.Property 
+				info.push(SymbolInformation.create(
+					name,
+					kind,
+					sym.range
+				));
+			}
+			else if (sym instanceof AHKMethodSymbol) {
+				info.push(SymbolInformation.create(
+					name,
+					SymbolKind.Method,
+					sym.range
+				));
+				info.push(...sym.symbolInformations());
+			}
+			else if (sym instanceof AHKObjectSymbol) {
+				info.push(SymbolInformation.create(
+					name,
+					SymbolKind.Class,
+					sym.range
+				));
+				info.push(...sym.symbolInformations());
+			}
+			else if (sym instanceof HotkeySymbol || sym instanceof HotStringSymbol) {
+				info.push(SymbolInformation.create(
+					name,
+					SymbolKind.Event,
+					sym.range
+				));
+			}
+			else
+				continue;
+		}
+
+		return info;
 	}
 }
 
@@ -168,13 +203,7 @@ export class AHKBuiltinObjectSymbol extends ScopedSymbol implements ISymType {
 	resolveProp(name: string): Maybe<ISymbol> {
 		if (this.symbols.has(name))
 			return this.symbols.get(name);
-		let searchScoop = this.parentScoop;
-		while (searchScoop) {
-			const sym = searchScoop.resolve(name);
-			if (sym) return sym;
-			searchScoop = searchScoop.parentScoop;
-		}
-		return undefined;
+		return this.parentScoop?.resolve(name);
 	}
 }
 
@@ -216,15 +245,9 @@ export class AHKObjectSymbol extends ScopedSymbol implements ISymType {
 	 * Lookup property symbol of a class
 	 * @param name Property symbol name
 	 */
-	resolveProp(name: string): Maybe<ISymbol> {
+	public resolveProp(name: string): Maybe<ISymbol> {
 		if (this.symbols.has(name))
 			return this.symbols.get(name);
-		let searchScoop = this.parentScoop;
-		while (searchScoop) {
-			const sym = searchScoop.resolve(name);
-			if (sym) return sym;
-			searchScoop = searchScoop.parentScoop;
-		}
-		return undefined;
+		return this.parentScoop?.resolve(name);
 	}
 }

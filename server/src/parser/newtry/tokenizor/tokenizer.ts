@@ -522,7 +522,7 @@ export class Tokenizer {
             else if (this.isHotkeyToken()) {
                 return this.CreateToken(TokenType.key, this.document[offset], p, this.genPosition());
             }
-            else if (this.isAlpha(this.currChar)) {
+            else if (this.isAlpha(this.currChar) && this.currChar !== 'EOF') {
                 const key1 = this.GetId(TokenType.precent);
                 if (this.isWhiteSpace(this.currChar)) {
                     this.SikpWhiteSpace();
@@ -797,10 +797,11 @@ export class Tokenizer {
             this.SikpWhiteSpace();
         }
         // check if is drective
-        if (this.currChar === '#') {
-            return this.GetDrectivesOrSharp();
-        }
-        else if (this.currChar === '/' && this.Peek() === '*') {
+        // if (this.currChar === '#') {
+        //     this.Advance();
+        //     return this.GetDrectivesOrSharp();
+        // }
+        if (this.currChar === '/' && this.Peek() === '*') {
             this.SkipBlockComment()
             return t;
         }

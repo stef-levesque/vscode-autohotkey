@@ -102,7 +102,7 @@ export class OptionalAssginStmt extends Stmt {
             [this.identifer, this.assign, this.expr] :
             [this.identifer];
     }
-
+    // optional assign will be process directly, this is to make ts happy.
     public accept<T extends (...args: any) => any>(
         visitor: IStmtVisitor<T>, 
         parameters: Parameters<T>

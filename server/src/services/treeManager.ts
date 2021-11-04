@@ -2,9 +2,11 @@ import {
 	CompletionItem,
 	CompletionItemKind,
     Definition,
+    IConnection,
     Location,
 	Position,
 	Range,
+	SymbolInformation,
 	SymbolKind
 } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -48,6 +50,9 @@ import { union } from '../utilities/setOperation';
 import { NodeMatcher, ScriptFinder } from '../parser/regParser/scriptFinder';
 import { threadId } from 'worker_threads';
 import { info } from 'console';
+import { SymbolTable } from '../parser/newtry/analyzer/models/symbolTable';
+import { AHKParser } from '../parser/newtry/parser/parser';
+import { PreProcesser } from '../parser/newtry/analyzer/semantic';
 
 // if belongs to FuncNode
 function isFuncNode(node: ISymbolNode): node is IFuncNode{
@@ -71,6 +76,7 @@ function setDiffSet<T>(set1: Set<T>, set2: Set<T>) {
 
 export class TreeManager
 {
+    private conn: IConnection;
 	/**
 	 * server cached documnets
 	 */
@@ -85,6 +91,12 @@ export class TreeManager
      * Map<uri, IDocmentInfomation>
 	 */
     private docsAST: Map<string, IDocumentInfomation>;
+    /**
+     * server cached symbol table of documents,
+     * parser result of syntax parser
+     * 递归下降分析器的分析结果，更准确更耗性能
+     */
+    private docsTable: Map<string, SymbolTable>;
 
     /**
      * local storaged AST of ahk documents, cached included documents
@@ -123,9 +135,11 @@ export class TreeManager
      */
     private readonly ULibDir: string;
 
-	constructor(logger: ILoggerBase) {
+	constructor(conn: IConnection, logger: ILoggerBase) {
+        this.conn = conn;
 		this.serverDocs = new Map();
         this.docsAST = new Map();
+        this.docsTable = new Map();
         this.localAST = new Map();
         this.incInfos = new Map();
         this.ioService = new IoService();
@@ -168,6 +182,8 @@ export class TreeManager
 	public async updateDocumentAST(uri: string, docinfo: IDocumentInfomation, doc: TextDocument) {
         // update documnet
         this.serverDocs.set(uri, doc);
+        const table = this.parseTable(doc);
+        this.docsTable.set(uri, table);
         const oldInclude = this.docsAST.get(uri)?.include
         let useneed, useless: string[];
         // updata AST first, then its includes
@@ -243,6 +259,18 @@ export class TreeManager
             // TODO: log exception here
             return undefined;
         }
+    }
+
+    private parseTable(doc: TextDocument) {
+        const parser = new AHKParser(doc.getText(), doc.uri, this.logger);
+        const ast = parser.parse();
+        const preprocesser = new PreProcesser(ast.script);
+        const table = preprocesser.process();
+        this.conn.sendDiagnostics({
+            uri: doc.uri,
+            diagnostics: table.diagnostics
+        });
+        return table.table;
     }
 
 	public deleteUnusedDocument(uri: string) {
@@ -362,6 +390,12 @@ export class TreeManager
 			return <Array<ISymbolNode|IFuncNode>>this.docsAST.get(this.currentDocUri)?.tree;
 		else
 			return [];
+    }
+
+    public docSymbolInfo(): SymbolInformation[] {
+        const table = this.docsTable.get(this.currentDocUri);
+        if (!table) return [];
+        return table.symbolInformations();
     }
 
     /**

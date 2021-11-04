@@ -1,3 +1,5 @@
+import { SymbolInformation } from 'vscode-languageserver-types';
+
 export interface IScoop {
 	readonly name: string;
 	/**
@@ -22,6 +24,10 @@ export interface IScoop {
 	 * @param scoop Scoop tabel to be added
 	 */
 	addScoop(scoop: IScoop): void;
+	/**
+	 * convert symbol to lsp SymbolInfomation
+	 */
+	symbolInformations(): SymbolInformation[];
 }
 
 export interface ISymbol {

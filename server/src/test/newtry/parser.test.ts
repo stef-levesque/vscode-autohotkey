@@ -405,4 +405,22 @@ suite('Full file test', () => {
 		assert.strictEqual(fileAST.tokenErrors.length, 0, 'Enconter Token error');
 		assert.strictEqual(fileAST.sytanxErrors.length, 0, 'Enconter Parser error');
 	});
+
+	test('Full document 1', () => {
+		const file = `#SingleInstance Force
+		#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+		; #Warn  ; Enable warnings to assist with detecting common errors.
+		SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+		SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+		
+		;#If WinActive("ahk_exe MatStudio.exe")
+		::aa::Al2Al2
+		::aar::Al2Al2RT
+		;#If		
+		`;
+		const parser = new AHKParser(file, '');
+		const fileAST = parser.parse();
+		assert.strictEqual(fileAST.tokenErrors.length, 0, 'Enconter Token error');
+		assert.strictEqual(fileAST.sytanxErrors.length, 0, 'Enconter Parser error');
+	});
 });

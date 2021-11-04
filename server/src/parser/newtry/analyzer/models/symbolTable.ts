@@ -1,10 +1,16 @@
+import { SymbolInformation, SymbolKind } from 'vscode-languageserver-types';
 import { IScoop } from '../types';
-import { BuiltinTypeSymbol, AHKSymbol } from './symbol';
+import { BuiltinTypeSymbol, AHKSymbol, VaribaleSymbol, AHKMethodSymbol, AHKObjectSymbol, HotkeySymbol, HotStringSymbol } from './symbol';
 
+/**
+ * Symbol Table for the entire AHK file
+ * Used for global scoop and super global scoop
+ */
 export class SymbolTable implements IScoop {
 	private symbols: Map<string, AHKSymbol> = new Map();
 	public readonly name: string;
 	public readonly enclosingScoop: Maybe<IScoop>;
+	private includeTable: Set<IScoop>;
 	public readonly dependcyScoop: Set<IScoop>;
 	public readonly scoopLevel: number;
 
@@ -13,6 +19,7 @@ export class SymbolTable implements IScoop {
 		this.scoopLevel = scoopLevel;
 		this.enclosingScoop = enclosingScoop;
 		this.dependcyScoop = new Set();
+		this.includeTable = new Set();
 		this.initTypeSystem();
 	}
 
@@ -26,11 +33,64 @@ export class SymbolTable implements IScoop {
 	}
 
 	public resolve(name: string): Maybe<AHKSymbol> {
-		return this.symbols.get(name);
+		let result = this.symbols.get(name);
+		if (result) return result;
+		// then check parent scoop
+		result = this.enclosingScoop?.resolve(name);
+		if (result) return result;
+		// finally check include symbol table
+		for (const table of this.includeTable) {
+			result = table.resolve(name);
+			if (result) return result;
+		}
+		return undefined;
 	}
 
 	public addScoop(scoop: IScoop) {
 		this.dependcyScoop.add(scoop);
+	}
+
+	public addInclude(table: IScoop) {
+		this.includeTable.add(table);
+	}
+
+	public symbolInformations(): SymbolInformation[] {
+		let info: SymbolInformation[] = [];
+		for (const [name, sym] of this.symbols) {
+			if (sym instanceof VaribaleSymbol) {
+				info.push(SymbolInformation.create(
+					name,
+					SymbolKind.Variable,
+					sym.range
+				));
+			}
+			else if (sym instanceof AHKMethodSymbol) {
+				info.push(SymbolInformation.create(
+					name,
+					SymbolKind.Method,
+					sym.range
+				));
+				info.push(...sym.symbolInformations());
+			}
+			else if (sym instanceof AHKObjectSymbol) {
+				info.push(SymbolInformation.create(
+					name,
+					SymbolKind.Class,
+					sym.range
+				));
+				info.push(...sym.symbolInformations());
+			}
+			else if (sym instanceof HotkeySymbol || sym instanceof HotStringSymbol) {
+				info.push(SymbolInformation.create(
+					name,
+					SymbolKind.Event,
+					sym.range
+				));
+			}
+			else
+				continue;
+		}
+		return info;
 	}
 
 	public toString(): string {

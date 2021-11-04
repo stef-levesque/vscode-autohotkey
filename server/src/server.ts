@@ -58,7 +58,7 @@ let hasDiagnosticRelatedInformationCapability: boolean = false;
 const logger = new Logger(connection.console);
 let keyWordCompletions: CompletionItem[] = buildKeyWordCompletions();
 let builtinVariableCompletions: CompletionItem[] = buildbuiltin_variable();
-let DOCManager: TreeManager = new TreeManager(logger);
+let DOCManager: TreeManager = new TreeManager(connection, logger);
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -191,16 +191,18 @@ function flatTree(tree: ISymbolNode[]): ISymbolNode[] {
 
 connection.onDocumentSymbol(
 	(params: DocumentSymbolParams): SymbolInformation[] => {
-		const tree = DOCManager.selectDocument(params.textDocument.uri).getTree();
+	// 	const tree = DOCManager.selectDocument(params.textDocument.uri).getTree();
 
-	return flatTree(tree).map(info => {
-		return SymbolInformation.create(
-			info.name,
-			info.kind,
-			info.range,
-			params.textDocument.uri
-		);
-	});
+	// return flatTree(tree).map(info => {
+	// 	return SymbolInformation.create(
+	// 		info.name,
+	// 		info.kind,
+	// 		info.range,
+	// 		params.textDocument.uri
+	// 	);
+	// });
+	DOCManager.selectDocument(params.textDocument.uri);
+	return DOCManager.docSymbolInfo();
 });
 
 connection.onSignatureHelp(
@@ -273,7 +275,7 @@ documents.onDidChangeContent(change => {
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
-	let result = await getDocumentSettings(textDocument.uri);
+	// let result = await getDocumentSettings(textDocument.uri);
 	// connection.console.log(result.documentLanguage);
 }
 

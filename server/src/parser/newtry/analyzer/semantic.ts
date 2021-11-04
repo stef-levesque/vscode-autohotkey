@@ -32,7 +32,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		this.table = new SymbolTable('global', 1, this.supperGlobal);
 		this.supperGlobal.addScoop(this.table);
 		this.stack = [this.table];
-		this.currentScoop = this.stack[-1];
+		this.currentScoop = this.stack[this.stack.length-1];
 	}
 
 	public process(): ProcessResult {
@@ -40,7 +40,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		const errors: Diagnostic[] = [];
 		for (const stmt of stmts) {
 			const error = stmt.accept(this, []);
-			errors.push(error);
+			errors.push(...error);
 		}
 		return {
 			table: this.table,
@@ -52,7 +52,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		const errors: Diagnostics = [];
 		const [e, vs] = this.createVarSym(decl.assigns);
 		errors.push(...e);
-		if (decl.scope.type === TokenType.static ) {
+		if (decl.scope.type === TokenType.static) {
 			if (!(this.currentScoop instanceof AHKObjectSymbol)) {
 				errors.push(
 					this.error(
@@ -105,8 +105,12 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 			dfltParams,
 			this.supperGlobal
 		);
-		this.supperGlobal.define(sym);
-		this.supperGlobal.addScoop(sym);
+		// this.supperGlobal.define(sym);
+		// this.supperGlobal.addScoop(sym);
+		// this.table.define(sym);
+		// this.table.addScoop(sym);
+		this.currentScoop.define(sym);
+		this.currentScoop.addScoop(sym);
 		this.enterScoop(sym);
 		const errors = decl.body.accept(this, []);
 		this.leaveScoop();
@@ -136,9 +140,11 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 			this.currentScoop
 		);
 		const errors: Diagnostics = [];
-
+		
+		// supper global means we are in global scoop
 		if (this.currentScoop === this.supperGlobal) {
 			this.supperGlobal.define(objTable);
+			this.table.define(objTable);
 		} 
 		else {
 			this.currentScoop.define(objTable);
@@ -182,6 +188,10 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		return [];
 	}
 
+	public visitStmtInvalid(stmt: Stmt.Invalid): Diagnostics {
+		return [];
+	}
+
 	public visitDrective(stmt: Stmt.Drective): Diagnostics {
 		// Nothing to do in first scanning
 		return [];
@@ -191,7 +201,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		const errors: Diagnostics = [];
 		for (const singleStmt of stmt.stmts) {
 			const e = singleStmt.accept(this, []);
-			errors.push(e);
+			errors.push(...e);
 		}
 		return errors;
 	}
@@ -225,14 +235,38 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 						errors.push(this.error(
 							copyRange(atom),
 							'Variable is used before defination'
-						))
+						));
 				}
 			}
+			// TODO: Call and backet identifer check
 		}
 		else if (expr instanceof Expr.Unary) {
 			errors.push(...this.processExpr(expr.factor));
 		}
 		else if (expr instanceof Expr.Binary) {
+			// if contains assign expression
+			// check if create a new variable检查是否有新的变量赋值
+			if (expr.operator.type === TokenType.aassign) {
+				const left = expr.left
+				if (left instanceof Expr.Factor) {
+					if (!left.trailer) {
+						const atom = left.suffixTerm.atom;
+						// 检查左侧是不是只有标识符
+						if (atom instanceof SuffixTerm.Identifier) {
+							const idName = atom.token.content;
+							if (!this.currentScoop.resolve(idName)) {
+								const sym = new VaribaleSymbol(
+									idName,
+									copyRange(left),
+									VarKind.variable,
+									undefined
+								);
+								this.currentScoop.define(sym);
+							}
+						}
+					}
+				}
+			}
 			errors.push(...this.processExpr(expr.left));
 			errors.push(...this.processExpr(expr.right));
 		}
@@ -386,20 +420,25 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 
 	private leaveScoop() {
 		this.stack.pop();
-		this.currentScoop = this.stack[-1];
+		this.currentScoop = this.stack[this.stack.length-1];
 	}
 
 	private createVarSym(assigns: Decl.OptionalAssginStmt[]): [Diagnostics, VaribaleSymbol[]] {
 		const errors: Diagnostics = [];
 		const varSym: VaribaleSymbol[] = [];
 		for (const assign of assigns) {
-			errors.push(assign.accept(this, []));
-			const sym = new VaribaleSymbol(
-				assign.identifer.content,
-				Range.create(assign.start, assign.end),
-				VarKind.variable,
-				undefined
-			);
+			// if there are any assign in variable declaration, 如果scoop声明里有赋值
+			if (assign.assign) {
+				const kind = this.currentScoop instanceof AHKObjectSymbol ?
+							 VarKind.property : VarKind.variable;
+				const sym = new VaribaleSymbol(
+					assign.identifer.content,
+					Range.create(assign.start, assign.end),
+					kind,
+					undefined
+				);
+				varSym.push(sym);
+			}
 		}
 		return [errors, varSym];
 	}
