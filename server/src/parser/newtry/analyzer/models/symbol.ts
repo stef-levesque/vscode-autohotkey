@@ -213,7 +213,8 @@ export class AHKMethodSymbol extends ScopedSymbol {
 		public readonly range: Range,
 		public readonly requiredParameters: VaribaleSymbol[],
 		public readonly optionalParameters: VaribaleSymbol[],
-		enclosingScoop?: IScoop
+		enclosingScoop?: IScoop,
+		public readonly parentScoop?: IScoop
 	) {
 		super(name, enclosingScoop);
 		this.initParameters();
@@ -235,7 +236,7 @@ export class AHKObjectSymbol extends ScopedSymbol implements ISymType {
 	constructor(
 		name: string,
 		public readonly range: Range,
-		public readonly parentScoop: Maybe<AHKObjectSymbol>,
+		public readonly parentScoop?: AHKObjectSymbol,
 		enclosingScoop?: IScoop
 	) {
 		super(name, enclosingScoop);

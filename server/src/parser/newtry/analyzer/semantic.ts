@@ -103,7 +103,8 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 			copyRange(decl),
 			reqParams,
 			dfltParams,
-			this.supperGlobal
+			this.supperGlobal,
+			this.currentScoop
 		);
 		// this.supperGlobal.define(sym);
 		// this.supperGlobal.addScoop(sym);
@@ -208,13 +209,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 
 	public visitAssign(stmt: Stmt.AssignStmt): Diagnostics {
 		const errors: Diagnostics = [];
-		const sym = new VaribaleSymbol(
-			stmt.identifer.content,
-			copyRange(stmt),
-			VarKind.variable,
-			undefined
-		);
-		this.currentScoop.define(sym);
+		errors.push(...this.processAssignVar(stmt.left, stmt));
 		errors.push(...this.processExpr(stmt.expr));
 		return errors;
 	}
@@ -246,28 +241,12 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		else if (expr instanceof Expr.Binary) {
 			// if contains assign expression
 			// check if create a new variable检查是否有新的变量赋值
-			if (expr.operator.type === TokenType.aassign) {
-				const left = expr.left
-				if (left instanceof Expr.Factor) {
-					if (!left.trailer) {
-						const atom = left.suffixTerm.atom;
-						// 检查左侧是不是只有标识符
-						if (atom instanceof SuffixTerm.Identifier) {
-							const idName = atom.token.content;
-							if (!this.currentScoop.resolve(idName)) {
-								const sym = new VaribaleSymbol(
-									idName,
-									copyRange(left),
-									VarKind.variable,
-									undefined
-								);
-								this.currentScoop.define(sym);
-							}
-						}
-					}
-				}
+			if (expr.operator.type === TokenType.aassign &&
+				expr.left instanceof Expr.Factor) {
+				errors.push(...this.processAssignVar(expr.left, expr));
 			}
-			errors.push(...this.processExpr(expr.left));
+			else
+				errors.push(...this.processExpr(expr.left));
 			errors.push(...this.processExpr(expr.right));
 		}
 		else if (expr instanceof Expr.Ternary) {
@@ -276,6 +255,61 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 			errors.push(...this.processExpr(expr.falseExpr));
 		}
 		
+		return errors;
+	}
+
+	private processAssignVar(left: Expr.Factor, fullRange: Range): Diagnostics {
+		const id1 = left.suffixTerm.atom;
+		const errors: Diagnostics = [];
+		if (id1 instanceof SuffixTerm.Identifier) {
+			// if only varible 标识符只有一个
+			// 就是变量赋值定义这个变量
+			if (left.trailer === undefined) {
+				const idName = id1.token.content;
+				if (!this.currentScoop.resolve(idName)) {
+					const sym = new VaribaleSymbol(
+						idName,
+						copyRange(left),
+						VarKind.variable,
+						undefined
+					);
+					this.currentScoop.define(sym);
+				}
+				return errors;
+			}
+
+			// check if assign to a property
+			if (id1.token.content === 'this') {
+				if (!(this.currentScoop instanceof AHKMethodSymbol &&
+					  this.currentScoop.parentScoop instanceof AHKObjectSymbol)) {
+					errors.push(Diagnostic.create(
+						copyRange(left),
+						'Assign a property out of class'
+					));
+					return errors;
+				}
+				const trailer = left.trailer;
+				if (trailer.trailer === undefined) {
+					const prop = trailer.suffixTerm.atom;
+					if (prop instanceof SuffixTerm.Identifier) {
+						if (!this.currentScoop.resolve(prop.token.content)) {
+							const sym = new VaribaleSymbol(
+								prop.token.content,
+								copyRange(fullRange),
+								VarKind.property,
+								undefined
+							);
+							this.currentScoop.define(sym);
+						}
+					}
+					return errors;
+				}
+			}
+		}
+		errors.push(Diagnostic.create(
+			copyRange(left),
+			'Assign to unassignable object'
+		))
 		return errors;
 	}
 

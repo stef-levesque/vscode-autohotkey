@@ -778,15 +778,23 @@ export class AHKParser {
 
     // assignment statemnet
     private assign(): INodeResult<Stmt.AssignStmt> {
-        const id = this.currentToken;
-        this.advance();
+        const left = this.factor();
+        if (!this.matchTokens([
+            TokenType.aassign,
+            TokenType.equal
+        ])) {
+            throw this.error(
+                this.currentToken,
+                'Expect an assignment'
+            );
+        }
         const assign = this.currentToken;
         this.advance();
         const expr = this.expression();
         this.terminal();
         return {
-            errors: expr.errors,
-            value: new Stmt.AssignStmt(id, assign, expr.value)
+            errors: left.errors.concat(expr.errors),
+            value: new Stmt.AssignStmt(left.value, assign, expr.value)
         };
 
     }

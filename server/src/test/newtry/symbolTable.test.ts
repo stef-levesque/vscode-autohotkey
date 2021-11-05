@@ -4,9 +4,9 @@ import { VaribaleSymbol } from '../../parser/newtry/analyzer/models/symbol';
 import { SymbolTable } from '../../parser/newtry/analyzer/models/symbolTable';
 import { ISymType, VarKind } from '../../parser/newtry/analyzer/types';
 import { Label } from '../../parser/newtry/parser/models/declaration';
-import { Factor } from '../../parser/newtry/parser/models/expr';
+import { Expr, Factor } from '../../parser/newtry/parser/models/expr';
 import * as Stmt from '../../parser/newtry/parser/models/stmt';
-import { Literal } from '../../parser/newtry/parser/models/suffixterm';
+import { Identifier, Literal } from '../../parser/newtry/parser/models/suffixterm';
 import { AHKParser } from "../../parser/newtry/parser/parser";
 import { TokenType } from '../../parser/newtry/tokenizor/tokenTypes';
 import { IExpr, IStmt, Token } from '../../parser/newtry/types';
@@ -31,13 +31,16 @@ function builtTable(AST: IStmt[]): SymbolTable {
                 symType = table.resolve('number');
             }
             if (symType === undefined) continue;
-            const sym = new VaribaleSymbol(
-                stmt.identifer.content,
-				Range.create(stmt.start, stmt.end),
-				VarKind.variable,
-                symType
-            );
-            table.define(sym);
+            const latom = stmt.left.suffixTerm.atom;
+            if (latom instanceof Identifier) {
+                const sym = new VaribaleSymbol(
+                    latom.token.content,
+                    Range.create(stmt.start, stmt.end),
+                    VarKind.variable,
+                    symType
+                );
+                table.define(sym);
+            }
         }
     }
     return table;

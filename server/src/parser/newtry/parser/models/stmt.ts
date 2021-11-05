@@ -83,11 +83,11 @@ export class Invalid extends Stmt {
 
 export class AssignStmt extends Stmt {
 	/**
-	 * @param identifer Variable to be assigned
+	 * @param left Variable to be assigned
 	 * @param assign Assign token
 	 */
 	constructor(
-		public readonly identifer: Token,
+		public readonly left: Expr.Factor,
 		public readonly assign: Token,
 		public readonly expr: Expr.Expr
 	) {
@@ -96,14 +96,12 @@ export class AssignStmt extends Stmt {
 
 	public toLines(): string[] {
 		const exprLines = this.expr.toLines();
-		const idLines = this.identifer.content;
-		const assignLines = this.assign.content;
-		exprLines[0] = `${idLines} ${assignLines} ${exprLines[0]}`
-		return exprLines;
+		const idLines = this.left.toLines();
+		return joinLines(this.assign.content, idLines, exprLines);
 	}
 
 	public get start(): Position {
-		return this.identifer.start;
+		return this.left.start;
 	}
 
 	public get end(): Position {
