@@ -34,6 +34,7 @@ function builtTable(AST: IStmt[]): SymbolTable {
             const latom = stmt.left.suffixTerm.atom;
             if (latom instanceof Identifier) {
                 const sym = new VaribaleSymbol(
+                    '',
                     latom.token.content,
                     Range.create(stmt.start, stmt.end),
                     VarKind.variable,
