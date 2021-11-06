@@ -4,8 +4,11 @@ import {
     Definition,
     IConnection,
     Location,
+	ParameterInformation,
 	Position,
 	Range,
+	SignatureHelp,
+	SignatureInformation,
 	SymbolInformation,
 	SymbolKind
 } from 'vscode-languageserver';
@@ -707,29 +710,46 @@ export class TreeManager
             if (lastnode instanceof CommandCall) {
                 // All Commands are built-in, just search built-in Commands
                 const bfind = arrayFilter(this.builtinCommand, item => item.name.toLowerCase() === funcName.toLowerCase());
-                if (!bfind) return undefined;
-                return {
-                    func: bfind,
-                    index: index,
-                    isCmd: true
+                const info = this.convertBuiltin2Signature(bfind);
+                if (info) {
+                    return {
+                        signatures: info,
+                        activeParameter: index,
+                        activeSignature: this.findActiveSignature(bfind, index)
+                    }
                 }
             }
             let find = this.searchNode([funcName].concat(...perfixs.reverse()), position);
             // if no find, search build-in
             if (!find) {
                 const bfind = arrayFilter(this.builtinFunction, item => item.name.toLowerCase() === funcName.toLowerCase());
-                if (!bfind) return undefined;
-                return {
-                    func: bfind,
-                    index: index,
-                    isCmd: false
+                const info = this.convertBuiltin2Signature(bfind);
+                if (info) {
+                    return {
+                        signatures: info,
+                        activeParameter: index,
+                        activeSignature: this.findActiveSignature(bfind, index)
+                    }
                 }
             }
-            return {
-                func: <IFuncNode>find.nodes[0],
-                index: index,
-                isCmd: false
-            };
+            if (find instanceof AHKMethodSymbol) {
+                const reqParam: ParameterInformation[] = find.requiredParameters.map(param => ({
+                    label: param.name
+                }));
+                const optParam: ParameterInformation[] = find.optionalParameters.map(param => ({
+                    label: param.name+'?'
+                }));
+                return {
+                    signatures: [SignatureInformation.create(
+                        find.toString(),
+                        undefined,
+                        ...reqParam,
+                        ...optParam
+                    )],
+                    activeSignature: 0,
+                    activeParameter: index
+                };
+            }
         }
     }
 
@@ -754,6 +774,38 @@ export class TreeManager
             return lastParam.value;
         }
         return node;
+    }
+
+    private convertBuiltin2Signature(symbols: BuiltinFuncNode[]): Maybe<SignatureInformation[]> {
+        if (symbols.length === 0)
+            return undefined;
+        const info: SignatureInformation[] = [];
+        for (const sym of symbols) {
+            const paraminfo: ParameterInformation[] = sym.params.map(param => ({
+                label: `${param.name}${param.isOptional ? '?' : ''}${param.defaultVal ? ' = '+param.defaultVal: ''}`
+            }))
+            info.push(SignatureInformation.create(
+                sym.name,
+                undefined,
+                ...paraminfo
+            ))
+        }
+        return info;
+    }
+
+    /**
+     * Find which index of signatures is active
+     * @param symbols symbols to be found
+     * @param paramIndex active parameter index
+     * @returns active signature index
+     */
+    private findActiveSignature(symbols: BuiltinFuncNode[], paramIndex: number): number {
+        for (let i = 0; i < symbols.length; i++) {
+            const sym = symbols[i];
+            if (sym.params.length >= paramIndex)
+                return i;
+        }
+        return 0;
     }
 
     public getDefinitionAtPosition(position: Position): Location[] {
@@ -817,14 +869,6 @@ export class TreeManager
             return '';
         }
 	}
-	
-	private getReference(): ReferenceMap {
-		if (this.currentDocUri){
-			const ref = this.docsAST.get(this.currentDocUri)?.refTable
-			if (ref) return ref;
-		}
-		return new Map();
-	}
 }
 
 /**
@@ -832,12 +876,19 @@ export class TreeManager
  * @param list array to be filted
  * @param callback condition of filter
  */
-function arrayFilter<T>(list: Array<T>, callback: (item: T) => boolean): Maybe<T> {
+function arrayFilter<T>(list: Array<T>, callback: (item: T) => boolean): T[] {
+    let flag = false;
+    const items: T[] = [];
+
     for (const item of list) {
-        if (callback(item)) 
-            return item;
+        if (callback(item)) {
+            items.push(item);
+            flag = true;
+        }
+        else if (flag === false) 
+            break;
     }
-    return undefined;
+    return items;
 }
 
 interface DocInfo {
