@@ -1,5 +1,5 @@
 import { IScoop, ISymbol, ISymType, VarKind } from '../types';
-import { Range, SymbolInformation, SymbolKind } from 'vscode-languageserver';
+import { CompletionItem, CompletionItemKind, Range, SymbolInformation, SymbolKind } from 'vscode-languageserver';
 
 export abstract class AHKSymbol implements ISymbol {
 	public readonly name: string;
@@ -123,6 +123,13 @@ export abstract class ScopedSymbol extends AHKSymbol implements IScoop {
 		this.dependcyScoop.add(scoop);
 	}
 
+	public allSymbols(): ISymbol[] {
+		const syms: ISymbol[] = [];
+		for (const [name, sym] of this.symbols) 
+			syms.push(sym);
+		return syms
+	}
+
 	public symbolInformations(): SymbolInformation[] {
 		const info: SymbolInformation[] = [];
 		for (const [name, sym] of this.symbols) {
@@ -223,6 +230,17 @@ export class AHKMethodSymbol extends ScopedSymbol {
 	private initParameters() {
 		this.requiredParameters.forEach(v => this.define(v));
 		this.optionalParameters.forEach(v => this.define(v));
+	}
+
+	public defineThis() {
+		if (this.parentScoop && this.parentScoop instanceof AHKMethodSymbol)
+			this.symbols.set('this', this.parentScoop);
+	}
+
+	public toString(): string {
+		const reqParaStr = this.requiredParameters.map(v => v.name);
+		const optParaStr = this.optionalParameters.map(v => v.name);
+		return `${this.name}(${reqParaStr.concat(optParaStr).join(',')})`
 	}
 }
 

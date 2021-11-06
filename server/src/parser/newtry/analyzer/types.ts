@@ -1,3 +1,4 @@
+import { CompletionItem } from 'vscode-languageserver';
 import { SymbolInformation } from 'vscode-languageserver-types';
 
 export interface IScoop {
@@ -28,6 +29,10 @@ export interface IScoop {
 	 * convert symbol to lsp SymbolInfomation
 	 */
 	symbolInformations(): SymbolInformation[];
+	/**
+	 * get all symbols of this scoop
+	 */
+	allSymbols(): ISymbol[]
 }
 
 export interface ISymbol {

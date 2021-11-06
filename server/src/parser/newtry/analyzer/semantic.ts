@@ -112,6 +112,9 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		// this.table.addScoop(sym);
 		this.currentScoop.define(sym);
 		this.currentScoop.addScoop(sym);
+		// Define Implicit this variable
+		if (this.currentScoop instanceof AHKObjectSymbol) 
+			sym.defineThis();
 		this.enterScoop(sym);
 		const errors = decl.body.accept(this, []);
 		this.leaveScoop();

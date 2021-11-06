@@ -1,5 +1,5 @@
 import { SymbolInformation, SymbolKind } from 'vscode-languageserver-types';
-import { IScoop } from '../types';
+import { IScoop, ISymbol } from '../types';
 import { BuiltinTypeSymbol, AHKSymbol, VaribaleSymbol, AHKMethodSymbol, AHKObjectSymbol, HotkeySymbol, HotStringSymbol } from './symbol';
 
 /**
@@ -52,6 +52,13 @@ export class SymbolTable implements IScoop {
 
 	public addInclude(table: IScoop) {
 		this.includeTable.add(table);
+	}
+
+	public allSymbols(): ISymbol[] {
+		const syms: ISymbol[] = [];
+		for (const [name, sym] of this.symbols) 
+			syms.push(sym);
+		return syms
 	}
 
 	public symbolInformations(): SymbolInformation[] {
