@@ -16,9 +16,7 @@ import {
 	ReferenceInfomation, 
 	ISymbolNode, 
 	Word,
-    ReferenceMap,
-    IDocumentInfomation,
-    NodeInfomation
+    ReferenceMap
 } from '../parser/regParser/types';
 import {
 	INodeResult, 
@@ -44,9 +42,7 @@ import {
     normalize
 } from 'path';
 import { homedir } from "os";
-import { Lexer } from '../parser/regParser/ahkparser';
 import { IoEntity, IoKind, IoService } from './ioService';
-import { NodeMatcher, ScriptFinder } from '../parser/regParser/scriptFinder';
 import { SymbolTable } from '../parser/newtry/analyzer/models/symbolTable';
 import { AHKParser } from '../parser/newtry/parser/parser';
 import { PreProcesser } from '../parser/newtry/analyzer/semantic';
@@ -176,17 +172,17 @@ export class TreeManager
         const parser = new AHKParser(doc.getText(), uri, this.logger);
         const ast = parser.parse();
         const preprocesser = new PreProcesser(ast.script);
-        const table = preprocesser.process();
+        const mainTable = preprocesser.process();
 
         // updata AST first, then its includes
         const oldInclude = this.docsAST.get(uri)?.AST.script.include
         this.docsAST.set(uri, {
             AST: ast,
-            table: table.table
+            table: mainTable.table
         });
         this.conn.sendDiagnostics({
             uri: uri,
-            diagnostics: table.diagnostics
+            diagnostics: mainTable.diagnostics
         });
         
         let useneed, useless: string[];
@@ -236,6 +232,7 @@ export class TreeManager
                 const ast = parser.parse();
                 const preprocesser = new PreProcesser(ast.script);
                 const table = preprocesser.process();
+                mainTable.table.addInclude(table.table);
                 // cache to local storage file AST
                 this.localAST.set(doc.uri, {
                     AST: ast,
@@ -372,9 +369,7 @@ export class TreeManager
      * A simple(vegetable) way to get all include AST of a document
      * @returns SymbolNode[]-ASTs, document uri
      */
-    private allIncludeTreeinfomation(): Maybe<DocInfo[]> {
-        const docinfo = this.docsAST.get(this.currentDocUri);
-        if (!docinfo) return undefined;
+    private allIncludeTreeinfomation(docinfo: DocInfo): DocInfo[] {
         const incInfo = this.incInfos.get(this.currentDocUri) || [];
         let r: DocInfo[] = [];
         for (const [path, raw] of incInfo) {
@@ -764,15 +759,16 @@ export class TreeManager
     public getDefinitionAtPosition(position: Position): Location[] {
         let lexems = this.getLexemsAtPosition(position);
         if (!lexems) return [];
-        const ast = this.docsAST.get(this.currentDocUri);
-        if (!ast) return [];
-        const scoop = this.getCurrentScoop(position, ast.table);
-        let find = scoop.resolve();
-        if (!find) return [];
+        const symbol = this.searchNode(lexems, position);
+        if (!symbol) return [];
         let locations: Location[] = [];
-        for (const node of find.nodes) {
-            locations.push(Location.create(find.uri, node.range));
-        }
+        if (symbol instanceof VaribaleSymbol ||
+            symbol instanceof AHKMethodSymbol ||
+            symbol instanceof AHKObjectSymbol)
+            locations.push(Location.create(
+                symbol.uri,
+                symbol.range
+            ));
         return locations;
     }
 
@@ -847,4 +843,9 @@ function arrayFilter<T>(list: Array<T>, callback: (item: T) => boolean): Maybe<T
 interface DocInfo {
     AST: IAST;
     table: SymbolTable;
+}
+
+interface NodeInfomation {
+    symbol: ISymbol;
+    uri: string;
 }

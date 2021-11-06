@@ -99,6 +99,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		const reqParams = this.paramAction(params.requiredParameters);
 		const dfltParams = this.paramAction(params.optionalParameters);
 		const sym = new AHKMethodSymbol(
+			this.script.uri,
 			decl.nameToken.content,
 			copyRange(decl),
 			reqParams,
@@ -125,6 +126,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		const syms: VaribaleSymbol[] = [];
 		for(const param of params) {
 			syms.push(new VaribaleSymbol(
+				this.script.uri,
 				param.identifier.content,
 				copyRange(param),
 				VarKind.parameter,
@@ -138,6 +140,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		// TODO: parent scoop of class
 		const parentScoop = undefined;
 		const objTable = new AHKObjectSymbol(
+			this.script.uri,
 			decl.name.content,
 			copyRange(decl),
 			parentScoop,
@@ -165,6 +168,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 			decl.key1.key.content;
 		this.table.define(
 			new HotkeySymbol(
+				this.script.uri,
 				name,
 				copyRange(decl)
 			)
@@ -175,6 +179,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 	public visitDeclHotString(decl: Decl.HotString): Diagnostics {
 		this.table.define(
 			new HotStringSymbol(
+				this.script.uri,
 				decl.str.content,
 				copyRange(decl)
 			)
@@ -185,6 +190,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 	public visitDeclLabel(decl: Decl.Label): Diagnostics {
 		this.table.define(
 			new LabelSymbol(
+				this.script.uri,
 				decl.name.content,
 				copyRange(decl)
 			)
@@ -271,6 +277,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 				const idName = id1.token.content;
 				if (!this.currentScoop.resolve(idName)) {
 					const sym = new VaribaleSymbol(
+						this.script.uri,
 						idName,
 						copyRange(left),
 						VarKind.variable,
@@ -297,6 +304,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 					if (prop instanceof SuffixTerm.Identifier) {
 						if (!this.currentScoop.resolve(prop.token.content)) {
 							const sym = new VaribaleSymbol(
+								this.script.uri,
 								prop.token.content,
 								copyRange(fullRange),
 								VarKind.property,
@@ -401,6 +409,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		// check if iter varible is defined, if not define them
 		if (!this.currentScoop.resolve(stmt.iter1id.content)) {
 			const sym = new VaribaleSymbol(
+				this.script.uri,
 				stmt.iter1id.content,
 				copyRange(stmt.iter1id),
 				VarKind.variable,
@@ -410,6 +419,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		}
 		if (stmt.iter2id) {
 			const sym = new VaribaleSymbol(
+				this.script.uri,
 				stmt.iter1id.content,
 				copyRange(stmt.iter2id),
 				VarKind.variable,
@@ -436,6 +446,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 		// check if output varible is defined, if not define it
 		if (!this.currentScoop.resolve(stmt.errors.content)) {
 			const sym = new VaribaleSymbol(
+				this.script.uri,
 				stmt.errors.content,
 				copyRange(stmt.errors),
 				VarKind.variable,
@@ -469,6 +480,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 				const kind = this.currentScoop instanceof AHKObjectSymbol ?
 							 VarKind.property : VarKind.variable;
 				const sym = new VaribaleSymbol(
+					this.script.uri,
 					assign.identifer.content,
 					Range.create(assign.start, assign.end),
 					kind,

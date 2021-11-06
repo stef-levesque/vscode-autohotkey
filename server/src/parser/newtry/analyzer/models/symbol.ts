@@ -34,6 +34,7 @@ export class VaribaleSymbol extends AHKSymbol {
 	 * @param type Type of this variable
 	 */
 	constructor(
+		public readonly uri: string,
 		public readonly name: string,
 		public readonly range: Range,
 		public readonly tag: VarKind,
@@ -51,6 +52,7 @@ export class VaribaleSymbol extends AHKSymbol {
 
 export class HotkeySymbol extends AHKSymbol {
 	constructor(
+		public readonly uri: string,
 		name: string,
 		public readonly range: Range
 	) {
@@ -64,6 +66,7 @@ export class HotkeySymbol extends AHKSymbol {
 
 export class HotStringSymbol extends AHKSymbol {
 	constructor(
+		public readonly uri: string,
 		name: string,
 		public readonly range: Range
 	) {
@@ -77,6 +80,7 @@ export class HotStringSymbol extends AHKSymbol {
 
 export class LabelSymbol extends AHKSymbol {
 	constructor(
+		public readonly uri: string,
 		name: string,
 		public readonly range: Range
 	) {
@@ -216,6 +220,7 @@ export class AHKBuiltinObjectSymbol extends ScopedSymbol implements ISymType {
 
 export class AHKMethodSymbol extends ScopedSymbol {
 	constructor(
+		public readonly uri: string,
 		name: string,
 		public readonly range: Range,
 		public readonly requiredParameters: VaribaleSymbol[],
@@ -252,6 +257,7 @@ export class AHKObjectSymbol extends ScopedSymbol implements ISymType {
 	 * @param enclosingScoop parent scoop
 	 */
 	constructor(
+		public readonly uri: string,
 		name: string,
 		public readonly range: Range,
 		public readonly parentScoop?: AHKObjectSymbol,
