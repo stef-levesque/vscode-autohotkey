@@ -310,7 +310,7 @@ export class PreProcesser extends TreeVisitor<Diagnostics> {
 								VarKind.property,
 								undefined
 							);
-							this.currentScoop.define(sym);
+							this.currentScoop.parentScoop.define(sym);
 						}
 					}
 					return errors;

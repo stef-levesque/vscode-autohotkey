@@ -50,7 +50,7 @@ import { SymbolTable } from '../parser/newtry/analyzer/models/symbolTable';
 import { AHKParser } from '../parser/newtry/parser/parser';
 import { PreProcesser } from '../parser/newtry/analyzer/semantic';
 import { IAST } from '../parser/newtry/types';
-import { IScoop, ISymbol } from '../parser/newtry/analyzer/types';
+import { IScoop, ISymbol, VarKind } from '../parser/newtry/analyzer/types';
 import { AHKMethodSymbol, AHKObjectSymbol, AHKSymbol, HotkeySymbol, HotStringSymbol, ScopedSymbol, VaribaleSymbol } from '../parser/newtry/analyzer/models/symbol';
 
 // if belongs to FuncNode
@@ -466,6 +466,13 @@ export class TreeManager
         docinfo = this.docsAST.get(this.currentDocUri);
         if (!docinfo) return [];
         const scoop = this.getCurrentScoop(pos, docinfo.table);
+        const lexems = this.getLexemsAtPosition(pos);
+        if (lexems && lexems.length > 1) {
+            const perfixs = lexems.reverse();
+            const symbol = this.searchPerfixSymbol(perfixs.slice(0, -1), scoop);
+            if (!symbol) return [];
+            return symbol.allSymbols().map(sym => this.convertSymCompletion(sym));
+        }
         if (scoop.name === 'global') return this.getGlobalCompletion();
         const symbols = scoop.allSymbols();
         return symbols.map(sym => this.convertSymCompletion(sym));
@@ -481,7 +488,8 @@ export class TreeManager
         const symbols = table.allSymbols();
         for (const sym of symbols) {
             if (sym instanceof AHKMethodSymbol || sym instanceof AHKObjectSymbol) {
-                if (sym.range.start >= pos && sym.range.end <= pos) {
+                if (sym.range.start.line >= pos.line && sym.range.start.character >= pos.character
+                    && sym.range.end.line <= pos.line && sym.range.end.character >= pos.character ) {
                     return this.getCurrentScoop(pos, sym);
                 }
             }
@@ -632,7 +640,9 @@ export class TreeManager
             sym.requiredParameters
 			ci.data = sym.toString();
 		} else if (sym instanceof VaribaleSymbol) {
-			ci.kind = CompletionItemKind.Variable;
+			ci.kind = sym.tag === VarKind.property ? 
+                      CompletionItemKind.Property :
+                      CompletionItemKind.Variable;
 		} else if (sym instanceof AHKObjectSymbol) {
 			ci['kind'] = CompletionItemKind.Class;
 			ci.data = ''
@@ -710,7 +720,7 @@ export class TreeManager
             if (lastnode instanceof CommandCall) {
                 // All Commands are built-in, just search built-in Commands
                 const bfind = arrayFilter(this.builtinCommand, item => item.name.toLowerCase() === funcName.toLowerCase());
-                const info = this.convertBuiltin2Signature(bfind);
+                const info = this.convertBuiltin2Signature(bfind, true);
                 if (info) {
                     return {
                         signatures: info,
@@ -776,7 +786,7 @@ export class TreeManager
         return node;
     }
 
-    private convertBuiltin2Signature(symbols: BuiltinFuncNode[]): Maybe<SignatureInformation[]> {
+    private convertBuiltin2Signature(symbols: BuiltinFuncNode[], iscmd: boolean = false): Maybe<SignatureInformation[]> {
         if (symbols.length === 0)
             return undefined;
         const info: SignatureInformation[] = [];
@@ -785,7 +795,7 @@ export class TreeManager
                 label: `${param.name}${param.isOptional ? '?' : ''}${param.defaultVal ? ' = '+param.defaultVal: ''}`
             }))
             info.push(SignatureInformation.create(
-                sym.name,
+                this.getFuncPrototype(sym, iscmd),
                 undefined,
                 ...paraminfo
             ))
@@ -880,12 +890,13 @@ function arrayFilter<T>(list: Array<T>, callback: (item: T) => boolean): T[] {
     let flag = false;
     const items: T[] = [];
 
+    // search a continueous block of symbols
     for (const item of list) {
         if (callback(item)) {
             items.push(item);
             flag = true;
         }
-        else if (flag === false) 
+        else if (flag === true) 
             break;
     }
     return items;
